@@ -1,0 +1,658 @@
+import { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+    FiArrowLeft,
+    FiMail,
+    FiPhone,
+    FiClock,
+    FiShield,
+    FiCalendar,
+    FiBriefcase,
+    FiFileText,
+    FiHash,
+    FiAlertCircle,
+    FiSmartphone,
+    FiWifi,
+    FiCpu,
+    FiUserCheck,
+    FiActivity,
+    FiCheckCircle,
+    FiXCircle,
+    FiAlertTriangle,
+    FiFilter,
+    FiRefreshCw,
+    FiChevronDown // Nuevo icono importado
+} from 'react-icons/fi';
+import { AiFillAndroid } from 'react-icons/ai';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
+
+const API_URL = 'https://9dm7dqf9-3002.usw3.devtunnels.ms';
+
+const DIAS_SEMANA = [
+    { key: 'lunes', label: 'Lunes' },
+    { key: 'martes', label: 'Martes' },
+    { key: 'miercoles', label: 'Miércoles' },
+    { key: 'jueves', label: 'Jueves' },
+    { key: 'viernes', label: 'Viernes' },
+    { key: 'sabado', label: 'Sábado' },
+    { key: 'domingo', label: 'Domingo' }
+];
+
+const COLORS = {
+    puntual: '#22c55e',
+    retardo: '#eab308',
+    falta: '#ef4444',
+    gris: '#94a3b8'
+};
+
+const PerfilUsuario = () => {
+    const { username } = useParams();
+    const navigate = useNavigate();
+
+    // Estados de datos
+    const [usuario, setUsuario] = useState(null);
+    const [empleadoId, setEmpleadoId] = useState(null);
+    const [dispositivo, setDispositivo] = useState(null);
+    const [estadisticas, setEstadisticas] = useState(null);
+    const [historial, setHistorial] = useState([]);
+
+    // Estados de filtros de tiempo
+    const [rangoTiempo, setRangoTiempo] = useState('siempre');
+    const [fechaInicio, setFechaInicio] = useState('');
+    const [fechaFin, setFechaFin] = useState('');
+
+    // Estado para el menú desplegable de fechas
+    const [showDateMenu, setShowDateMenu] = useState(false);
+
+    // Estados de carga y error
+    const [loading, setLoading] = useState(true);
+    const [loadingStats, setLoadingStats] = useState(false);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        fetchUsuario();
+    }, [username]);
+
+    const fetchUsuario = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const token = localStorage.getItem('auth_token');
+
+            const response = await fetch(`${API_URL}/api/usuarios/username/${username}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const userData = result.data;
+                const esEmpleado = userData.es_empleado || userData.roles?.some(r => r.nombre === 'Empleado');
+                userData.es_empleado = esEmpleado;
+
+                setUsuario(userData);
+
+                if (esEmpleado) {
+                    let idEmpleadoEncontrado = userData.empleado_id || userData.id_empleado;
+                    if (!idEmpleadoEncontrado && userData.rfc) {
+                        try {
+                            const empResponse = await fetch(`${API_URL}/api/empleados/buscar/rfc/${userData.rfc}`, {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            const empResult = await empResponse.json();
+                            if (empResult.success && empResult.data) {
+                                idEmpleadoEncontrado = empResult.data.id;
+                            }
+                        } catch (e) {
+                            console.error("Error buscando ID de empleado por RFC", e);
+                        }
+                    }
+
+                    if (idEmpleadoEncontrado) {
+                        setEmpleadoId(idEmpleadoEncontrado);
+                        await Promise.all([
+                            fetchDispositivo(idEmpleadoEncontrado, token),
+                            fetchEstadisticas(idEmpleadoEncontrado, token, { rango: 'siempre' }),
+                            fetchHistorial(idEmpleadoEncontrado, token)
+                        ]);
+                    }
+                }
+            } else {
+                setError(result.message || 'Usuario no encontrado');
+            }
+        } catch (err) {
+            console.error('Error al cargar datos:', err);
+            setError('Error al cargar los datos del usuario');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchDispositivo = async (idEmpleado, token) => {
+        try {
+            const response = await fetch(`${API_URL}/api/movil?empleado_id=${idEmpleado}&es_activo=true`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await response.json();
+            if (result.success && result.data && result.data.length > 0) {
+                setDispositivo(result.data[0]);
+            }
+        } catch (err) {
+            console.error('Error al cargar dispositivo:', err);
+        }
+    };
+
+    const fetchEstadisticas = async (idEmpleado, token, filtros = {}) => {
+        try {
+            setLoadingStats(true);
+            let url = `${API_URL}/api/reportes/estadisticas-empleado/${idEmpleado}`;
+
+            const params = new URLSearchParams();
+
+            if (filtros.rango === 'intervalo' && filtros.inicio && filtros.fin) {
+                params.append('fecha_inicio', filtros.inicio);
+                params.append('fecha_fin', filtros.fin);
+            }
+
+            if (params.toString()) {
+                url += `?${params.toString()}`;
+            }
+
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await response.json();
+            if (result.success) {
+                setEstadisticas(result.data);
+            }
+        } catch (err) {
+            console.error('Error al cargar estadísticas:', err);
+        } finally {
+            setLoadingStats(false);
+        }
+    };
+
+    const fetchHistorial = async (idEmpleado, token) => {
+        try {
+            const response = await fetch(`${API_URL}/api/reportes/detalle-asistencias?empleado_id=${idEmpleado}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await response.json();
+            if (result.success && Array.isArray(result.data)) {
+                setHistorial(result.data.slice(0, 10));
+            }
+        } catch (err) {
+            console.error('Error al cargar historial:', err);
+        }
+    };
+
+    const handleActualizarEstadisticas = () => {
+        if (!empleadoId) return;
+        const token = localStorage.getItem('auth_token');
+        fetchEstadisticas(empleadoId, token, {
+            rango: rangoTiempo,
+            inicio: fechaInicio,
+            fin: fechaFin
+        });
+        // Cerrar el menú si está abierto
+        setShowDateMenu(false);
+    };
+
+    const getInitials = (nombre) => {
+        if (!nombre) return '?';
+        const parts = nombre.trim().split(' ');
+        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+        return nombre.substring(0, 2).toUpperCase();
+    };
+
+    const getEstadoBadge = (estado) => {
+        const estados = {
+            activo: { dot: 'bg-green-500', text: 'text-green-700', bg: 'bg-green-50', label: 'Activo' },
+            baja: { dot: 'bg-red-500', text: 'text-red-700', bg: 'bg-red-50', label: 'Baja' },
+            suspendido: { dot: 'bg-yellow-500', text: 'text-yellow-700', bg: 'bg-yellow-50', label: 'Suspendido' }
+        };
+        return estados[estado] || estados.activo;
+    };
+
+    const formatFecha = (fecha) => {
+        if (!fecha) return 'Sin definir';
+        return new Date(fecha).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+    };
+
+    const chartData = useMemo(() => {
+        if (!estadisticas?.asistencias) return [];
+        return [
+            { name: 'Puntuales', value: parseInt(estadisticas.asistencias.puntuales) || 0, color: COLORS.puntual },
+            { name: 'Retardos', value: parseInt(estadisticas.asistencias.retardos) || 0, color: COLORS.retardo },
+            { name: 'Faltas', value: parseInt(estadisticas.asistencias.faltas) || 0, color: COLORS.falta },
+        ].filter(item => item.value > 0);
+    }, [estadisticas]);
+
+    if (loading) return <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div></div>;
+    if (error) return <div className="p-8 text-center text-red-600">{error}</div>;
+
+    const estadoBadge = getEstadoBadge(usuario?.estado_cuenta);
+    const horarioConfig = usuario?.horario?.configuracion?.configuracion_semanal;
+
+    return (
+        <div className="max-w-7xl mx-auto space-y-6">
+            <div>
+                <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors font-medium">
+                    <FiArrowLeft className="w-5 h-5" /> Volver
+                </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                {/* COLUMNA IZQUIERDA */}
+                <div className="lg:col-span-4 space-y-6">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="p-6">
+                            <div className="flex items-start gap-5">
+                                <div className="flex-shrink-0">
+                                    {usuario?.foto ? (
+                                        <img src={usuario.foto} alt={usuario.nombre} className="w-20 h-20 rounded-full object-cover border border-gray-200 shadow-sm" />
+                                    ) : (
+                                        <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 font-bold text-2xl border border-blue-100 shadow-sm">
+                                            {getInitials(usuario?.nombre)}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex-1 min-w-0 pt-1">
+                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                        <h1 className="text-xl font-bold text-gray-900 leading-tight truncate">{usuario?.nombre}</h1>
+                                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${estadoBadge.bg} ${estadoBadge.text} border-transparent`}>
+                                            {estadoBadge.label}
+                                        </span>
+                                    </div>
+                                    <p className="text-gray-500 text-sm mb-3">@{usuario?.usuario}</p>
+                                </div>
+                            </div>
+                            <div className="mt-6 pt-6 border-t border-gray-100 space-y-3">
+                                <div className="flex items-center gap-3 text-sm group">
+                                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400"><FiMail className="w-4 h-4" /></div>
+                                    <span className="text-gray-600 truncate">{usuario?.correo || 'Sin correo'}</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-sm group">
+                                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400"><FiPhone className="w-4 h-4" /></div>
+                                    <span className="text-gray-600">{usuario?.telefono || 'Sin teléfono'}</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-sm group">
+                                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400"><FiCalendar className="w-4 h-4" /></div>
+                                    <span className="text-gray-600">Registrado: {formatFecha(usuario?.fecha_registro)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {usuario?.es_empleado && (
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4 flex items-center gap-2">
+                                <FiFileText className="w-4 h-4 text-blue-500" /> Datos Laborales
+                            </h3>
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                                    <span className="text-sm text-gray-500">RFC</span>
+                                    <span className="text-sm font-mono font-medium text-gray-900">{usuario?.rfc || 'N/A'}</span>
+                                </div>
+                                <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                                    <span className="text-sm text-gray-500">NSS</span>
+                                    <span className="text-sm font-mono font-medium text-gray-900">{usuario?.nss || 'N/A'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4 flex items-center gap-2">
+                            <FiShield className="w-4 h-4 text-blue-500" /> Roles
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                            {usuario?.roles && usuario.roles.length > 0 ? (
+                                usuario.roles.map((rol, i) => (
+                                    <span key={i} className={`px-3 py-1 text-xs font-medium rounded-lg border ${rol.es_admin ? 'bg-red-50 text-red-700 border-red-100' : 'bg-gray-50 text-gray-700 border-gray-200'}`}>
+                                        {rol.nombre}
+                                    </span>
+                                ))
+                            ) : (
+                                <span className="text-sm text-gray-400 italic">Sin roles</span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* COLUMNA DERECHA */}
+                <div className="lg:col-span-8 space-y-6">
+
+                    {/* APARTADO ESTADÍSTICAS */}
+                    {usuario?.es_empleado && (
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-visible relative z-10">
+
+                            {/* HEADER COMBINADO */}
+                            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <h2 className="font-semibold text-gray-900 flex items-center gap-2 whitespace-nowrap">
+                                    <FiActivity className="w-5 h-5 text-blue-600" /> Desempeño y Asistencia
+                                </h2>
+
+                                <div className="flex items-center gap-3">
+                                    <div className="relative w-full md:w-48">
+                                        <select
+                                            value={rangoTiempo}
+                                            onChange={(e) => setRangoTiempo(e.target.value)}
+                                            className="w-full pl-3 pr-8 py-1.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm appearance-none"
+                                        >
+                                            <option value="siempre">Histórico Completo</option>
+                                            <option value="intervalo">Intervalo de Fechas</option>
+                                        </select>
+                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                                            <FiFilter className="w-4 h-4" />
+                                        </div>
+                                    </div>
+
+                                    {rangoTiempo === 'intervalo' && (
+                                        <div className="relative">
+                                            <button
+                                                onClick={() => setShowDateMenu(!showDateMenu)}
+                                                className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 shadow-sm whitespace-nowrap"
+                                            >
+                                                <FiCalendar className="w-4 h-4 text-gray-500" />
+                                                <span className="hidden sm:inline">
+                                                    {fechaInicio && fechaFin ? `${fechaInicio} - ${fechaFin}` : 'Seleccionar fechas'}
+                                                </span>
+                                                <span className="sm:hidden">Fechas</span>
+                                                <FiChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showDateMenu ? 'rotate-180' : ''}`} />
+                                            </button>
+
+                                            {showDateMenu && (
+                                                <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-100 z-50 p-4 animate-in fade-in zoom-in-95 duration-100">
+                                                    <div className="space-y-4">
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Desde</label>
+                                                            <input
+                                                                type="date"
+                                                                value={fechaInicio}
+                                                                onChange={(e) => setFechaInicio(e.target.value)}
+                                                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Hasta</label>
+                                                            <input
+                                                                type="date"
+                                                                value={fechaFin}
+                                                                onChange={(e) => setFechaFin(e.target.value)}
+                                                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                                            />
+                                                        </div>
+                                                        <button
+                                                            onClick={handleActualizarEstadisticas}
+                                                            disabled={loadingStats}
+                                                            className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-colors flex justify-center items-center gap-2"
+                                                        >
+                                                            {loadingStats ? 'Cargando...' : 'Aplicar Filtro'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Botón de recarga simple si no es intervalo, o visual feedback */}
+                                    {rangoTiempo === 'siempre' && (
+                                        <button
+                                            onClick={handleActualizarEstadisticas}
+                                            disabled={loadingStats}
+                                            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            title="Actualizar datos"
+                                        >
+                                            <FiRefreshCw className={`w-4 h-4 ${loadingStats ? 'animate-spin' : ''}`} />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* CONTENIDO */}
+                            <div className="p-6 relative z-0">
+                                {estadisticas ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-6">
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="bg-green-50 p-3 rounded-xl border border-green-100">
+                                                    <p className="text-[10px] text-green-600 font-bold uppercase mb-1">Puntuales</p>
+                                                    <div className="flex items-end justify-between">
+                                                        <span className="text-xl font-bold text-green-700">{estadisticas.asistencias?.puntuales || 0}</span>
+                                                        <FiCheckCircle className="w-4 h-4 text-green-400" />
+                                                    </div>
+                                                </div>
+                                                <div className="bg-red-50 p-3 rounded-xl border border-red-100">
+                                                    <p className="text-[10px] text-red-600 font-bold uppercase mb-1">Faltas</p>
+                                                    <div className="flex items-end justify-between">
+                                                        <span className="text-xl font-bold text-red-700">{estadisticas.asistencias?.faltas || 0}</span>
+                                                        <FiXCircle className="w-4 h-4 text-red-400" />
+                                                    </div>
+                                                </div>
+                                                <div className="bg-yellow-50 p-3 rounded-xl border border-yellow-100">
+                                                    <p className="text-[10px] text-yellow-600 font-bold uppercase mb-1">Retardos</p>
+                                                    <div className="flex items-end justify-between">
+                                                        <span className="text-xl font-bold text-yellow-700">{estadisticas.asistencias?.retardos || 0}</span>
+                                                        <FiAlertTriangle className="w-4 h-4 text-yellow-400" />
+                                                    </div>
+                                                </div>
+                                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                                    <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Total</p>
+                                                    <div className="flex items-end justify-between">
+                                                        <span className="text-xl font-bold text-gray-700">{estadisticas.asistencias?.total || 0}</span>
+                                                        <FiActivity className="w-4 h-4 text-gray-400" />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {chartData.length > 0 ? (
+                                                <div className="h-40 w-full relative">
+                                                    <ResponsiveContainer width="100%" height="100%">
+                                                        <PieChart>
+                                                            <Pie
+                                                                data={chartData}
+                                                                cx="50%"
+                                                                cy="50%"
+                                                                innerRadius={35}
+                                                                outerRadius={55}
+                                                                paddingAngle={5}
+                                                                dataKey="value"
+                                                            >
+                                                                {chartData.map((entry, index) => (
+                                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                                ))}
+                                                            </Pie>
+                                                            <RechartsTooltip />
+                                                            <Legend verticalAlign="bottom" height={36} iconSize={8} wrapperStyle={{ fontSize: '12px' }} />
+                                                        </PieChart>
+                                                    </ResponsiveContainer>
+                                                </div>
+                                            ) : (
+                                                <div className="h-40 flex items-center justify-center text-gray-400 text-xs italic bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                                    Sin datos
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden flex flex-col h-full">
+                                            <div className="px-4 py-2 border-b border-gray-200 bg-white">
+                                                <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wide">Historial Reciente</h3>
+                                            </div>
+                                            <div className="flex-1 overflow-y-auto max-h-[250px] p-0">
+                                                {historial.length > 0 ? (
+                                                    <table className="min-w-full divide-y divide-gray-200">
+                                                        <tbody className="bg-white divide-y divide-gray-200">
+                                                            {historial.map((registro, idx) => (
+                                                                <tr key={idx} className="hover:bg-gray-50">
+                                                                    <td className="px-4 py-2.5 whitespace-nowrap text-xs text-gray-500">
+                                                                        {new Date(registro.fecha_registro).toLocaleDateString()}
+                                                                    </td>
+                                                                    <td className="px-4 py-2.5 whitespace-nowrap text-xs font-medium text-gray-900">
+                                                                        {new Date(registro.fecha_registro).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                    </td>
+                                                                    <td className="px-4 py-2.5 whitespace-nowrap">
+                                                                        <span className={`px-2 py-0.5 inline-flex text-[10px] leading-4 font-semibold rounded-full 
+                                                                            ${(registro.estado === 'puntual' || registro.estado === 'aprobado') ? 'bg-green-100 text-green-800' :
+                                                                                (registro.estado === 'retardo') ? 'bg-yellow-100 text-yellow-800' :
+                                                                                    'bg-red-100 text-red-800'}`}>
+                                                                            {registro.estado}
+                                                                        </span>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                ) : (
+                                                    <div className="flex flex-col items-center justify-center h-full text-gray-400 py-8">
+                                                        <FiClock className="w-6 h-6 mb-2 opacity-50" />
+                                                        <p className="text-xs">Sin registros</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-10 text-gray-400">
+                                        <div className="animate-pulse flex flex-col items-center">
+                                            <div className="h-4 w-32 bg-gray-200 rounded mb-2"></div>
+                                            <div className="h-3 w-24 bg-gray-200 rounded"></div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Horario semanal */}
+                    {usuario?.es_empleado && (
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+                            <div className="px-6 py-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
+                                <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                                    <FiClock className="w-5 h-5 text-blue-600" /> Horario Semanal
+                                </h2>
+                                {usuario?.horario ? (
+                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${usuario.horario.es_activo ? 'bg-green-50 text-green-700 border-green-100' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                                        {usuario.horario.es_activo ? 'VIGENTE' : 'INACTIVO'}
+                                    </span>
+                                ) : null}
+                            </div>
+
+                            <div className="p-6">
+                                {usuario?.horario && horarioConfig ? (
+                                    <>
+                                        <div className="flex items-center gap-2 text-sm text-gray-500 mb-6 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                            <FiCalendar className="w-4 h-4 text-blue-500" />
+                                            <span>Periodo: <span className="font-medium text-gray-900">{formatFecha(usuario.horario.fecha_inicio)}</span></span>
+                                            {usuario.horario.fecha_fin && <span> al <span className="font-medium text-gray-900">{formatFecha(usuario.horario.fecha_fin)}</span></span>}
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {DIAS_SEMANA.map((dia) => {
+                                                const turnos = horarioConfig[dia.key] || [];
+                                                const tieneTurnos = turnos.length > 0;
+                                                return (
+                                                    <div key={dia.key} className={`p-3 rounded-xl border ${tieneTurnos ? 'border-gray-200 bg-white' : 'border-gray-100 bg-gray-50/50'}`}>
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <span className={`text-sm font-bold ${tieneTurnos ? 'text-gray-800' : 'text-gray-400'}`}>{dia.label}</span>
+                                                            {!tieneTurnos && <span className="text-[10px] uppercase font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">Descanso</span>}
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            {tieneTurnos ? turnos.map((turno, idx) => (
+                                                                <div key={idx} className="text-xs font-medium text-blue-700 bg-blue-50 px-2 py-1.5 rounded-md flex items-center gap-2">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                                                                    {turno.inicio} - {turno.fin}
+                                                                </div>
+                                                            )) : (
+                                                                <div className="h-6"></div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="text-center py-10 text-gray-400">
+                                        <FiClock className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                        <p>No se ha configurado un horario para este empleado.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Dispositivo Asignado */}
+                    {usuario?.es_empleado && (
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="px-6 py-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
+                                <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                                    <FiSmartphone className="w-5 h-5 text-blue-600" /> Dispositivo Móvil
+                                </h2>
+                                {dispositivo ? (
+                                    <span className="flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-50 px-2.5 py-1 rounded-lg border border-green-100">
+                                        <FiUserCheck className="w-3.5 h-3.5" /> ASIGNADO
+                                    </span>
+                                ) : (
+                                    <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">SIN DISPOSITIVO</span>
+                                )}
+                            </div>
+
+                            {dispositivo ? (
+                                <div className="p-6">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                                    <AiFillAndroid className="w-7 h-7" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm text-gray-500">Sistema Operativo</p>
+                                                    <p className="font-bold text-gray-900 text-lg">{dispositivo.sistema_operativo}</p>
+                                                </div>
+                                            </div>
+                                            {dispositivo.es_root && (
+                                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-50 text-red-700 text-xs font-bold rounded-md border border-red-100">
+                                                    <FiAlertCircle className="w-3 h-3" /> ACCESO ROOT DETECTADO
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                    <FiWifi className="w-4 h-4" /> IP
+                                                </div>
+                                                <span className="font-mono text-sm font-medium text-gray-900">{dispositivo.ip || '--'}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                    <FiCpu className="w-4 h-4" /> MAC
+                                                </div>
+                                                <span className="font-mono text-sm font-medium text-gray-900">{dispositivo.mac || '--'}</span>
+                                            </div>
+                                            <div className="pt-2 mt-2 border-t border-gray-200 flex justify-between items-center">
+                                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                    <FiCalendar className="w-3 h-3" /> Asignado
+                                                </div>
+                                                <span className="text-xs font-medium text-gray-700">{formatFecha(dispositivo.fecha_registro)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-8 text-center text-gray-400">
+                                    <FiSmartphone className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                    <p>No tiene un dispositivo móvil vinculado actualmente.</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default PerfilUsuario;
