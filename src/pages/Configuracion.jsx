@@ -7,7 +7,8 @@ import {
     FiWifi
 } from 'react-icons/fi';
 
-const API_URL = 'https://9dm7dqf9-3002.usw3.devtunnels.ms';
+import { API_CONFIG } from '../config/Apiconfig';
+const API_URL = API_CONFIG.BASE_URL;
 
 // Catálogo de métodos para mapear los códigos de la BD a nombres legibles
 const METODOS_AUTH = [

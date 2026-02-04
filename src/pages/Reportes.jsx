@@ -16,7 +16,8 @@ import autoTable from 'jspdf-autotable';
 // imports de docx omitidos para brevedad, mantener los tuyos...
 import html2canvas from 'html2canvas';
 
-const API_BASE_URL = 'https://9dm7dqf9-3002.usw3.devtunnels.ms/api';
+import { API_CONFIG } from '../config/Apiconfig';
+const API_BASE_URL = `${API_CONFIG.BASE_URL}/api`;
 
 const COLORS = {
     puntual: '#22c55e', // Verde

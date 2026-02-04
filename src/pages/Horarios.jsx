@@ -5,7 +5,8 @@ import ScheduleCard from '../components/cards/ScheduleCard';
 import ScheduleModal from '../components/modals/ScheduleModal';
 import WeeklyCalendar from '../components/schedules/WeeklyCalendar';
 
-const API_URL = 'https://9dm7dqf9-3002.usw3.devtunnels.ms';
+import { API_CONFIG } from '../config/Apiconfig';
+const API_URL = API_CONFIG.BASE_URL;
 
 const Horarios = () => {
     const [horarios, setHorarios] = useState([]);
@@ -188,22 +189,20 @@ const Horarios = () => {
                     <div className="flex bg-gray-100 rounded-lg p-1">
                         <button
                             onClick={() => setVista('cards')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                                vista === 'cards'
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${vista === 'cards'
                                     ? 'bg-white text-gray-900 shadow-sm'
                                     : 'text-gray-600 hover:text-gray-900'
-                            }`}
+                                }`}
                         >
                             <FiGrid className="w-4 h-4" />
                             Cards
                         </button>
                         <button
                             onClick={() => setVista('calendario')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                                vista === 'calendario'
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${vista === 'calendario'
                                     ? 'bg-white text-gray-900 shadow-sm'
                                     : 'text-gray-600 hover:text-gray-900'
-                            }`}
+                                }`}
                         >
                             <FiCalendar className="w-4 h-4" />
                             Calendario

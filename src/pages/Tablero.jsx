@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fi';
 import { API_CONFIG } from '../config/Apiconfig';
 import Pagination from '../components/Pagination';
+import { useRealTime } from '../hooks/useRealTime';
 
 const API_URL = API_CONFIG.BASE_URL;
 
@@ -28,6 +29,13 @@ const Dashboard = () => {
     useEffect(() => {
         fetchDashboardData();
     }, []);
+
+    // Actualización en tiempo real
+    useRealTime({
+        'nueva-asistencia': () => {
+            fetchDashboardData();
+        }
+    });
 
     const fetchDashboardData = async () => {
         try {
@@ -219,86 +227,86 @@ const Dashboard = () => {
                     </div>
 
                     <div className="flex-1">
-                    {ultimasAsistencias.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
-                            <FiClock className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                            <p>No hay asistencias registradas hoy</p>
-                        </div>
-                    ) : (
-                        <div className="overflow-hidden w-full">
-                            <table className="w-full table-fixed divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Empleado
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Tipo
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Hora
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Estado
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Dispositivo
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {asistenciasPaginadas.map((asistencia) => (
-                                        <tr key={asistencia.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate(`/empleados/usuario/${asistencia.empleado_usuario}`)}>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center">
-                                                    <div className="ml-3">
-                                                        <div className="text-sm font-medium text-gray-900">
-                                                            {asistencia.empleado_nombre}
+                        {ultimasAsistencias.length === 0 ? (
+                            <div className="text-center py-8 text-gray-500">
+                                <FiClock className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                                <p>No hay asistencias registradas hoy</p>
+                            </div>
+                        ) : (
+                            <div className="overflow-hidden w-full">
+                                <table className="w-full table-fixed divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Empleado
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Tipo
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Hora
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Estado
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Dispositivo
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {asistenciasPaginadas.map((asistencia) => (
+                                            <tr key={asistencia.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate(`/empleados/usuario/${asistencia.empleado_usuario}`)}>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center">
+                                                        <div className="ml-3">
+                                                            <div className="text-sm font-medium text-gray-900">
+                                                                {asistencia.empleado_nombre}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            </td>
+                                                </td>
 
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${asistencia.tipo === 'entrada'
-                                                    ? 'bg-blue-100 text-blue-800'
-                                                    : 'bg-purple-100 text-purple-800'
-                                                    }`}>
-                                                    {asistencia.tipo === 'entrada' ? '→' : '←'}
-                                                    {asistencia.tipo === 'entrada' ? 'Entrada' : 'Salida'}
-                                                </span>
-                                            </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${asistencia.tipo === 'entrada'
+                                                        ? 'bg-blue-100 text-blue-800'
+                                                        : 'bg-purple-100 text-purple-800'
+                                                        }`}>
+                                                        {asistencia.tipo === 'entrada' ? '→' : '←'}
+                                                        {asistencia.tipo === 'entrada' ? 'Entrada' : 'Salida'}
+                                                    </span>
+                                                </td>
 
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {formatHora(asistencia.fecha_registro)}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                {(() => {
-                                                    const e = asistencia.estado;
-                                                    const map = {
-                                                        puntual: { cls: 'bg-green-100 text-green-800', icon: <FiCheckCircle className="w-3 h-3" />, label: 'Puntual' },
-                                                        salida_puntual: { cls: 'bg-green-100 text-green-800', icon: <FiCheckCircle className="w-3 h-3" />, label: 'Salida puntual' },
-                                                        salida_temprana: { cls: 'bg-blue-100 text-blue-800', icon: <FiClock className="w-3 h-3" />, label: 'Salida temprana' },
-                                                        retardo: { cls: 'bg-yellow-100 text-yellow-800', icon: <FiClock className="w-3 h-3" />, label: 'Retardo' },
-                                                        falta: { cls: 'bg-red-100 text-red-800', icon: <FiAlertCircle className="w-3 h-3" />, label: 'Falta' },
-                                                    };
-                                                    const info = map[e] || { cls: 'bg-gray-100 text-gray-800', icon: <FiClock className="w-3 h-3" />, label: e };
-                                                    return (
-                                                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${info.cls}`}>
-                                                            {info.icon} {info.label}
-                                                        </span>
-                                                    );
-                                                })()}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
-                                                {asistencia.dispositivo_origen}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {formatHora(asistencia.fecha_registro)}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {(() => {
+                                                        const e = asistencia.estado;
+                                                        const map = {
+                                                            puntual: { cls: 'bg-green-100 text-green-800', icon: <FiCheckCircle className="w-3 h-3" />, label: 'Puntual' },
+                                                            salida_puntual: { cls: 'bg-green-100 text-green-800', icon: <FiCheckCircle className="w-3 h-3" />, label: 'Salida puntual' },
+                                                            salida_temprana: { cls: 'bg-blue-100 text-blue-800', icon: <FiClock className="w-3 h-3" />, label: 'Salida temprana' },
+                                                            retardo: { cls: 'bg-yellow-100 text-yellow-800', icon: <FiClock className="w-3 h-3" />, label: 'Retardo' },
+                                                            falta: { cls: 'bg-red-100 text-red-800', icon: <FiAlertCircle className="w-3 h-3" />, label: 'Falta' },
+                                                        };
+                                                        const info = map[e] || { cls: 'bg-gray-100 text-gray-800', icon: <FiClock className="w-3 h-3" />, label: e };
+                                                        return (
+                                                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${info.cls}`}>
+                                                                {info.icon} {info.label}
+                                                            </span>
+                                                        );
+                                                    })()}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
+                                                    {asistencia.dispositivo_origen}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
 
                     <Pagination

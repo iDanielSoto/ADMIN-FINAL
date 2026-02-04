@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 
-const API_URL = 'https://9dm7dqf9-3002.usw3.devtunnels.ms';
+import { API_CONFIG } from '../config/Apiconfig';
+const API_URL = API_CONFIG.BASE_URL;
 
 /**
  * Hook para escuchar eventos SSE de solicitudes en tiempo real.

@@ -2,7 +2,7 @@
  * Configuración de la API
  */
 export const API_CONFIG = {
-    BASE_URL: 'https://9dm7dqf9-3002.usw3.devtunnels.ms',
+    BASE_URL: import.meta.env.VITE_API_URL,
     ENDPOINTS: {
         MODULOS: '/api/modulos',
         USUARIOS: '/api/usuarios',

@@ -26,7 +26,8 @@ import {
 import { AiFillAndroid } from 'react-icons/ai';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
-const API_URL = 'https://9dm7dqf9-3002.usw3.devtunnels.ms';
+import { API_CONFIG } from '../config/Apiconfig';
+const API_URL = API_CONFIG.BASE_URL;
 
 const DIAS_SEMANA = [
     { key: 'lunes', label: 'Lunes' },

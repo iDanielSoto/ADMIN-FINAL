@@ -27,7 +27,8 @@ import {
     RefreshCw
 } from 'lucide-react';
 
-const API_URL = 'https://9dm7dqf9-3002.usw3.devtunnels.ms';
+import { API_CONFIG } from '../config/Apiconfig';
+const API_URL = API_CONFIG.BASE_URL;
 
 const ESTADOS = {
     pendiente: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-800', icon: Clock },

@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
-const API_URL = 'https://9dm7dqf9-3002.usw3.devtunnels.ms';
+import { API_CONFIG } from '../config/Apiconfig';
+import { useRealTime } from '../hooks/useRealTime';
+const API_URL = API_CONFIG.BASE_URL;
 
 // Crear el contexto
 const AuthContext = createContext(null);
@@ -29,6 +31,26 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         checkAuth();
     }, []);
+
+    // Escuchar cambios en el usuario en tiempo real
+    useRealTime({
+        'usuario-actualizado': (data) => {
+            if (user && user.usuario && (data.id === user.usuario.id || data.id === user.id)) {
+                // Actualizar estado local
+                const updatedUser = {
+                    ...user,
+                    usuario: {
+                        ...user.usuario,
+                        ...data
+                    }
+                };
+                setUser(updatedUser);
+
+                // Actualizar localStorage para persistencia
+                localStorage.setItem('user_data', JSON.stringify(updatedUser));
+            }
+        }
+    });
 
     /**
      * Verificar si hay una sesión activa

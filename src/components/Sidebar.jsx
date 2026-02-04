@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, Book, Users, Calendar, Settings, BarChart3, AlertCircle, Menu, X, ChevronLeft, Building2, Shield, Cpu } from 'lucide-react'
+import { useRealTime } from '../hooks/useRealTime';
 
-const API_URL = 'https://9dm7dqf9-3002.usw3.devtunnels.ms';
+import { API_CONFIG } from '../config/Apiconfig';
+const API_URL = API_CONFIG.BASE_URL;
 
 // Menú principal (Sin configuración)
 const menuItems = [
@@ -47,6 +49,14 @@ const Sidebar = () => {
         };
         fetchEmpresa();
     }, []);
+
+    useRealTime({
+        'empresa-actualizada': (data) => {
+            if (data && data.es_activo) {
+                setEmpresa(prev => ({ ...prev, ...data }));
+            }
+        }
+    });
 
     const handleMenuClick = (ruta) => {
         setIsMobileOpen(false);
