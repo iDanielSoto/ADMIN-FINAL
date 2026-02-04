@@ -13,6 +13,7 @@ import {
     FiFileText
 } from 'react-icons/fi';
 import ConfirmBox from '../components/ConfirmBox';
+import Pagination from '../components/Pagination';
 
 const API_URL = 'https://9dm7dqf9-3002.usw3.devtunnels.ms';
 
@@ -504,42 +505,13 @@ const Incidencias = () => {
 
             </div>
 
-            {/* Paginación - siempre al fondo */}
-            {incidencias.length > porPagina && (
-                <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-200">
-                    <p className="text-xs text-gray-500">
-                        {(pagina - 1) * porPagina + 1}-{Math.min(pagina * porPagina, incidencias.length)} de {incidencias.length}
-                    </p>
-                    <div className="flex gap-1">
-                        <button
-                            onClick={() => setPagina(p => Math.max(1, p - 1))}
-                            disabled={pagina === 1}
-                            className="px-3 py-1 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            Anterior
-                        </button>
-                        {Array.from({ length: Math.ceil(incidencias.length / porPagina) }, (_, i) => i + 1).map(num => (
-                            <button
-                                key={num}
-                                onClick={() => setPagina(num)}
-                                className={`px-3 py-1 text-sm rounded-lg border ${pagina === num
-                                    ? 'bg-primary-600 text-white border-primary-600'
-                                    : 'border-gray-300 hover:bg-gray-50'
-                                }`}
-                            >
-                                {num}
-                            </button>
-                        ))}
-                        <button
-                            onClick={() => setPagina(p => Math.min(Math.ceil(incidencias.length / porPagina), p + 1))}
-                            disabled={pagina === Math.ceil(incidencias.length / porPagina)}
-                            className="px-3 py-1 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            Siguiente
-                        </button>
-                    </div>
-                </div>
-            )}
+            <Pagination
+                pagina={pagina}
+                totalPaginas={Math.ceil(incidencias.length / porPagina)}
+                total={incidencias.length}
+                porPagina={porPagina}
+                onChange={setPagina}
+            />
 
             {/* Modal Crear/Editar */}
             {showModal && (

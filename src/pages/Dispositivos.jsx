@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import ConfirmBox from '../components/ConfirmBox';
+import { useSolicitudesSSE } from '../hooks/useSolicitudesSSE';
 import {
     Monitor,
     Smartphone,
@@ -119,12 +120,11 @@ const Dispositivos = () => {
         fetchData();
     }, [fetchData]);
 
-    useEffect(() => {
-        const intervalId = setInterval(() => {
-            fetchData(true);
-        }, 30000);
-        return () => clearInterval(intervalId);
-    }, [fetchData]);
+    // Notificaciones en tiempo real via SSE (reemplaza polling)
+    useSolicitudesSSE({
+        onNuevaSolicitud: () => fetchData(true),
+        onSolicitudActualizada: () => fetchData(true)
+    });
 
     // --- Lógica Modales ---
     const openAceptarModal = (solicitud) => {

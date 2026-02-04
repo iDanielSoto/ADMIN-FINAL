@@ -493,12 +493,23 @@ const PerfilUsuario = () => {
                                                                         {new Date(registro.fecha_registro).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                                     </td>
                                                                     <td className="px-4 py-2.5 whitespace-nowrap">
-                                                                        <span className={`px-2 py-0.5 inline-flex text-[10px] leading-4 font-semibold rounded-full 
-                                                                            ${(registro.estado === 'puntual' || registro.estado === 'aprobado') ? 'bg-green-100 text-green-800' :
-                                                                                (registro.estado === 'retardo') ? 'bg-yellow-100 text-yellow-800' :
-                                                                                    'bg-red-100 text-red-800'}`}>
-                                                                            {registro.estado}
-                                                                        </span>
+                                                                        {(() => {
+                                                                            const e = registro.estado;
+                                                                            const map = {
+                                                                                puntual: { cls: 'bg-green-100 text-green-800', label: 'Puntual' },
+                                                                                aprobado: { cls: 'bg-green-100 text-green-800', label: 'Aprobado' },
+                                                                                salida_puntual: { cls: 'bg-green-100 text-green-800', label: 'Salida puntual' },
+                                                                                salida_temprana: { cls: 'bg-blue-100 text-blue-800', label: 'Salida temprana' },
+                                                                                retardo: { cls: 'bg-yellow-100 text-yellow-800', label: 'Retardo' },
+                                                                                falta: { cls: 'bg-red-100 text-red-800', label: 'Falta' },
+                                                                            };
+                                                                            const info = map[e] || { cls: 'bg-gray-100 text-gray-800', label: e };
+                                                                            return (
+                                                                                <span className={`px-2 py-0.5 inline-flex text-[10px] leading-4 font-semibold rounded-full ${info.cls}`}>
+                                                                                    {info.label}
+                                                                                </span>
+                                                                            );
+                                                                        })()}
                                                                     </td>
                                                                 </tr>
                                                             ))}

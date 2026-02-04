@@ -8,6 +8,7 @@ import {
     FiCalendar
 } from 'react-icons/fi';
 import { API_CONFIG } from '../config/Apiconfig';
+import Pagination from '../components/Pagination';
 
 const API_URL = API_CONFIG.BASE_URL;
 
@@ -272,22 +273,22 @@ const Dashboard = () => {
                                                 {formatHora(asistencia.fecha_registro)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                                                    asistencia.estado === 'puntual'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : asistencia.estado === 'falta'
-                                                            ? 'bg-red-100 text-red-800'
-                                                            : 'bg-yellow-100 text-yellow-800'
-                                                    }`}>
-                                                    {asistencia.estado === 'puntual' ? (
-                                                        <FiCheckCircle className="w-3 h-3" />
-                                                    ) : asistencia.estado === 'falta' ? (
-                                                        <FiAlertCircle className="w-3 h-3" />
-                                                    ) : (
-                                                        <FiClock className="w-3 h-3" />
-                                                    )}
-                                                    {asistencia.estado === 'puntual' ? 'Puntual' : asistencia.estado === 'falta' ? 'Falta' : 'Retardo'}
-                                                </span>
+                                                {(() => {
+                                                    const e = asistencia.estado;
+                                                    const map = {
+                                                        puntual: { cls: 'bg-green-100 text-green-800', icon: <FiCheckCircle className="w-3 h-3" />, label: 'Puntual' },
+                                                        salida_puntual: { cls: 'bg-green-100 text-green-800', icon: <FiCheckCircle className="w-3 h-3" />, label: 'Salida puntual' },
+                                                        salida_temprana: { cls: 'bg-blue-100 text-blue-800', icon: <FiClock className="w-3 h-3" />, label: 'Salida temprana' },
+                                                        retardo: { cls: 'bg-yellow-100 text-yellow-800', icon: <FiClock className="w-3 h-3" />, label: 'Retardo' },
+                                                        falta: { cls: 'bg-red-100 text-red-800', icon: <FiAlertCircle className="w-3 h-3" />, label: 'Falta' },
+                                                    };
+                                                    const info = map[e] || { cls: 'bg-gray-100 text-gray-800', icon: <FiClock className="w-3 h-3" />, label: e };
+                                                    return (
+                                                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${info.cls}`}>
+                                                            {info.icon} {info.label}
+                                                        </span>
+                                                    );
+                                                })()}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
                                                 {asistencia.dispositivo_origen}
@@ -300,42 +301,13 @@ const Dashboard = () => {
                     )}
                     </div>
 
-                    {/* Paginación */}
-                    {totalPaginasAsistencias > 1 && (
-                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
-                            <p className="text-xs text-gray-500">
-                                {(paginaAsistencias - 1) * asistenciasPorPagina + 1}-{Math.min(paginaAsistencias * asistenciasPorPagina, ultimasAsistencias.length)} de {ultimasAsistencias.length}
-                            </p>
-                            <div className="flex gap-1">
-                                <button
-                                    onClick={() => setPaginaAsistencias(p => Math.max(1, p - 1))}
-                                    disabled={paginaAsistencias === 1}
-                                    className="px-3 py-1 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                    Anterior
-                                </button>
-                                {Array.from({ length: totalPaginasAsistencias }, (_, i) => i + 1).map(num => (
-                                    <button
-                                        key={num}
-                                        onClick={() => setPaginaAsistencias(num)}
-                                        className={`px-3 py-1 text-sm rounded-lg border ${paginaAsistencias === num
-                                            ? 'bg-primary-600 text-white border-primary-600'
-                                            : 'border-gray-300 hover:bg-gray-50'
-                                        }`}
-                                    >
-                                        {num}
-                                    </button>
-                                ))}
-                                <button
-                                    onClick={() => setPaginaAsistencias(p => Math.min(totalPaginasAsistencias, p + 1))}
-                                    disabled={paginaAsistencias === totalPaginasAsistencias}
-                                    className="px-3 py-1 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                    Siguiente
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                    <Pagination
+                        pagina={paginaAsistencias}
+                        totalPaginas={totalPaginasAsistencias}
+                        total={ultimasAsistencias.length}
+                        porPagina={asistenciasPorPagina}
+                        onChange={setPaginaAsistencias}
+                    />
                 </div>
 
                 {/* Panel lateral */}

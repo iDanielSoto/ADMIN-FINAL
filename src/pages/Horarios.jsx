@@ -122,7 +122,7 @@ const Horarios = () => {
 
     const handleDelete = (horario) => {
         setConfirmAction({
-            message: '¿Estás seguro de eliminar este horario?',
+            message: '¿Estás seguro de desactivar este horario?',
             onConfirm: async () => {
                 setConfirmAction(null);
                 try {
@@ -133,6 +133,27 @@ const Horarios = () => {
                     });
                     const result = await response.json();
                     if (result.success) fetchData();
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+        });
+    };
+
+    const handleReactivar = (horario) => {
+        setConfirmAction({
+            message: `¿Reactivar este horario?`,
+            onConfirm: async () => {
+                setConfirmAction(null);
+                try {
+                    const token = localStorage.getItem('auth_token');
+                    const response = await fetch(`${API_URL}/api/horarios/${horario.id}/reactivar`, {
+                        method: 'PATCH',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const result = await response.json();
+                    if (result.success) fetchData();
+                    else setAlertMsg(result.message || 'Error al reactivar');
                 } catch (error) {
                     console.error('Error:', error);
                 }
@@ -216,6 +237,7 @@ const Horarios = () => {
                             empleadoNombre={getEmpleadoNombre(horario)}
                             onEdit={handleEdit}
                             onDelete={handleDelete}
+                            onReactivar={handleReactivar}
                         />
                     ))}
                 </div>

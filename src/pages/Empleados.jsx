@@ -3,6 +3,7 @@ import {
     FiPlus, FiSearch, FiUser
 } from 'react-icons/fi';
 import ConfirmBox from '../components/ConfirmBox';
+import Pagination from '../components/Pagination';
 import { useNavigate } from 'react-router-dom';
 import UserCard from '../components/cards/UserCard';
 import UserModal from '../components/modals/UserModal';
@@ -201,42 +202,14 @@ const Empleados = () => {
                 )}
             </div>
 
-            {/* Paginación - siempre al fondo */}
-            {usuarios.length > porPagina && (
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-                    <p className="text-sm text-gray-500">
-                        {(pagina - 1) * porPagina + 1}-{Math.min(pagina * porPagina, usuarios.length)} de {usuarios.length} usuarios
-                    </p>
-                    <div className="flex gap-1">
-                        <button
-                            onClick={() => setPagina(p => Math.max(1, p - 1))}
-                            disabled={pagina === 1}
-                            className="px-3 py-1 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            Anterior
-                        </button>
-                        {Array.from({ length: Math.ceil(usuarios.length / porPagina) }, (_, i) => i + 1).map(num => (
-                            <button
-                                key={num}
-                                onClick={() => setPagina(num)}
-                                className={`px-3 py-1 text-sm rounded-lg border ${pagina === num
-                                    ? 'bg-primary-600 text-white border-primary-600'
-                                    : 'border-gray-300 hover:bg-gray-50'
-                                }`}
-                            >
-                                {num}
-                            </button>
-                        ))}
-                        <button
-                            onClick={() => setPagina(p => Math.min(Math.ceil(usuarios.length / porPagina), p + 1))}
-                            disabled={pagina === Math.ceil(usuarios.length / porPagina)}
-                            className="px-3 py-1 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            Siguiente
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Paginación */}
+            <Pagination
+                pagina={pagina}
+                totalPaginas={Math.ceil(usuarios.length / porPagina)}
+                total={usuarios.length}
+                porPagina={porPagina}
+                onChange={setPagina}
+            />
 
             {alertMsg && <ConfirmBox message={alertMsg} onConfirm={() => setAlertMsg(null)} />}
             {confirmAction && <ConfirmBox message={confirmAction.message} onConfirm={confirmAction.onConfirm} onCancel={() => setConfirmAction(null)} />}

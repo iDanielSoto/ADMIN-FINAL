@@ -4,17 +4,16 @@ import {
     FiSave, FiUpload, FiTrash2, FiImage, FiGlobe, FiClock,
     FiAlertCircle, FiSettings, FiPhone, FiMail, FiShield,
     FiArrowUp, FiArrowDown, FiLock, FiLayout, FiChevronRight,
-    FiWifi // Icono para la nueva sección
+    FiWifi
 } from 'react-icons/fi';
 
 const API_URL = 'https://9dm7dqf9-3002.usw3.devtunnels.ms';
 
 // Catálogo de métodos para mapear los códigos de la BD a nombres legibles
 const METODOS_AUTH = [
-    { id: 'huella', label: 'Huella Digital' },
-    { id: 'rostro', label: 'Reconocimiento Facial' },
-    { id: 'tarjeta', label: 'Tarjeta NFC/RFID' },
-    { id: 'codigo', label: 'Código PIN / Contraseña' }
+    { id: 'huella', label: 'Huella Digital', icon: '' },
+    { id: 'rostro', label: 'Reconocimiento Facial', icon: '' },
+    { id: 'codigo', label: 'Código PIN / Contraseña', icon: '' }
 ];
 
 // Configuración del menú lateral (Incluye la nueva sección "Red")
@@ -64,7 +63,12 @@ const Configuracion = () => {
         formato_hora: '24',
         zona_horaria: 'America/Mexico_City',
         intentos_maximos: 3,
-        orden_credenciales: ['huella', 'rostro', 'tarjeta', 'codigo']
+        orden_credenciales: {
+            huella: { prioridad: 1, activo: true },
+            rostro: { prioridad: 2, activo: true },
+            tarjeta: { prioridad: 3, activo: true },
+            codigo: { prioridad: 4, activo: true }
+        }
     });
 
     const [formTolerancia, setFormTolerancia] = useState({
@@ -188,12 +192,30 @@ const Configuracion = () => {
                         const cfg = dataConfig.data;
                         setConfiguracion(cfg);
 
-                        let ordenCredenciales = ['huella', 'rostro', 'tarjeta', 'codigo'];
+                        // Estructura por defecto para orden_credenciales
+                        let ordenCredenciales = {
+                            huella: { prioridad: 1, activo: true },
+                            rostro: { prioridad: 2, activo: true },
+                            tarjeta: { prioridad: 3, activo: true },
+                            codigo: { prioridad: 4, activo: true }
+                        };
+
                         if (cfg.orden_credenciales) {
                             try {
-                                ordenCredenciales = typeof cfg.orden_credenciales === 'string'
+                                const parsed = typeof cfg.orden_credenciales === 'string'
                                     ? JSON.parse(cfg.orden_credenciales)
                                     : cfg.orden_credenciales;
+
+                                // Si es array (formato antiguo), convertir a objeto
+                                if (Array.isArray(parsed)) {
+                                    ordenCredenciales = {};
+                                    parsed.forEach((metodo, index) => {
+                                        ordenCredenciales[metodo] = { prioridad: index + 1, activo: true };
+                                    });
+                                } else {
+                                    // Ya es objeto con la nueva estructura
+                                    ordenCredenciales = parsed;
+                                }
                             } catch (e) {
                                 console.error("Error parseando orden_credenciales", e);
                             }
@@ -270,14 +292,55 @@ const Configuracion = () => {
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    const moveMethod = (index, direction) => {
-        const newOrder = [...formConfig.orden_credenciales];
+    // --- FUNCIONES PARA MÉTODOS DE AUTENTICACIÓN ---
+
+    // Obtener métodos ordenados por prioridad
+    const getMetodosOrdenados = () => {
+        return Object.entries(formConfig.orden_credenciales)
+            .map(([id, config]) => ({ id, ...config }))
+            .sort((a, b) => a.prioridad - b.prioridad);
+    };
+
+    // Toggle activar/desactivar método
+    const toggleMetodo = (metodoId) => {
+        setFormConfig(prev => ({
+            ...prev,
+            orden_credenciales: {
+                ...prev.orden_credenciales,
+                [metodoId]: {
+                    ...prev.orden_credenciales[metodoId],
+                    activo: !prev.orden_credenciales[metodoId].activo
+                }
+            }
+        }));
+    };
+
+    // Mover prioridad de método
+    const moveMetodo = (metodoId, direction) => {
+        const ordenados = getMetodosOrdenados();
+        const index = ordenados.findIndex(m => m.id === metodoId);
+
         if (direction === 'up' && index > 0) {
-            [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
-        } else if (direction === 'down' && index < newOrder.length - 1) {
-            [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+            const anterior = ordenados[index - 1];
+            setFormConfig(prev => ({
+                ...prev,
+                orden_credenciales: {
+                    ...prev.orden_credenciales,
+                    [metodoId]: { ...prev.orden_credenciales[metodoId], prioridad: anterior.prioridad },
+                    [anterior.id]: { ...prev.orden_credenciales[anterior.id], prioridad: prev.orden_credenciales[metodoId].prioridad }
+                }
+            }));
+        } else if (direction === 'down' && index < ordenados.length - 1) {
+            const siguiente = ordenados[index + 1];
+            setFormConfig(prev => ({
+                ...prev,
+                orden_credenciales: {
+                    ...prev.orden_credenciales,
+                    [metodoId]: { ...prev.orden_credenciales[metodoId], prioridad: siguiente.prioridad },
+                    [siguiente.id]: { ...prev.orden_credenciales[siguiente.id], prioridad: prev.orden_credenciales[metodoId].prioridad }
+                }
+            }));
         }
-        setFormConfig(prev => ({ ...prev, orden_credenciales: newOrder }));
     };
 
     // --- NUEVAS FUNCIONES PARA SECCIÓN RED ---
@@ -541,75 +604,118 @@ const Configuracion = () => {
 
                         {/* SECCIÓN: SEGURIDAD */}
                         {activeTab === 'seguridad' && (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                                <div className="space-y-6">
-                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Políticas de Acceso</h3>
+                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    <div className="space-y-6">
+                                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Políticas de Acceso</h3>
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            <span className="flex items-center gap-2"><FiLock className="w-4 h-4" /> Intentos máximos de inicio de sesión</span>
-                                        </label>
-                                        <input type="number" min="1" max="10" value={formConfig.intentos_maximos}
-                                            onChange={(e) => setFormConfig(prev => ({ ...prev, intentos_maximos: parseInt(e.target.value) }))}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                            placeholder="Ej. 3" />
-                                        <p className="text-xs text-gray-500 mt-1">Bloquea temporalmente la cuenta tras fallos consecutivos.</p>
-                                    </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                <span className="flex items-center gap-2"><FiLock className="w-4 h-4" /> Intentos máximos de inicio de sesión</span>
+                                            </label>
+                                            <input type="number" min="1" max="10" value={formConfig.intentos_maximos}
+                                                onChange={(e) => setFormConfig(prev => ({ ...prev, intentos_maximos: parseInt(e.target.value) }))}
+                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                placeholder="Ej. 3" />
+                                            <p className="text-xs text-gray-500 mt-1">Bloquea temporalmente la cuenta tras fallos consecutivos.</p>
+                                        </div>
 
-                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                        <div className="flex items-start gap-3">
-                                            <div className="pt-0.5">
-                                                <input type="checkbox" id="mantenimiento" checked={formConfig.es_mantenimiento}
-                                                    onChange={(e) => setFormConfig(prev => ({ ...prev, es_mantenimiento: e.target.checked }))}
-                                                    className="w-5 h-5 text-yellow-600 border-gray-300 rounded focus:ring-2 focus:ring-yellow-500" />
-                                            </div>
-                                            <div>
-                                                <label htmlFor="mantenimiento" className="block text-sm font-medium text-gray-900 mb-1">
-                                                    Modo Mantenimiento
-                                                </label>
-                                                <p className="text-xs text-gray-600 leading-relaxed">
-                                                    Al activar esta opción, <strong>solo los administradores</strong> podrán acceder al sistema. Los empleados verán una pantalla de "En Mantenimiento".
-                                                </p>
+                                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                            <div className="flex items-start gap-3">
+                                                <div className="pt-0.5">
+                                                    <input type="checkbox" id="mantenimiento" checked={formConfig.es_mantenimiento}
+                                                        onChange={(e) => setFormConfig(prev => ({ ...prev, es_mantenimiento: e.target.checked }))}
+                                                        className="w-5 h-5 text-yellow-600 border-gray-300 rounded focus:ring-2 focus:ring-yellow-500" />
+                                                </div>
+                                                <div>
+                                                    <label htmlFor="mantenimiento" className="block text-sm font-medium text-gray-900 mb-1">
+                                                        Modo Mantenimiento
+                                                    </label>
+                                                    <p className="text-xs text-gray-600 leading-relaxed">
+                                                        Al activar esta opción, <strong>solo los administradores</strong> podrán acceder al sistema. Los empleados verán una pantalla de "En Mantenimiento".
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="space-y-4">
-                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Prioridad de Autenticación</h3>
-                                    <p className="text-sm text-gray-500">
-                                        Ordena los métodos de validación que solicitará el reloj checador.
-                                    </p>
+                                    <div className="space-y-4">
+                                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Prioridad de Autenticación</h3>
+                                        <p className="text-sm text-gray-500">
+                                            Activa o desactiva los métodos de validación y define su prioridad para el reloj checador.
+                                        </p>
 
-                                    <div className="space-y-2 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                                        {formConfig.orden_credenciales.map((metodoId, index) => {
-                                            const metodoInfo = METODOS_AUTH.find(m => m.id === metodoId) || { label: metodoId };
-                                            return (
-                                                <div key={metodoId} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm group hover:border-blue-300 transition-colors">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="flex items-center justify-center w-6 h-6 bg-gray-100 text-gray-600 rounded-full text-xs font-bold group-hover:bg-blue-100 group-hover:text-blue-700">
-                                                            {index + 1}
-                                                        </span>
-                                                        <span className="text-sm text-gray-700 font-medium">{metodoInfo.label}</span>
+                                        <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                                            {getMetodosOrdenados().map((metodo, index) => {
+                                                const metodoInfo = METODOS_AUTH.find(m => m.id === metodo.id) || { label: metodo.id, icon: '' };
+                                                const ordenados = getMetodosOrdenados();
+
+                                                return (
+                                                    <div
+                                                        key={metodo.id}
+                                                        className={`flex items-center justify-between p-4 rounded-lg border shadow-sm transition-all ${metodo.activo
+                                                            ? 'bg-white border-gray-200 hover:border-blue-300'
+                                                            : 'bg-gray-100 border-gray-300 opacity-60'
+                                                            }`}
+                                                    >
+                                                        <div className="flex items-center gap-4">
+                                                            {/* Número de prioridad */}
+                                                            <span className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${metodo.activo
+                                                                ? 'bg-blue-100 text-blue-700'
+                                                                : 'bg-gray-200 text-gray-500'
+                                                                }`}>
+                                                                {index + 1}
+                                                            </span>
+
+                                                            {/* Icono y nombre */}
+                                                            <div className="flex items-center gap-3">
+                                                                <span className="text-2xl">{metodoInfo.icon}</span>
+                                                                <span className={`text-sm font-medium ${metodo.activo ? 'text-gray-700' : 'text-gray-500 line-through'}`}>
+                                                                    {metodoInfo.label}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-3">
+                                                            {/* Toggle activar/desactivar */}
+                                                            <button
+                                                                onClick={() => toggleMetodo(metodo.id)}
+                                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${metodo.activo ? 'bg-blue-600' : 'bg-gray-300'
+                                                                    }`}
+                                                            >
+                                                                <span
+                                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${metodo.activo ? 'translate-x-6' : 'translate-x-1'
+                                                                        }`}
+                                                                />
+                                                            </button>
+
+                                                            {/* Botones de prioridad */}
+                                                            <div className="flex gap-1">
+                                                                <button
+                                                                    onClick={() => moveMetodo(metodo.id, 'up')}
+                                                                    disabled={index === 0}
+                                                                    className="p-1.5 text-gray-500 hover:bg-gray-200 rounded disabled:opacity-30 disabled:cursor-not-allowed hover:text-blue-600"
+                                                                    title="Subir prioridad"
+                                                                >
+                                                                    <FiArrowUp className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => moveMetodo(metodo.id, 'down')}
+                                                                    disabled={index === ordenados.length - 1}
+                                                                    className="p-1.5 text-gray-500 hover:bg-gray-200 rounded disabled:opacity-30 disabled:cursor-not-allowed hover:text-blue-600"
+                                                                    title="Bajar prioridad"
+                                                                >
+                                                                    <FiArrowDown className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex gap-1 opacity-60 group-hover:opacity-100">
-                                                        <button
-                                                            onClick={() => moveMethod(index, 'up')}
-                                                            disabled={index === 0}
-                                                            className="p-1.5 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-0 hover:text-blue-600"
-                                                        >
-                                                            <FiArrowUp className="w-4 h-4" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => moveMethod(index, 'down')}
-                                                            disabled={index === formConfig.orden_credenciales.length - 1}
-                                                            className="p-1.5 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-0 hover:text-blue-600"
-                                                        >
-                                                            <FiArrowDown className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+                                                );
+                                            })}
+                                        </div>
+
+                                        <p className="text-xs text-gray-500 mt-2">
+                                            Los métodos desactivados no se solicitarán. La prioridad determina el orden de verificación.
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -887,7 +993,6 @@ const Configuracion = () => {
                                 </div>
                             </div>
                         )}
-
                     </div>
                 </main>
             </div>

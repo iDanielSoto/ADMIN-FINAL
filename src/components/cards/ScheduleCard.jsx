@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiUser, FiCalendar, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { FiUser, FiCalendar, FiEdit2, FiTrash2, FiRefreshCw } from 'react-icons/fi';
 import { fusionarBloquesContinuos, timeToMinutes, DIAS_SEMANA } from '../../utils/scheduleUtils';
 
 const HORA_MIN = 6 * 60;  // 6:00
@@ -53,7 +53,7 @@ const MiniTimeline = ({ configuracion }) => {
     );
 };
 
-const ScheduleCard = ({ horario, empleadoNombre, onEdit, onDelete }) => {
+const ScheduleCard = ({ horario, empleadoNombre, onEdit, onDelete, onReactivar }) => {
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow flex flex-col h-full">
             {/* Header */}
@@ -105,20 +105,32 @@ const ScheduleCard = ({ horario, empleadoNombre, onEdit, onDelete }) => {
 
             {/* Footer */}
             <div className="flex gap-2 mt-auto pt-4 border-t border-gray-100">
-                <button
-                    onClick={() => onEdit(horario)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                    <FiEdit2 className="w-4 h-4" />
-                    Editar
-                </button>
-                <button
-                    onClick={() => onDelete(horario)}
-                    className="flex items-center justify-center px-3 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-transparent"
-                    title="Eliminar horario"
-                >
-                    <FiTrash2 className="w-4 h-4" />
-                </button>
+                {horario.es_activo ? (
+                    <>
+                        <button
+                            onClick={() => onEdit(horario)}
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                            <FiEdit2 className="w-4 h-4" />
+                            Editar
+                        </button>
+                        <button
+                            onClick={() => onDelete(horario)}
+                            className="flex items-center justify-center px-3 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-transparent"
+                            title="Desactivar horario"
+                        >
+                            <FiTrash2 className="w-4 h-4" />
+                        </button>
+                    </>
+                ) : (
+                    <button
+                        onClick={() => onReactivar(horario)}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+                    >
+                        <FiRefreshCw className="w-4 h-4" />
+                        Reactivar
+                    </button>
+                )}
             </div>
         </div>
     );
