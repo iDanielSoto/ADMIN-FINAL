@@ -16,11 +16,15 @@ import Reportes from './pages/Reportes';
 import Registros from './pages/Registros'
 import Error404 from './pages/Error404'
 
+import { NetworkProvider } from './context/NetworkContext';
+
 function App() {
     return (
         <BrowserRouter>
             <AuthProvider>
-                <AppRoutes />
+                <NetworkProvider>
+                    <AppRoutes />
+                </NetworkProvider>
             </AuthProvider>
         </BrowserRouter>
     );

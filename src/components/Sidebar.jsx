@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Book, Users, Calendar, Settings, BarChart3, AlertCircle, Menu, X, ChevronLeft, Building2, Shield, Cpu } from 'lucide-react'
+import { Home, Book, Users, Calendar, Settings, BarChart3, AlertCircle, Menu, X, ChevronLeft, Building2, Shield, Cpu, WifiOff } from 'lucide-react'
 import { useRealTime } from '../hooks/useRealTime';
+import { useNetwork } from '../context/NetworkContext';
 
 import { API_CONFIG } from '../config/Apiconfig';
 const API_URL = API_CONFIG.BASE_URL;
@@ -143,6 +144,9 @@ const Sidebar = () => {
           ${isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}
         `}
             >
+                {/* Offline Indicator */}
+
+
                 {/* Header con logo y nombre de empresa */}
                 <div className={`h-16 flex items-center border-b border-gray-200 flex-shrink-0 ${isCollapsed ? 'justify-center' : 'justify-between px-4'}`}>
                     {!isCollapsed ? (
@@ -206,6 +210,7 @@ const Sidebar = () => {
 
                 {/* Footer del Sidebar (Configuración) */}
                 <div className={`flex-shrink-0 border-t border-gray-200 bg-white ${isCollapsed ? 'px-2 py-2' : 'px-3 py-3'}`}>
+                    <OfflineIndicator isCollapsed={isCollapsed} />
                     <nav className="space-y-1">
                         {renderMenuButton({
                             id: 'configuracion',
@@ -217,6 +222,29 @@ const Sidebar = () => {
                 </div>
             </aside>
         </>
+    );
+};
+
+const OfflineIndicator = ({ isCollapsed }) => {
+    const { isOffline } = useNetwork();
+
+    if (!isOffline) return null;
+
+    return (
+        <div className={`
+            bg-red-500 text-white flex items-center justify-center
+            transition-all duration-300 overflow-hidden
+            ${isCollapsed ? 'h-8' : 'h-8 px-2'}
+        `}
+            title="Sin conexión a internet"
+        >
+            <WifiOff className="w-4 h-4" />
+            {!isCollapsed && (
+                <span className="ml-2 text-xs font-bold whitespace-nowrap">
+                    MODO OFFLINE
+                </span>
+            )}
+        </div>
     );
 };
 
