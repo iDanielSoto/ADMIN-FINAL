@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTheme } from '../context/ThemeContext';
+import { useConfig } from '../context/ConfigContext';
 import { compressImage } from '../utils/imageUtils';
 import {
     FiSave, FiUpload, FiTrash2, FiImage, FiGlobe, FiClock,
@@ -19,16 +21,19 @@ const METODOS_AUTH = [
 
 // Configuración del menú lateral (Incluye la nueva sección "Red")
 const SECCIONES = [
+    { id: 'general', label: 'General', icon: FiSettings, description: 'Región, idioma y preferencias' },
     { id: 'empresa', label: 'Empresa', icon: FiLayout, description: 'Identidad y contacto de la organización' },
     { id: 'seguridad', label: 'Seguridad', icon: FiShield, description: 'Accesos, bloqueos y autenticación' },
-    { id: 'general', label: 'General', icon: FiSettings, description: 'Región, idioma y preferencias' },
     { id: 'tolerancia', label: 'Tolerancia', icon: FiClock, description: 'Reglas de asistencia y retardos' },
     { id: 'red', label: 'Red', icon: FiWifi, description: 'Puntos de acceso y segmentación IP' },
 ];
 
+
 const Configuracion = () => {
+    const { theme, toggleTheme } = useTheme();
+    const { config, updateConfig } = useConfig(); // Consumir contexto
     // Estado para la navegación interna
-    const [activeTab, setActiveTab] = useState('empresa');
+    const [activeTab, setActiveTab] = useState('general');
 
     // Estados de datos principales
     const [empresa, setEmpresa] = useState(null);
@@ -57,12 +62,13 @@ const Configuracion = () => {
         correo: ''
     });
 
+    // Inicializar formConfig con valores del contexto
     const [formConfig, setFormConfig] = useState({
-        idioma: 'es',
-        es_mantenimiento: false,
-        formato_fecha: 'DD/MM/YYYY',
-        formato_hora: '24',
-        zona_horaria: 'America/Mexico_City',
+        idioma: config.idioma || 'es',
+        es_mantenimiento: config.es_mantenimiento || false,
+        formato_fecha: config.formato_fecha || 'DD/MM/YYYY',
+        formato_hora: config.formato_hora || '24',
+        zona_horaria: config.zona_horaria || 'America/Mexico_City',
         intentos_maximos: 3,
         orden_credenciales: {
             huella: { prioridad: 1, activo: true },
@@ -71,6 +77,18 @@ const Configuracion = () => {
             codigo: { prioridad: 4, activo: true }
         }
     });
+
+    // Sincronizar formulario cuando el contexto cambie (carga inicial)
+    useEffect(() => {
+        setFormConfig(prev => ({
+            ...prev,
+            idioma: config.idioma,
+            formato_fecha: config.formato_fecha,
+            formato_hora: config.formato_hora,
+            zona_horaria: config.zona_horaria,
+            es_mantenimiento: config.es_mantenimiento
+        }));
+    }, [config]);
 
     const [formTolerancia, setFormTolerancia] = useState({
         nombre: 'Tolerancia General',
@@ -417,6 +435,15 @@ const Configuracion = () => {
                 });
                 const dataConfig = await resConfig.json();
                 if (!dataConfig.success) throw new Error('Error al actualizar configuración');
+
+                // Actualizar contexto global
+                updateConfig({
+                    idioma: formConfig.idioma,
+                    formato_fecha: formConfig.formato_fecha,
+                    formato_hora: formConfig.formato_hora,
+                    zona_horaria: formConfig.zona_horaria,
+                    es_mantenimiento: formConfig.es_mantenimiento
+                });
             }
 
             // Guardar Tolerancia actual
@@ -466,10 +493,10 @@ const Configuracion = () => {
 
                 {/* --- SIDEBAR DE CONFIGURACIÓN --- */}
                 <aside className="lg:w-72 flex-shrink-0">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden sticky top-6">
-                        <div className="p-4 border-b border-gray-100 bg-gray-50">
-                            <h2 className="font-bold text-gray-700">Ajustes</h2>
-                            <p className="text-xs text-gray-500">Configuración del sistema</p>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden sticky top-6 transition-colors duration-200">
+                        <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                            <h2 className="font-bold text-gray-700 dark:text-gray-200">Ajustes</h2>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Configuración del sistema</p>
                         </div>
                         <nav className="p-2 space-y-1">
                             {SECCIONES.map((seccion) => {
@@ -480,8 +507,8 @@ const Configuracion = () => {
                                         key={seccion.id}
                                         onClick={() => setActiveTab(seccion.id)}
                                         className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
-                                            ? 'bg-blue-50 text-blue-700 shadow-sm'
-                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 shadow-sm'
+                                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-200'
                                             }`}
                                     >
                                         <div className="flex items-center gap-3">
@@ -499,13 +526,13 @@ const Configuracion = () => {
                 {/* --- ÁREA DE CONTENIDO PRINCIPAL --- */}
                 <main className="flex-1 min-w-0">
                     {/* Header de la sección */}
-                    <div className="bg-white rounded-t-xl shadow-sm border border-gray-200 border-b-0 p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-t-xl shadow-sm border border-gray-200 dark:border-gray-700 border-b-0 p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-colors duration-200">
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                 {currentSection.icon && <currentSection.icon className="w-6 h-6 text-gray-400" />}
                                 {currentSection.label}
                             </h1>
-                            <p className="text-gray-500 mt-1">{currentSection.description}</p>
+                            <p className="text-gray-500 dark:text-gray-400 mt-1">{currentSection.description}</p>
                         </div>
 
                         <button
@@ -533,13 +560,13 @@ const Configuracion = () => {
                     )}
 
                     {/* Contenido del Formulario */}
-                    <div className="bg-white rounded-b-xl shadow-sm border border-gray-200 p-6">
+                    <div className="bg-white dark:bg-gray-800 rounded-b-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-200">
 
                         {/* SECCIÓN: EMPRESA */}
                         {activeTab === 'empresa' && (
                             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-3">Logo de la empresa</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Logo de la empresa</label>
                                     <div className="flex items-start gap-6">
                                         <div className="flex-shrink-0">
                                             {formEmpresa.logo ? (
@@ -551,7 +578,7 @@ const Configuracion = () => {
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <div className="w-32 h-32 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
+                                                <div className="w-32 h-32 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center bg-gray-50 dark:bg-gray-700">
                                                     <FiImage className="w-8 h-8 text-gray-400" />
                                                 </div>
                                             )}
@@ -573,10 +600,10 @@ const Configuracion = () => {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="md:col-span-2">
-                                        <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-2">Nombre de la organización</label>
+                                        <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nombre de la organización</label>
                                         <input type="text" id="nombre" value={formEmpresa.nombre}
                                             onChange={(e) => setFormEmpresa(prev => ({ ...prev, nombre: e.target.value }))}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                                            className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
                                             placeholder="Ingresa el nombre oficial" />
                                     </div>
 
@@ -591,12 +618,12 @@ const Configuracion = () => {
                                     </div>
 
                                     <div>
-                                        <label htmlFor="correo" className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label htmlFor="correo" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             <span className="flex items-center gap-2"><FiMail className="w-4 h-4" /> Correo electrónico</span>
                                         </label>
                                         <input type="email" id="correo" value={formEmpresa.correo}
                                             onChange={(e) => setFormEmpresa(prev => ({ ...prev, correo: e.target.value }))}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                                            className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
                                             placeholder="contacto@empresa.com" />
                                     </div>
                                 </div>
@@ -726,7 +753,28 @@ const Configuracion = () => {
                         {activeTab === 'general' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                                 <div className="space-y-6">
-                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Regionalización</h3>
+                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Apariencia</h3>
+
+                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h4 className="font-medium text-gray-900">Modo Oscuro</h4>
+                                                <p className="text-xs text-gray-500 mt-1">Cambia la apariencia de la interfaz a colores oscuros.</p>
+                                            </div>
+                                            <button
+                                                onClick={toggleTheme}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200'
+                                                    }`}
+                                            >
+                                                <span
+                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
+                                                        }`}
+                                                />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider pt-4">Regionalización</h3>
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">

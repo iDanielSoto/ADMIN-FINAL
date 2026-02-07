@@ -133,7 +133,7 @@ const Dashboard = () => {
     return (
         <div className="select-none space-y-6 s">
             {/* Fecha actual */}
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
                 {new Date().toLocaleDateString('es-MX', {
                     weekday: 'long',
                     year: 'numeric',
@@ -151,12 +151,12 @@ const Dashboard = () => {
                 >
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-600 mb-1">Total Empleados</p>
-                            <p className="text-3xl font-bold text-gray-900">{stats.totalEmpleados}</p>
-                            <p className="text-xs text-gray-500 mt-2">Empleados activos</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Empleados</p>
+                            <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.totalEmpleados}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">Empleados activos</p>
                         </div>
-                        <div className="p-4 bg-blue-100 rounded-full">
-                            <FiUsers className="w-8 h-8 text-blue-600" />
+                        <div className="p-4 bg-blue-100 dark:bg-blue-900/20 rounded-full">
+                            <FiUsers className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                         </div>
                     </div>
                 </div>
@@ -167,14 +167,14 @@ const Dashboard = () => {
                 >
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-600 mb-1">Asistencias Hoy</p>
-                            <p className="text-3xl font-bold text-gray-900">{stats.asistenciasHoy}</p>
-                            <p className="text-xs text-green-600 mt-2">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Asistencias Hoy</p>
+                            <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.asistenciasHoy}</p>
+                            <p className="text-xs text-green-600 dark:text-green-400 mt-2">
                                 {porcentajeAsistencia}% del total
                             </p>
                         </div>
-                        <div className="p-4 bg-green-100 rounded-full">
-                            <FiCheckCircle className="w-8 h-8 text-green-600" />
+                        <div className="p-4 bg-green-100 dark:bg-green-900/20 rounded-full">
+                            <FiCheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
                         </div>
                     </div>
                 </div>
@@ -185,14 +185,14 @@ const Dashboard = () => {
                 >
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-600 mb-1">Puntuales</p>
-                            <p className="text-3xl font-bold text-gray-900">{stats.puntuales}</p>
-                            <p className="text-xs text-green-600 mt-2">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Puntuales</p>
+                            <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.puntuales}</p>
+                            <p className="text-xs text-green-600 dark:text-green-400 mt-2">
                                 {porcentajePuntualidad}% de asistencias
                             </p>
                         </div>
-                        <div className="p-4 bg-emerald-100 rounded-full">
-                            <FiCheckCircle className="w-8 h-8 text-emerald-600" />
+                        <div className="p-4 bg-emerald-100 dark:bg-emerald-900/20 rounded-full">
+                            <FiCheckCircle className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
                         </div>
                     </div>
                 </div>
@@ -203,14 +203,14 @@ const Dashboard = () => {
                 >
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-600 mb-1">Retardos</p>
-                            <p className="text-3xl font-bold text-gray-900">{stats.retardos}</p>
-                            <p className="text-xs text-yellow-600 mt-2">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Retardos</p>
+                            <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.retardos}</p>
+                            <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">
                                 {stats.asistenciasHoy > 0 ? Math.round((stats.retardos / stats.asistenciasHoy) * 100) : 0}% de asistencias
                             </p>
                         </div>
-                        <div className="p-4 bg-yellow-100 rounded-full">
-                            <FiClock className="w-8 h-8 text-yellow-600" />
+                        <div className="p-4 bg-yellow-100 dark:bg-yellow-900/20 rounded-full">
+                            <FiClock className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
                         </div>
                     </div>
                 </div>
@@ -221,46 +221,46 @@ const Dashboard = () => {
                 {/* Últimas asistencias */}
                 <div className="lg:col-span-2 card flex flex-col">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                             Últimas Asistencias Registradas
                         </h3>
                     </div>
 
                     <div className="flex-1">
                         {ultimasAsistencias.length === 0 ? (
-                            <div className="text-center py-8 text-gray-500">
-                                <FiClock className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                                <FiClock className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
                                 <p>No hay asistencias registradas hoy</p>
                             </div>
                         ) : (
                             <div className="overflow-hidden w-full">
-                                <table className="w-full table-fixed divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
+                                <table className="w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
+                                    <thead className="bg-gray-50 dark:bg-gray-800">
                                         <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                                 Empleado
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                                 Tipo
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                                 Hora
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                                 Estado
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                                 Dispositivo
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
+                                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                         {asistenciasPaginadas.map((asistencia) => (
-                                            <tr key={asistencia.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate(`/empleados/usuario/${asistencia.empleado_usuario}`)}>
+                                            <tr key={asistencia.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer" onClick={() => navigate(`/empleados/usuario/${asistencia.empleado_usuario}`)}>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center">
                                                         <div className="ml-3">
-                                                            <div className="text-sm font-medium text-gray-900">
+                                                            <div className="text-sm font-medium text-gray-900 dark:text-white">
                                                                 {asistencia.empleado_nombre}
                                                             </div>
                                                         </div>
@@ -269,28 +269,28 @@ const Dashboard = () => {
 
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${asistencia.tipo === 'entrada'
-                                                        ? 'bg-blue-100 text-blue-800'
-                                                        : 'bg-purple-100 text-purple-800'
+                                                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+                                                        : 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'
                                                         }`}>
                                                         {asistencia.tipo === 'entrada' ? '→' : '←'}
                                                         {asistencia.tipo === 'entrada' ? 'Entrada' : 'Salida'}
                                                     </span>
                                                 </td>
 
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                     {formatHora(asistencia.fecha_registro)}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     {(() => {
                                                         const e = asistencia.estado;
                                                         const map = {
-                                                            puntual: { cls: 'bg-green-100 text-green-800', icon: <FiCheckCircle className="w-3 h-3" />, label: 'Puntual' },
-                                                            salida_puntual: { cls: 'bg-green-100 text-green-800', icon: <FiCheckCircle className="w-3 h-3" />, label: 'Salida puntual' },
-                                                            salida_temprana: { cls: 'bg-blue-100 text-blue-800', icon: <FiClock className="w-3 h-3" />, label: 'Salida temprana' },
-                                                            retardo: { cls: 'bg-yellow-100 text-yellow-800', icon: <FiClock className="w-3 h-3" />, label: 'Retardo' },
-                                                            falta: { cls: 'bg-red-100 text-red-800', icon: <FiAlertCircle className="w-3 h-3" />, label: 'Falta' },
+                                                            puntual: { cls: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300', icon: <FiCheckCircle className="w-3 h-3" />, label: 'Puntual' },
+                                                            salida_puntual: { cls: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300', icon: <FiCheckCircle className="w-3 h-3" />, label: 'Salida puntual' },
+                                                            salida_temprana: { cls: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300', icon: <FiClock className="w-3 h-3" />, label: 'Salida temprana' },
+                                                            retardo: { cls: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300', icon: <FiClock className="w-3 h-3" />, label: 'Retardo' },
+                                                            falta: { cls: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300', icon: <FiAlertCircle className="w-3 h-3" />, label: 'Falta' },
                                                         };
-                                                        const info = map[e] || { cls: 'bg-gray-100 text-gray-800', icon: <FiClock className="w-3 h-3" />, label: e };
+                                                        const info = map[e] || { cls: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300', icon: <FiClock className="w-3 h-3" />, label: e };
                                                         return (
                                                             <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${info.cls}`}>
                                                                 {info.icon} {info.label}
@@ -298,7 +298,7 @@ const Dashboard = () => {
                                                         );
                                                     })()}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 capitalize">
                                                     {asistencia.dispositivo_origen}
                                                 </td>
                                             </tr>
@@ -322,7 +322,7 @@ const Dashboard = () => {
                 <div className="space-y-6">
                     {/* Acciones rápidas */}
                     <div className="card">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                             Acciones Rápidas
                         </h3>
                         <div className="space-y-3">
@@ -352,18 +352,18 @@ const Dashboard = () => {
 
                     {/* Resumen del día */}
                     <div className="card">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4 w-max-xl">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 w-max-xl">
                             Resumen del Día
                         </h3>
                         <div className="space-y-4">
                             <div>
                                 <div className="flex justify-between items-center mb-1">
-                                    <span className="text-sm text-gray-600">Asistencia</span>
-                                    <span className="text-sm font-semibold text-blue-600">{porcentajeAsistencia}%</span>
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">Asistencia</span>
+                                    <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">{porcentajeAsistencia}%</span>
                                 </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                                     <div
-                                        className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                                        className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all duration-500"
                                         style={{ width: `${porcentajeAsistencia}%` }}
                                     ></div>
                                 </div>
@@ -371,12 +371,12 @@ const Dashboard = () => {
 
                             <div>
                                 <div className="flex justify-between items-center mb-1">
-                                    <span className="text-sm text-gray-600">Puntualidad</span>
-                                    <span className="text-sm font-semibold text-green-600">{porcentajePuntualidad}%</span>
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">Puntualidad</span>
+                                    <span className="text-sm font-semibold text-green-600 dark:text-green-400">{porcentajePuntualidad}%</span>
                                 </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                                     <div
-                                        className="bg-green-600 h-2 rounded-full transition-all duration-500"
+                                        className="bg-green-600 dark:bg-green-500 h-2 rounded-full transition-all duration-500"
                                         style={{ width: `${porcentajePuntualidad}%` }}
                                     ></div>
                                 </div>

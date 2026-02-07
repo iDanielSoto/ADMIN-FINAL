@@ -26,7 +26,7 @@ const Empleados = () => {
 
     // --- FILTROS ---
     const [busqueda, setBusqueda] = useState('');
-    const [filtroEstado, setFiltroEstado] = useState('');
+    const [filtroEstado, setFiltroEstado] = useState('activo');
 
     // --- PAGINACIÓN ---
     const [pagina, setPagina] = useState(1);
@@ -164,13 +164,13 @@ const Empleados = () => {
                             placeholder="Buscar por nombre, usuario o correo..."
                             value={busqueda}
                             onChange={(e) => setBusqueda(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition-colors"
                         />
                     </div>
                     <select
                         value={filtroEstado}
                         onChange={(e) => setFiltroEstado(e.target.value)}
-                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        className="px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition-colors"
                     >
                         <option value="">Todos los estados</option>
                         <option value="activo">Activo</option>
@@ -190,8 +190,8 @@ const Empleados = () => {
                         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
                     </div>
                 ) : usuarios.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500">
-                        <FiUser className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                    <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                        <FiUser className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
                         <p>No se encontraron usuarios</p>
                     </div>
                 ) : (

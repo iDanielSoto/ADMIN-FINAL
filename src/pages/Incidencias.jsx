@@ -292,8 +292,8 @@ const Incidencias = () => {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Incidencias</h1>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Incidencias</h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         Gestiona justificantes, permisos y vacaciones
                     </p>
                 </div>
@@ -312,28 +312,28 @@ const Incidencias = () => {
             {/* Estadísticas */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="card">
-                    <p className="text-sm text-gray-600 mb-1">Total</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
                 </div>
                 <div className="card">
-                    <p className="text-sm text-gray-600 mb-1">Pendientes</p>
-                    <p className="text-3xl font-bold text-yellow-600">{stats.pendientes}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Pendientes</p>
+                    <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-500">{stats.pendientes}</p>
                 </div>
                 <div className="card">
-                    <p className="text-sm text-gray-600 mb-1">Aprobadas</p>
-                    <p className="text-3xl font-bold text-green-600">{stats.aprobadas}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Aprobadas</p>
+                    <p className="text-3xl font-bold text-green-600 dark:text-green-500">{stats.aprobadas}</p>
                 </div>
                 <div className="card">
-                    <p className="text-sm text-gray-600 mb-1">Rechazadas</p>
-                    <p className="text-3xl font-bold text-red-600">{stats.rechazadas}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Rechazadas</p>
+                    <p className="text-3xl font-bold text-red-600 dark:text-red-500">{stats.rechazadas}</p>
                 </div>
             </div>
 
             {/* Filtros */}
             <div className="card">
                 <div className="flex items-center gap-2 mb-4">
-                    <FiFilter className="w-4 h-4 text-gray-500" />
-                    <h3 className="text-sm font-semibold text-gray-900">Filtros</h3>
+                    <FiFilter className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Filtros</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <select
@@ -391,39 +391,39 @@ const Incidencias = () => {
             {/* Tabla de incidencias */}
             <div className="card flex-1">
                 {incidencias.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500">
-                        <FiFileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                    <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                        <FiFileText className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
                         <p className="text-lg font-medium">No hay incidencias registradas</p>
                         <p className="text-sm">Comienza creando una nueva incidencia</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead className="bg-gray-50 dark:bg-gray-700">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                                         Empleado
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                                         Tipo
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                                         Fecha Inicio
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                                         Fecha Fin
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                                         Estado
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                                         Acciones
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
+                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                 {incidencias.slice((pagina - 1) * porPagina, pagina * porPagina).map((incidencia) => (
-                                    <tr key={incidencia.id} className="hover:bg-gray-50">
+                                    <tr key={incidencia.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 {incidencia.empleado_foto ? (
@@ -438,7 +438,7 @@ const Incidencias = () => {
                                                     </div>
                                                 )}
                                                 <div className="ml-3">
-                                                    <div className="text-sm font-medium text-gray-900">
+                                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
                                                         {incidencia.empleado_nombre}
                                                     </div>
                                                 </div>
@@ -450,10 +450,10 @@ const Incidencias = () => {
                                                 {incidencia.tipo}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             {formatFecha(incidencia.fecha_inicio)}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             {formatFecha(incidencia.fecha_fin)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -465,7 +465,7 @@ const Incidencias = () => {
                                             <div className="flex items-center gap-2">
                                                 <button
                                                     onClick={() => openDetailModal(incidencia)}
-                                                    className="text-blue-600 hover:text-blue-900"
+                                                    className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
                                                     title="Ver detalles"
                                                 >
                                                     <FiFileText className="w-4 h-4" />
@@ -474,21 +474,21 @@ const Incidencias = () => {
                                                     <>
                                                         <button
                                                             onClick={() => openEditModal(incidencia)}
-                                                            className="text-gray-600 hover:text-gray-900"
+                                                            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                                                             title="Editar"
                                                         >
                                                             <FiEdit2 className="w-4 h-4" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleAprobar(incidencia.id)}
-                                                            className="text-green-600 hover:text-green-900"
+                                                            className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300"
                                                             title="Aprobar"
                                                         >
                                                             <FiCheck className="w-4 h-4" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleRechazar(incidencia.id)}
-                                                            className="text-red-600 hover:text-red-900"
+                                                            className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
                                                             title="Rechazar"
                                                         >
                                                             <FiX className="w-4 h-4" />
@@ -516,14 +516,14 @@ const Incidencias = () => {
 
             {/* Modal Crear/Editar */}
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">
+                <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md transition-colors duration-200">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                             {selectedIncidencia ? 'Editar Incidencia' : 'Nueva Incidencia'}
                         </h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Empleado *
                                 </label>
                                 <select
@@ -541,7 +541,7 @@ const Incidencias = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Tipo *
                                 </label>
                                 <select
@@ -559,7 +559,7 @@ const Incidencias = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Motivo
                                 </label>
                                 <textarea
@@ -572,7 +572,7 @@ const Incidencias = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Observaciones
                                 </label>
                                 <textarea
@@ -586,7 +586,7 @@ const Incidencias = () => {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Fecha Inicio
                                     </label>
                                     <input
@@ -597,7 +597,7 @@ const Incidencias = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Fecha Fin
                                     </label>
                                     <input
@@ -616,7 +616,7 @@ const Incidencias = () => {
                                         setShowModal(false);
                                         resetForm();
                                     }}
-                                    className="btn-secondary flex-1"
+                                    className="btn-secondary flex-1 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
                                 >
                                     Cancelar
                                 </button>
@@ -631,47 +631,47 @@ const Incidencias = () => {
 
             {/* Modal Detalles */}
             {showDetailModal && selectedIncidencia && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-lg">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">Detalles de Incidencia</h2>
+                <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg transition-colors duration-200">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Detalles de Incidencia</h2>
                         <div className="space-y-4">
                             <div>
-                                <p className="text-sm text-gray-500">Empleado</p>
-                                <p className="font-medium">{selectedIncidencia.empleado_nombre}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Empleado</p>
+                                <p className="font-medium dark:text-white">{selectedIncidencia.empleado_nombre}</p>
                             </div>
                             <div>
-                                <p className="text-sm text-gray-500">Tipo</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Tipo</p>
                                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getTipoBadge(selectedIncidencia.tipo)}`}>
                                     {getTipoIcon(selectedIncidencia.tipo)}
                                     {selectedIncidencia.tipo}
                                 </span>
                             </div>
                             <div>
-                                <p className="text-sm text-gray-500">Estado</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Estado</p>
                                 <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${getEstadoBadge(selectedIncidencia.estado)}`}>
                                     {selectedIncidencia.estado}
                                 </span>
                             </div>
                             {selectedIncidencia.motivo && (
                                 <div>
-                                    <p className="text-sm text-gray-500">Motivo</p>
-                                    <p className="text-sm">{selectedIncidencia.motivo}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Motivo</p>
+                                    <p className="text-sm dark:text-gray-300">{selectedIncidencia.motivo}</p>
                                 </div>
                             )}
                             {selectedIncidencia.observaciones && (
                                 <div>
-                                    <p className="text-sm text-gray-500">Observaciones</p>
-                                    <p className="text-sm">{selectedIncidencia.observaciones}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Observaciones</p>
+                                    <p className="text-sm dark:text-gray-300">{selectedIncidencia.observaciones}</p>
                                 </div>
                             )}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p className="text-sm text-gray-500">Fecha Inicio</p>
-                                    <p className="text-sm font-medium">{formatFecha(selectedIncidencia.fecha_inicio)}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Fecha Inicio</p>
+                                    <p className="text-sm font-medium dark:text-gray-200">{formatFecha(selectedIncidencia.fecha_inicio)}</p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-gray-500">Fecha Fin</p>
-                                    <p className="text-sm font-medium">{formatFecha(selectedIncidencia.fecha_fin)}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Fecha Fin</p>
+                                    <p className="text-sm font-medium dark:text-gray-200">{formatFecha(selectedIncidencia.fecha_fin)}</p>
                                 </div>
                             </div>
                         </div>

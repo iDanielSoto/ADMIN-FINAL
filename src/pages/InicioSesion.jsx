@@ -76,11 +76,11 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
             {/* Contenedor principal */}
             <div className="w-full max-w-md">
                 {/* Card de Login */}
-                <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
                     {/* Header con logo */}
                     <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-8 py-10 text-center">
                         <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
@@ -96,7 +96,7 @@ const Login = () => {
 
                     {/* Formulario */}
                     <div className="px-8 py-8">
-                        <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
+                        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center">
                             Iniciar Sesión
                         </h2>
 
@@ -212,10 +212,10 @@ const Login = () => {
                     </div>
 
                     {/* Footer */}
-                    <div className="px-8 py-6 bg-gray-50 border-t border-gray-200">
-                        <p className="text-center text-sm text-gray-600">
+                    <div className="px-8 py-6 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700">
+                        <p className="text-center text-sm text-gray-600 dark:text-gray-400">
                             ¿No tienes cuenta?{' '}
-                            <a href="#" className="text-primary-600 hover:text-primary-700 font-medium">
+                            <a href="#" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
                                 Contacta al administrador
                             </a>
                         </p>
@@ -224,7 +224,7 @@ const Login = () => {
 
                 {/* Info adicional */}
                 <div className="mt-6 text-center">
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                         <span className="font-medium">FASITLAC</span> © 2026 - Sistema Checador v2.0
                     </p>
                 </div>

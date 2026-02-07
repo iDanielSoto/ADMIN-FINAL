@@ -78,8 +78,8 @@ const TimeInput = ({ value, onChange, error, placeholder }) => {
                     onFocus={() => setIsOpen(true)}
                     placeholder={placeholder || "HH:MM"}
                     className={`w-full py-2 pl-3 pr-8 border rounded-md text-sm font-medium focus:ring-2 outline-none transition-all ${error
-                            ? 'bg-red-50 border-red-300 text-red-700 focus:ring-red-200'
-                            : 'bg-white border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-gray-700'
+                        ? 'bg-red-50 border-red-300 text-red-700 focus:ring-red-200'
+                        : 'bg-white border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-gray-700'
                         }`}
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:text-blue-500 transition-colors">
@@ -240,7 +240,7 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 transition-opacity">
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
             <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[95vh] flex flex-col animate-fadeIn">
 
                 {/* Header */}
@@ -306,10 +306,10 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
                                         type="button"
                                         onClick={() => setSelectedDay(dia.key)}
                                         className={`flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
-                                                ? 'bg-blue-600 text-white shadow-md transform scale-[1.02]'
-                                                : count > 0
-                                                    ? 'bg-blue-50 text-blue-700 border border-blue-100'
-                                                    : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
+                                            ? 'bg-blue-600 text-white shadow-md transform scale-[1.02]'
+                                            : count > 0
+                                                ? 'bg-blue-50 text-blue-700 border border-blue-100'
+                                                : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
                                             }`}
                                     >
                                         <span>{dia.label}</span>

@@ -13,6 +13,7 @@ const Departamentos = () => {
     const [usuarios, setUsuarios] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
+    const [filtroEstado, setFiltroEstado] = useState('activo');
 
     const [modalOpen, setModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('create');
@@ -159,23 +160,40 @@ const Departamentos = () => {
         }
     };
 
-    const filteredDepartamentos = departamentos.filter(d =>
-        d.nombre.toLowerCase().includes(busqueda.toLowerCase())
-    );
+    const filteredDepartamentos = departamentos.filter(d => {
+        const matchesBusqueda = d.nombre.toLowerCase().includes(busqueda.toLowerCase());
+
+        if (!matchesBusqueda) return false;
+
+        if (filtroEstado === 'activo') return d.es_activo !== false;
+        if (filtroEstado === 'inactivo') return d.es_activo === false;
+        return true;
+    });
 
     return (
         <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col">
             {/* Toolbar */}
             <div className="flex justify-between items-center gap-4 flex-shrink-0">
-                <div className="relative flex-1 max-w-md">
-                    <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Buscar departamentos..."
-                        value={busqueda}
-                        onChange={e => setBusqueda(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
+                <div className="flex flex-1 gap-3">
+                    <div className="relative flex-1 max-w-md">
+                        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Buscar departamentos..."
+                            value={busqueda}
+                            onChange={e => setBusqueda(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
+                        />
+                    </div>
+                    <select
+                        value={filtroEstado}
+                        onChange={(e) => setFiltroEstado(e.target.value)}
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                        <option value="">Todos los estados</option>
+                        <option value="activo">Activos</option>
+                        <option value="inactivo">Inactivos</option>
+                    </select>
                 </div>
                 <button onClick={handleCreate} className="btn-primary flex items-center gap-2">
                     <FiPlus /> Nuevo Departamento
@@ -190,7 +208,7 @@ const Departamentos = () => {
                     {loading ? (
                         <div className="flex justify-center p-10"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>
                     ) : filteredDepartamentos.length === 0 ? (
-                        <div className="text-center p-10 text-gray-500">No se encontraron departamentos</div>
+                        <div className="text-center p-10 text-gray-500 dark:text-gray-400">No se encontraron departamentos</div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {filteredDepartamentos.map(depto => (
@@ -208,7 +226,7 @@ const Departamentos = () => {
                 </div>
 
                 {/* Mapa General Fijo */}
-                <div className="h-full rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-white relative">
+                <div className="h-full rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-800 relative">
                     <MapaDepartamentos
                         departamentos={filteredDepartamentos}
                         focusedDepto={focusedDepto} // Pasamos el departamento seleccionado

@@ -188,22 +188,22 @@ const Reportes = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
             <div className="max-w-7xl mx-auto space-y-6">
 
                 {/* --- HEADER PRINCIPAL --- */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                             <Activity className="w-8 h-8 text-blue-600" />
                             Panel de Estadísticas
                         </h1>
-                        <p className="text-gray-500 mt-1">Visión general del comportamiento de asistencia</p>
+                        <p className="text-gray-500 dark:text-gray-400 mt-1">Visión general del comportamiento de asistencia</p>
                     </div>
 
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="mt-4 md:mt-0 px-6 py-3 bg-white border-2 border-blue-100 text-blue-700 font-semibold rounded-xl hover:bg-blue-50 transition-all flex items-center gap-2"
+                        className="mt-4 md:mt-0 px-6 py-3 bg-white dark:bg-gray-700 border-2 border-blue-100 dark:border-blue-900/50 text-blue-700 dark:text-blue-400 font-semibold rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all flex items-center gap-2"
                     >
                         <FileText className="w-5 h-5" />
                         Exportar Reporte
@@ -211,11 +211,11 @@ const Reportes = () => {
                 </div>
 
                 {/* --- BARRA DE FILTROS --- */}
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
                     <div className="flex flex-col xl:flex-row gap-4 items-end xl:items-center">
                         <div className="w-full xl:w-auto flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 ml-1">Ver Datos De:</label>
+                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">Ver Datos De:</label>
                                 <div className="relative">
                                     <select
                                         value={alcance}
@@ -223,7 +223,7 @@ const Reportes = () => {
                                             setAlcance(e.target.value);
                                             setIdSeleccionado('');
                                         }}
-                                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border-transparent focus:bg-white border focus:border-blue-500 rounded-xl text-sm font-medium transition-all outline-none appearance-none"
+                                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border-transparent focus:bg-white dark:focus:bg-gray-600 border focus:border-blue-500 rounded-xl text-sm font-medium dark:text-white transition-all outline-none appearance-none"
                                     >
                                         <option value="global">Toda la Empresa</option>
                                         <option value="departamento">Departamento Específico</option>
@@ -236,14 +236,14 @@ const Reportes = () => {
                             {/* Selector Específico */}
                             {alcance !== 'global' && (
                                 <div className="animate-in fade-in zoom-in-95 duration-200">
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 ml-1">
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
                                         {alcance === 'departamento' ? 'Seleccionar Depto:' : 'Seleccionar Empleado:'}
                                     </label>
                                     <div className="relative">
                                         <select
                                             value={idSeleccionado}
                                             onChange={(e) => setIdSeleccionado(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border-transparent focus:bg-white border focus:border-blue-500 rounded-xl text-sm font-medium transition-all outline-none appearance-none"
+                                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border-transparent focus:bg-white dark:focus:bg-gray-600 border focus:border-blue-500 rounded-xl text-sm font-medium dark:text-white transition-all outline-none appearance-none"
                                         >
                                             <option value="">-- Seleccionar --</option>
                                             {alcance === 'departamento'
@@ -258,12 +258,12 @@ const Reportes = () => {
 
                             {/* Selector de Tiempo */}
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 ml-1">Periodo de Tiempo:</label>
+                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">Periodo de Tiempo:</label>
                                 <div className="relative">
                                     <select
                                         value={modoFecha}
                                         onChange={(e) => setModoFecha(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border-transparent focus:bg-white border focus:border-blue-500 rounded-xl text-sm font-medium transition-all outline-none appearance-none"
+                                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border-transparent focus:bg-white dark:focus:bg-gray-600 border focus:border-blue-500 rounded-xl text-sm font-medium dark:text-white transition-all outline-none appearance-none"
                                     >
                                         <option value="siempre">Histórico Completo</option>
                                         <option value="intervalo">Rango de Fechas</option>
@@ -277,21 +277,21 @@ const Reportes = () => {
                         {modoFecha === 'intervalo' && (
                             <div className="flex gap-2 w-full xl:w-auto animate-in fade-in slide-in-from-left-4">
                                 <div className="flex-1">
-                                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5 ml-1">Inicio</label>
+                                    <label className="block text-xs font-bold text-gray-400 dark:text-gray-400 uppercase mb-1.5 ml-1">Inicio</label>
                                     <input
                                         type="date"
                                         value={fechaInicio}
                                         onChange={(e) => setFechaInicio(e.target.value)}
-                                        className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
                                     />
                                 </div>
                                 <div className="flex-1">
-                                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5 ml-1">Fin</label>
+                                    <label className="block text-xs font-bold text-gray-400 dark:text-gray-400 uppercase mb-1.5 ml-1">Fin</label>
                                     <input
                                         type="date"
                                         value={fechaFin}
                                         onChange={(e) => setFechaFin(e.target.value)}
-                                        className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
                                     />
                                 </div>
                             </div>
@@ -337,13 +337,13 @@ const Reportes = () => {
                             SECCIÓN NUEVA: COMPARATIVA DE DEPARTAMENTOS
                            ========================================================== */}
                         {alcance === 'global' && (
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 w-full animate-in slide-in-from-bottom-2">
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 w-full animate-in slide-in-from-bottom-2">
                                 <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                        <Building2 className="w-5 h-5 text-indigo-600" />
+                                    <h3 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                                        <Building2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                                         Comparativa: Departamentos
                                     </h3>
-                                    <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                                    <span className="text-xs font-medium text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full">
                                         Ranking de Eficiencia
                                     </span>
                                 </div>
@@ -365,11 +365,12 @@ const Reportes = () => {
                                                 <YAxis axisLine={false} tickLine={false} />
                                                 <Tooltip
                                                     contentStyle={{
+                                                        backgroundColor: '#fff',
                                                         borderRadius: '12px',
                                                         border: 'none',
                                                         boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                                                     }}
-                                                    cursor={{ fill: '#f3f4f6' }}
+                                                    cursor={{ fill: 'var(--tooltip-cursor-bg, #f3f4f6)' }}
                                                 />
                                                 <Legend wrapperStyle={{ paddingTop: '20px' }} />
                                                 <Bar name="Puntuales" dataKey="puntuales" fill={COLORS.puntual} radius={[4, 4, 0, 0]} maxBarSize={50} />
@@ -378,7 +379,7 @@ const Reportes = () => {
                                             </BarChart>
                                         </ResponsiveContainer>
                                     ) : (
-                                        <div className="h-full flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-100 rounded-xl bg-gray-50/50">
+                                        <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 border-2 border-dashed border-gray-100 dark:border-gray-700 rounded-xl bg-gray-50/50 dark:bg-gray-800/50">
                                             <Building2 className="w-8 h-8 mb-2 opacity-50" />
                                             <p className="text-sm">Sin datos departamentales suficientes para comparar</p>
                                         </div>
@@ -392,11 +393,11 @@ const Reportes = () => {
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                             {/* Gráfica Circular Comparativa */}
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 col-span-1 flex flex-col">
-                                <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 col-span-1 flex flex-col">
+                                <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-2">
                                     <PieIcon className="w-5 h-5 text-gray-400" /> Distribución General
                                 </h3>
-                                <p className="text-xs text-gray-500 mb-6">Puntuales vs Retardos vs Faltas</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">Puntuales vs Retardos vs Faltas</p>
 
                                 {chartData.pieData.length > 0 ? (
                                     <div className="flex-1 min-h-[300px]">
@@ -429,13 +430,13 @@ const Reportes = () => {
 
                             {/* Top 10 Desempeño Empleados */}
                             {(alcance === 'departamento' || alcance === 'global') && (
-                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 col-span-1 lg:col-span-2 flex flex-col">
+                                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 col-span-1 lg:col-span-2 flex flex-col">
                                     <div className="flex justify-between items-center mb-6">
-                                        <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                        <h3 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
                                             <Trophy className="w-5 h-5 text-yellow-500" />
                                             Top 10 Empleados
                                         </h3>
-                                        <span className="text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                                        <span className="text-xs font-medium text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full">
                                             Mayor Puntualidad
                                         </span>
                                     </div>
@@ -444,27 +445,27 @@ const Reportes = () => {
                                         {topDesempeno.length > 0 ? (
                                             <table className="min-w-full">
                                                 <thead>
-                                                    <tr className="border-b border-gray-100">
-                                                        <th className="text-left text-xs font-bold text-gray-500 uppercase py-2">Empleado</th>
-                                                        <th className="text-center text-xs font-bold text-green-600 uppercase py-2">Puntuales</th>
-                                                        <th className="text-center text-xs font-bold text-yellow-600 uppercase py-2">Retardos</th>
-                                                        <th className="text-center text-xs font-bold text-red-600 uppercase py-2">Faltas</th>
-                                                        <th className="text-center text-xs font-bold text-blue-600 uppercase py-2">Score</th>
+                                                    <tr className="border-b border-gray-100 dark:border-gray-700">
+                                                        <th className="text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase py-2">Empleado</th>
+                                                        <th className="text-center text-xs font-bold text-green-600 dark:text-green-500 uppercase py-2">Puntuales</th>
+                                                        <th className="text-center text-xs font-bold text-yellow-600 dark:text-yellow-500 uppercase py-2">Retardos</th>
+                                                        <th className="text-center text-xs font-bold text-red-600 dark:text-red-500 uppercase py-2">Faltas</th>
+                                                        <th className="text-center text-xs font-bold text-blue-600 dark:text-blue-500 uppercase py-2">Score</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-gray-50">
+                                                <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
                                                     {topDesempeno.map((emp, idx) => (
-                                                        <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                                                            <td className="py-3 text-sm font-medium text-gray-800 flex items-center gap-2">
-                                                                <span className={`w-5 h-5 flex items-center justify-center rounded text-[10px] font-bold ${idx < 3 ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                        <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                                            <td className="py-3 text-sm font-medium text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                                                                <span className={`w-5 h-5 flex items-center justify-center rounded text-[10px] font-bold ${idx < 3 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
                                                                     {idx + 1}
                                                                 </span>
                                                                 {emp.empleado_nombre}
                                                             </td>
-                                                            <td className="text-center text-sm text-gray-600">{emp.puntuales}</td>
-                                                            <td className="text-center text-sm text-gray-600">{emp.retardos}</td>
-                                                            <td className="text-center text-sm text-gray-600">{emp.faltas}</td>
-                                                            <td className="text-center text-sm font-bold text-blue-700">{emp.porcentaje_puntualidad}%</td>
+                                                            <td className="text-center text-sm text-gray-600 dark:text-gray-400">{emp.puntuales}</td>
+                                                            <td className="text-center text-sm text-gray-600 dark:text-gray-400">{emp.retardos}</td>
+                                                            <td className="text-center text-sm text-gray-600 dark:text-gray-400">{emp.faltas}</td>
+                                                            <td className="text-center text-sm font-bold text-blue-700 dark:text-blue-400">{emp.porcentaje_puntualidad}%</td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
@@ -480,8 +481,8 @@ const Reportes = () => {
 
                             {/* Gráfica de Barras (Incidencias Empleado Único) */}
                             {alcance === 'empleado' && (
-                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 col-span-1 lg:col-span-2 flex flex-col">
-                                    <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 col-span-1 lg:col-span-2 flex flex-col">
+                                    <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
                                         <AlertTriangle className="w-5 h-5 text-gray-400" /> Historial de Incidencias
                                     </h3>
                                     <div className="flex-1 min-h-[300px]">
@@ -501,12 +502,12 @@ const Reportes = () => {
 
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
-                        <div className="p-4 bg-gray-50 rounded-full mb-4">
+                    <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
+                        <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-full mb-4">
                             <Search className="w-8 h-8 text-gray-400" />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-800">No hay datos disponibles</h3>
-                        <p className="text-gray-500 mt-1 max-w-md text-center">
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-white">No hay datos disponibles</h3>
+                        <p className="text-gray-500 dark:text-gray-400 mt-1 max-w-md text-center">
                             No se encontraron registros para los filtros seleccionados.
                         </p>
                     </div>
@@ -518,25 +519,25 @@ const Reportes = () => {
             {/* --- MODAL DE DESCARGA (Código previo mantenido igual) --- */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
 
-                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
                             <div>
-                                <h2 className="text-lg font-bold text-gray-900">Descargar Reporte</h2>
-                                <p className="text-xs text-gray-500">Selecciona el formato de salida</p>
+                                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Descargar Reporte</h2>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Selecciona el formato de salida</p>
                             </div>
-                            <button onClick={() => setIsModalOpen(false)} className="p-2 text-gray-400 hover:bg-gray-200 rounded-lg transition-colors">
+                            <button onClick={() => setIsModalOpen(false)} className="p-2 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
                         <div className="p-6">
                             <div className="mb-6 space-y-3">
-                                <label className="block text-xs font-bold text-gray-500 uppercase">Tipo de Detalle</label>
+                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Tipo de Detalle</label>
                                 <select
                                     value={exportCategoria}
                                     onChange={(e) => setExportCategoria(e.target.value)}
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                 >
                                     <option value="general">Resumen Ejecutivo (Dashboard)</option>
                                     <option value="asistencias">Detalle de Asistencias (Tabla)</option>
@@ -545,39 +546,39 @@ const Reportes = () => {
                             </div>
 
                             {exporting ? (
-                                <div className="py-6 text-center bg-blue-50 rounded-xl border border-blue-100">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                                    <p className="text-sm font-medium text-blue-700">Generando documento...</p>
+                                <div className="py-6 text-center bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-2"></div>
+                                    <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Generando documento...</p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 gap-3">
-                                    <button onClick={() => handleExport('excel')} className="flex items-center gap-4 p-3 border border-gray-200 rounded-xl hover:bg-green-50 hover:border-green-200 transition-all group text-left">
-                                        <div className="p-2 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
-                                            <FileSpreadsheet className="w-5 h-5 text-green-700" />
+                                    <button onClick={() => handleExport('excel')} className="flex items-center gap-4 p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-green-50 dark:hover:bg-green-900/30 hover:border-green-200 dark:hover:border-green-800 transition-all group text-left">
+                                        <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
+                                            <FileSpreadsheet className="w-5 h-5 text-green-700 dark:text-green-400" />
                                         </div>
                                         <div>
-                                            <span className="block font-bold text-sm text-gray-800 group-hover:text-green-800">Excel (.xlsx)</span>
-                                            <span className="text-xs text-gray-500">Ideal para análisis de datos</span>
+                                            <span className="block font-bold text-sm text-gray-800 dark:text-gray-200 group-hover:text-green-800 dark:group-hover:text-green-300">Excel (.xlsx)</span>
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">Ideal para análisis de datos</span>
                                         </div>
                                     </button>
 
-                                    <button onClick={() => handleExport('pdf')} className="flex items-center gap-4 p-3 border border-gray-200 rounded-xl hover:bg-red-50 hover:border-red-200 transition-all group text-left">
-                                        <div className="p-2 bg-red-100 rounded-lg group-hover:bg-red-200 transition-colors">
-                                            <FileIcon className="w-5 h-5 text-red-700" />
+                                    <button onClick={() => handleExport('pdf')} className="flex items-center gap-4 p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-200 dark:hover:border-red-800 transition-all group text-left">
+                                        <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-lg group-hover:bg-red-200 dark:group-hover:bg-red-900/50 transition-colors">
+                                            <FileIcon className="w-5 h-5 text-red-700 dark:text-red-400" />
                                         </div>
                                         <div>
-                                            <span className="block font-bold text-sm text-gray-800 group-hover:text-red-800">PDF (.pdf)</span>
-                                            <span className="text-xs text-gray-500">Documento visual para imprimir</span>
+                                            <span className="block font-bold text-sm text-gray-800 dark:text-gray-200 group-hover:text-red-800 dark:group-hover:text-red-300">PDF (.pdf)</span>
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">Documento visual para imprimir</span>
                                         </div>
                                     </button>
 
-                                    <button onClick={() => handleExport('word')} className="flex items-center gap-4 p-3 border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-200 transition-all group text-left">
-                                        <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
-                                            <FileText className="w-5 h-5 text-blue-700" />
+                                    <button onClick={() => handleExport('word')} className="flex items-center gap-4 p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-200 dark:hover:border-blue-800 transition-all group text-left">
+                                        <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
+                                            <FileText className="w-5 h-5 text-blue-700 dark:text-blue-400" />
                                         </div>
                                         <div>
-                                            <span className="block font-bold text-sm text-gray-800 group-hover:text-blue-800">Word (.docx)</span>
-                                            <span className="text-xs text-gray-500">Documento editable</span>
+                                            <span className="block font-bold text-sm text-gray-800 dark:text-gray-200 group-hover:text-blue-800 dark:group-hover:text-blue-300">Word (.docx)</span>
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">Documento editable</span>
                                         </div>
                                     </button>
                                 </div>
@@ -592,12 +593,12 @@ const Reportes = () => {
 
 // Componente KPI Card
 const KpiCard = ({ title, value, total, sub, icon: Icon, color, bg }) => (
-    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex items-start justify-between hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 flex items-start justify-between hover:shadow-md transition-shadow">
         <div>
-            <p className="text-gray-500 text-sm font-medium mb-1">{title}</p>
-            <h4 className="text-3xl font-bold text-gray-900">{value || 0}</h4>
+            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">{title}</p>
+            <h4 className="text-3xl font-bold text-gray-900 dark:text-white">{value || 0}</h4>
             {total ? (
-                <p className="text-xs text-gray-400 mt-2 font-medium">
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 font-medium">
                     {total > 0 ? ((value / total) * 100).toFixed(1) : 0}% del total
                 </p>
             ) : null}

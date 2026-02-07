@@ -38,15 +38,15 @@ function Pagination({ pagina, totalPaginas, total, porPagina, onChange }) {
     };
 
     return (
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200">
-            <p className="text-xs text-gray-500">
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
                 {inicio}-{fin} de {total}
             </p>
             <div className="flex gap-1">
                 <button
                     onClick={() => onChange(Math.max(1, pagina - 1))}
                     disabled={pagina === 1}
-                    className="px-3 py-1 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="px-3 py-1 text-sm rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                     Anterior
                 </button>
@@ -58,11 +58,10 @@ function Pagination({ pagina, totalPaginas, total, porPagina, onChange }) {
                         <button
                             key={num}
                             onClick={() => onChange(num)}
-                            className={`px-3 py-1 text-sm rounded-lg border ${
-                                pagina === num
+                            className={`px-3 py-1 text-sm rounded-lg border transition-colors ${pagina === num
                                     ? 'bg-primary-600 text-white border-primary-600'
-                                    : 'border-gray-300 hover:bg-gray-50'
-                            }`}
+                                    : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                }`}
                         >
                             {num}
                         </button>
@@ -72,12 +71,12 @@ function Pagination({ pagina, totalPaginas, total, porPagina, onChange }) {
                 <button
                     onClick={() => onChange(Math.min(totalPaginas, pagina + 1))}
                     disabled={pagina === totalPaginas}
-                    className="px-3 py-1 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="px-3 py-1 text-sm rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                     Siguiente
                 </button>
             </div>
-        </div>
+        </div >
     );
 }
 

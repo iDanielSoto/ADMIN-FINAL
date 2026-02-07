@@ -27,6 +27,8 @@ import {
     RefreshCw
 } from 'lucide-react';
 
+import EscritorioProfile from '../components/EscritorioProfile';
+
 import { API_CONFIG } from '../config/Apiconfig';
 const API_URL = API_CONFIG.BASE_URL;
 
@@ -47,6 +49,7 @@ const Dispositivos = () => {
     const [empleados, setEmpleados] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
+    const [filtroEstado, setFiltroEstado] = useState('activo');
     const [tabActiva, setTabActiva] = useState('escritorio');
 
     // Estado para controlar el desplegable del historial
@@ -314,14 +317,22 @@ const Dispositivos = () => {
     const solicitudesFiltradas = filtrarLista(solicitudes);
     const pendientesList = solicitudesFiltradas.filter(s => s.estado === 'pendiente');
     const historialList = solicitudesFiltradas.filter(s => s.estado !== 'pendiente');
-    const activosList = tabActiva === 'movil'
+
+    let activosList = tabActiva === 'movil'
         ? filtrarLista(movilesActivos, true)
         : filtrarLista(escritoriosActivos, false);
+
+    // Aplicar filtro de estado
+    if (filtroEstado === 'activo') {
+        activosList = activosList.filter(d => d.es_activo !== false);
+    } else if (filtroEstado === 'inactivo') {
+        activosList = activosList.filter(d => d.es_activo === false);
+    }
 
     return (
         <div className="space-y-6">
             {/* Tabs */}
-            <div className="border-b border-gray-200">
+            <div className="border-b border-gray-200 dark:border-gray-700">
                 <div className="flex gap-4">
                     <button
                         onClick={() => setTabActiva('escritorio')}
@@ -336,8 +347,8 @@ const Dispositivos = () => {
                     <button
                         onClick={() => setTabActiva('movil')}
                         className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${tabActiva === 'movil'
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                            ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                            : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                             }`}
                     >
                         <Smartphone className="w-4 h-4" />
@@ -348,15 +359,26 @@ const Dispositivos = () => {
 
             {/* Buscador */}
             <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder={tabActiva === 'movil' ? "Buscar por nombre, correo..." : "Buscar por nombre, IP, MAC..."}
-                        value={busqueda}
-                        onChange={(e) => setBusqueda(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
+                <div className="flex flex-1 gap-3">
+                    <div className="relative flex-1 max-w-md">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder={tabActiva === 'movil' ? "Buscar por nombre, correo..." : "Buscar por nombre, IP, MAC..."}
+                            value={busqueda}
+                            onChange={(e) => setBusqueda(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                    </div>
+                    <select
+                        value={filtroEstado}
+                        onChange={(e) => setFiltroEstado(e.target.value)}
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="">Todos los estados</option>
+                        <option value="activo">Activos</option>
+                        <option value="inactivo">Inactivos</option>
+                    </select>
                 </div>
             </div>
 
@@ -370,8 +392,8 @@ const Dispositivos = () => {
                     {/* === COLUMNA 1: SOLICITUDES === */}
                     <div className="space-y-6">
                         <div className="space-y-4">
-                            <div className="flex items-center justify-between pb-2 border-b border-gray-200">
-                                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-700">
+                                <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
                                     <Clock className="w-5 h-5 text-orange-500" />
                                     Solicitudes Pendientes
                                 </h2>
@@ -388,16 +410,16 @@ const Dispositivos = () => {
                                 pendientesList.map((solicitud) => {
                                     const IconoTipo = solicitud.tipo === 'movil' ? Smartphone : Monitor;
                                     return (
-                                        <div key={solicitud.id} className="bg-white rounded-lg shadow-sm border border-orange-200 p-4 hover:shadow-md transition-shadow relative">
+                                        <div key={solicitud.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-orange-200 dark:border-orange-900/50 p-4 hover:shadow-md transition-shadow relative">
                                             <div className="absolute top-4 right-4 w-2 h-2 bg-orange-500 rounded-full"></div>
                                             <div className="flex items-start justify-between mb-3 pr-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="p-2 rounded-lg bg-orange-50">
-                                                        <IconoTipo className="w-5 h-5 text-orange-600" />
+                                                    <div className="p-2 rounded-lg bg-orange-50 dark:bg-orange-900/20">
+                                                        <IconoTipo className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                                                     </div>
                                                     <div>
-                                                        <h3 className="font-semibold text-gray-900 text-sm">{solicitud.nombre}</h3>
-                                                        <p className="text-xs text-gray-500">{solicitud.correo}</p>
+                                                        <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{solicitud.nombre}</h3>
+                                                        <p className="text-xs text-gray-500 dark:text-gray-400">{solicitud.correo}</p>
                                                     </div>
                                                 </div>
                                                 {/* Badge de Biométricos en Solicitud */}
@@ -409,7 +431,7 @@ const Dispositivos = () => {
                                                 )}
                                             </div>
                                             <div className="flex gap-2 mt-3">
-                                                <button onClick={() => openDetallesModal(solicitud, true)} className="flex-1 py-1.5 text-xs bg-gray-50 text-gray-600 rounded hover:bg-gray-100 border border-gray-200">
+                                                <button onClick={() => openDetallesModal(solicitud, true)} className="flex-1 py-1.5 text-xs bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600">
                                                     Revisar Ficha
                                                 </button>
                                                 <button onClick={() => openAceptarModal(solicitud)} className="p-1.5 text-green-600 hover:bg-green-50 rounded border border-transparent hover:border-green-200 transition-colors">
@@ -426,14 +448,14 @@ const Dispositivos = () => {
                         </div>
 
                         {/* Historial Desplegable */}
-                        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                             <button
                                 onClick={() => setHistorialOpen(!historialOpen)}
-                                className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                                className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                             >
                                 <div className="flex items-center gap-2">
-                                    <FileText className="w-5 h-5 text-gray-500" />
-                                    <h2 className="text-sm font-bold text-gray-700">Historial de Solicitudes</h2>
+                                    <FileText className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                                    <h2 className="text-sm font-bold text-gray-700 dark:text-gray-200">Historial de Solicitudes</h2>
                                     <span className="bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full text-xs">
                                         {historialList.length}
                                     </span>
@@ -442,19 +464,19 @@ const Dispositivos = () => {
                             </button>
 
                             {historialOpen && (
-                                <div className="p-4 bg-gray-50/50 border-t border-gray-200 max-h-[400px] overflow-y-auto space-y-3">
+                                <div className="p-4 bg-gray-50/50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 max-h-[400px] overflow-y-auto space-y-3">
                                     {historialList.length === 0 ? (
                                         <p className="text-center text-xs text-gray-500 py-4">No hay historial disponible.</p>
                                     ) : (
                                         historialList.map(solicitud => (
-                                            <div key={solicitud.id} className="bg-white p-3 rounded border border-gray-200 flex items-center justify-between opacity-80 hover:opacity-100 transition-opacity">
+                                            <div key={solicitud.id} className="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700 flex items-center justify-between opacity-80 hover:opacity-100 transition-opacity">
                                                 <div className="flex items-center gap-3">
                                                     <div className={`p-1.5 rounded ${solicitud.estado === 'aceptado' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
                                                         {solicitud.estado === 'aceptado' ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
                                                     </div>
                                                     <div>
-                                                        <p className="text-xs font-semibold text-gray-800">{solicitud.nombre}</p>
-                                                        <p className="text-[10px] text-gray-500">{new Date(solicitud.fecha_registro).toLocaleDateString()}</p>
+                                                        <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">{solicitud.nombre}</p>
+                                                        <p className="text-[10px] text-gray-500 dark:text-gray-400">{new Date(solicitud.fecha_registro).toLocaleDateString()}</p>
                                                     </div>
                                                 </div>
                                                 <button onClick={() => openDetallesModal(solicitud, true)} className="text-xs text-blue-600 hover:underline">
@@ -470,12 +492,12 @@ const Dispositivos = () => {
 
                     {/* === COLUMNA 2: ACTIVOS === */}
                     <div className="space-y-4">
-                        <div className="flex items-center justify-between pb-2 border-b border-gray-200">
-                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-700">
+                            <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
                                 <Shield className="w-5 h-5 text-green-600" />
                                 {tabActiva === 'movil' ? 'Móviles Asignados' : 'Escritorios Activos'}
                             </h2>
-                            <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-bold">
+                            <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-full text-xs font-bold">
                                 {activosList.length}
                             </span>
                         </div>
@@ -489,16 +511,16 @@ const Dispositivos = () => {
                                 {activosList.map((dispositivo) => {
                                     if (tabActiva === 'movil') {
                                         return (
-                                            <div key={dispositivo.id} className={`rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow relative overflow-hidden ${dispositivo.es_activo === false ? 'bg-gray-50 border-red-200 opacity-75' : 'bg-white border-green-100'}`}>
+                                            <div key={dispositivo.id} className={`rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow relative overflow-hidden ${dispositivo.es_activo === false ? 'bg-gray-50 dark:bg-gray-900 border-red-200 dark:border-red-900/50 opacity-75' : 'bg-white dark:bg-gray-800 border-green-100 dark:border-green-900/50'}`}>
                                                 <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl ${dispositivo.es_activo === false ? 'from-red-50' : 'from-green-50'} to-transparent -mr-8 -mt-8 rounded-full pointer-events-none`}></div>
                                                 <div className="flex items-start justify-between mb-3 relative z-10">
                                                     <div className="flex items-center gap-3">
-                                                        <div className={`p-2 rounded-lg ${dispositivo.es_activo === false ? 'bg-red-50' : 'bg-green-50'}`}>
-                                                            <Smartphone className={`w-5 h-5 ${dispositivo.es_activo === false ? 'text-red-400' : 'text-green-600'}`} />
+                                                        <div className={`p-2 rounded-lg ${dispositivo.es_activo === false ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20'}`}>
+                                                            <Smartphone className={`w-5 h-5 ${dispositivo.es_activo === false ? 'text-red-400' : 'text-green-600 dark:text-green-400'}`} />
                                                         </div>
                                                         <div>
-                                                            <h3 className={`font-semibold text-sm ${dispositivo.es_activo === false ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{dispositivo.empleado_nombre}</h3>
-                                                            <p className="text-xs text-gray-500">{dispositivo.empleado_correo}</p>
+                                                            <h3 className={`font-semibold text-sm ${dispositivo.es_activo === false ? 'text-gray-400 line-through' : 'text-gray-900 dark:text-white'}`}>{dispositivo.empleado_nombre}</h3>
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400">{dispositivo.empleado_correo}</p>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-1">
@@ -506,12 +528,12 @@ const Dispositivos = () => {
                                                         {dispositivo.es_root && <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-red-100 text-red-700 border border-red-200">ROOT</span>}
                                                     </div>
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-2 mb-3 text-xs text-gray-600">
-                                                    <div className="bg-gray-50 px-2 py-1 rounded"><span className="font-medium text-gray-500">OS:</span> {dispositivo.sistema_operativo}</div>
-                                                    <div className="bg-gray-50 px-2 py-1 rounded"><span className="font-medium text-gray-500">Reg:</span> {new Date(dispositivo.fecha_registro).toLocaleDateString()}</div>
+                                                <div className="grid grid-cols-2 gap-2 mb-3 text-xs text-gray-600 dark:text-gray-400">
+                                                    <div className="bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded"><span className="font-medium text-gray-500 dark:text-gray-300">OS:</span> {dispositivo.sistema_operativo}</div>
+                                                    <div className="bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded"><span className="font-medium text-gray-500 dark:text-gray-300">Reg:</span> {new Date(dispositivo.fecha_registro).toLocaleDateString()}</div>
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <button onClick={() => openDetallesModal(dispositivo, false)} className="flex-1 py-1.5 text-xs bg-white text-green-700 border border-green-200 rounded hover:bg-green-50 transition-colors">Ver Ficha Técnica</button>
+                                                    <button onClick={() => openDetallesModal(dispositivo, false)} className="flex-1 py-1.5 text-xs bg-white dark:bg-gray-800 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 rounded hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors">Ver Ficha Técnica</button>
                                                     {dispositivo.es_activo === false ? (
                                                         <button onClick={() => handleReactivarDispositivo(dispositivo)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded transition-colors">
                                                             <RefreshCw className="w-3.5 h-3.5" /> Reactivar
@@ -526,16 +548,16 @@ const Dispositivos = () => {
                                         );
                                     } else {
                                         return (
-                                            <div key={dispositivo.id} className={`rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow relative overflow-hidden ${dispositivo.es_activo === false ? 'bg-gray-50 border-red-200 opacity-75' : 'bg-white border-blue-100'}`}>
+                                            <div key={dispositivo.id} className={`rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow relative overflow-hidden ${dispositivo.es_activo === false ? 'bg-gray-50 dark:bg-gray-900 border-red-200 dark:border-red-900/50 opacity-75' : 'bg-white dark:bg-gray-800 border-blue-100 dark:border-blue-900/50'}`}>
                                                 <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl ${dispositivo.es_activo === false ? 'from-red-50' : 'from-blue-50'} to-transparent -mr-8 -mt-8 rounded-full pointer-events-none`}></div>
                                                 <div className="flex items-start justify-between mb-3 relative z-10">
                                                     <div className="flex items-center gap-3">
-                                                        <div className={`p-2 rounded-lg ${dispositivo.es_activo === false ? 'bg-red-50' : 'bg-blue-50'}`}>
-                                                            <Laptop className={`w-5 h-5 ${dispositivo.es_activo === false ? 'text-red-400' : 'text-blue-600'}`} />
+                                                        <div className={`p-2 rounded-lg ${dispositivo.es_activo === false ? 'bg-red-50 dark:bg-red-900/20' : 'bg-blue-50 dark:bg-blue-900/20'}`}>
+                                                            <Laptop className={`w-5 h-5 ${dispositivo.es_activo === false ? 'text-red-400' : 'text-blue-600 dark:text-blue-400'}`} />
                                                         </div>
                                                         <div>
-                                                            <h3 className={`font-semibold text-sm ${dispositivo.es_activo === false ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{dispositivo.nombre}</h3>
-                                                            <p className="text-xs text-gray-500 font-mono">{dispositivo.ip}</p>
+                                                            <h3 className={`font-semibold text-sm ${dispositivo.es_activo === false ? 'text-gray-400 line-through' : 'text-gray-900 dark:text-white'}`}>{dispositivo.nombre}</h3>
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">{dispositivo.ip}</p>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-1">
@@ -549,17 +571,17 @@ const Dispositivos = () => {
                                                     </div>
                                                 </div>
                                                 <div className="space-y-2 mb-3">
-                                                    <div className="flex justify-between text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
-                                                        <span className="font-medium text-gray-500">MAC:</span>
+                                                    <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded">
+                                                        <span className="font-medium text-gray-500 dark:text-gray-300">MAC:</span>
                                                         <span className="font-mono text-[10px]">{dispositivo.mac}</span>
                                                     </div>
-                                                    <div className="flex justify-between text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
-                                                        <span className="font-medium text-gray-500">OS:</span>
+                                                    <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded">
+                                                        <span className="font-medium text-gray-500 dark:text-gray-300">OS:</span>
                                                         <span>{dispositivo.sistema_operativo}</span>
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <button onClick={() => openDetallesModal(dispositivo, false)} className="flex-1 py-1.5 text-xs bg-white text-blue-700 border border-blue-200 rounded hover:bg-blue-50 transition-colors">
+                                                    <button onClick={() => openDetallesModal(dispositivo, false)} className="flex-1 py-1.5 text-xs bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
                                                         Ver Ficha Técnica
                                                     </button>
                                                     {dispositivo.es_activo === false ? (
@@ -585,7 +607,7 @@ const Dispositivos = () => {
             {/* MODAL DETALLES ACTUALIZADO */}
             {modalDetalles && dispositivoDetalles && createPortal(
                 <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto flex flex-col">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto flex flex-col">
                         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 sticky top-0 bg-white z-10">
                             <div>
                                 <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
@@ -600,109 +622,82 @@ const Dispositivos = () => {
                         </div>
 
                         <div className="p-6 space-y-8">
-                            <div className="flex items-start gap-5">
-                                <div className={`p-5 rounded-2xl ${dispositivoDetalles.tipo === 'movil' ? 'bg-purple-50' : 'bg-blue-50'}`}>
-                                    {dispositivoDetalles.tipo === 'movil' ? (
-                                        <Smartphone className="w-10 h-10 text-purple-600" />
-                                    ) : (
-                                        <Monitor className="w-10 h-10 text-blue-600" />
-                                    )}
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="text-2xl font-bold text-gray-900">{dispositivoDetalles.nombre}</h3>
-                                    <div className="flex items-center gap-3 mt-2">
-                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-full ${ESTADOS[dispositivoDetalles.estado]?.color}`}>
-                                            {ESTADOS[dispositivoDetalles.estado]?.icon && React.createElement(ESTADOS[dispositivoDetalles.estado].icon, { className: "w-3 h-3" })}
-                                            {ESTADOS[dispositivoDetalles.estado]?.label || dispositivoDetalles.estado}
-                                        </span>
-                                        <span className="text-sm text-gray-500 capitalize px-2 py-0.5 bg-gray-100 rounded border border-gray-200">
-                                            {dispositivoDetalles.tipo}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-4">
-                                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">Conectividad</h4>
-                                    <div className="space-y-3">
-                                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-white rounded-md shadow-sm text-gray-500"><Wifi className="w-4 h-4" /></div>
-                                                <span className="text-sm font-medium text-gray-700">Dirección IP</span>
-                                            </div>
-                                            <span className="text-sm font-mono text-gray-900">{dispositivoDetalles.ip || 'N/A'}</span>
+                            {/* FICHA TÉCNICA - RENDERIZADO CONDICIONAL */}
+                            {dispositivoDetalles.tipo === 'escritorio' ? (
+                                <EscritorioProfile dispositivo={dispositivoDetalles} />
+                            ) : (
+                                <>
+                                    <div className="flex items-start gap-5">
+                                        <div className={`p-5 rounded-2xl ${dispositivoDetalles.tipo === 'movil' ? 'bg-purple-50' : 'bg-blue-50'}`}>
+                                            <Smartphone className="w-10 h-10 text-purple-600" />
                                         </div>
-                                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-white rounded-md shadow-sm text-gray-500"><Cpu className="w-4 h-4" /></div>
-                                                <span className="text-sm font-medium text-gray-700">Dirección MAC</span>
+                                        <div className="flex-1">
+                                            <h3 className="text-2xl font-bold text-gray-900">{dispositivoDetalles.nombre}</h3>
+                                            <div className="flex items-center gap-3 mt-2">
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-full ${ESTADOS[dispositivoDetalles.estado]?.color}`}>
+                                                    {ESTADOS[dispositivoDetalles.estado]?.icon && React.createElement(ESTADOS[dispositivoDetalles.estado].icon, { className: "w-3 h-3" })}
+                                                    {ESTADOS[dispositivoDetalles.estado]?.label || dispositivoDetalles.estado}
+                                                </span>
+                                                <span className="text-sm text-gray-500 capitalize px-2 py-0.5 bg-gray-100 rounded border border-gray-200">
+                                                    {dispositivoDetalles.tipo}
+                                                </span>
                                             </div>
-                                            <span className="text-sm font-mono text-gray-900">{dispositivoDetalles.mac || 'N/A'}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">Sistema Operativo</h4>
-                                    <div className="space-y-3">
-                                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-white rounded-md shadow-sm text-gray-500"><Server className="w-4 h-4" /></div>
-                                                <span className="text-sm font-medium text-gray-700">OS</span>
-                                            </div>
-                                            <span className="text-sm font-semibold text-gray-900">{dispositivoDetalles.sistema_operativo || 'N/A'}</span>
                                         </div>
                                     </div>
 
-                                    {/* SECCIÓN BIOMÉTRICOS AÑADIDA */}
-                                    {dispositivoDetalles.tipo === 'escritorio' && (
-                                        <>
-                                            <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2 pt-2">Periféricos y Biométricos</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-4">
+                                            <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">Conectividad</h4>
                                             <div className="space-y-3">
-                                                <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-100">
+                                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="p-2 bg-white rounded-md shadow-sm text-purple-500"><Fingerprint className="w-4 h-4" /></div>
-                                                        <span className="text-sm font-medium text-gray-700">Lectores Conectados</span>
+                                                        <div className="p-2 bg-white rounded-md shadow-sm text-gray-500"><Wifi className="w-4 h-4" /></div>
+                                                        <span className="text-sm font-medium text-gray-700">Dirección IP</span>
                                                     </div>
-                                                    <span className="text-sm font-bold text-purple-700 bg-white px-3 py-0.5 rounded border border-purple-200 shadow-sm">
-                                                        {dispositivoDetalles.biometricos_count || 0}
-                                                    </span>
+                                                    <span className="text-sm font-mono text-gray-900">{dispositivoDetalles.ip || 'N/A'}</span>
                                                 </div>
-
-                                                {/* Si el backend envía el detalle de los biométricos (array), los listamos */}
-                                                {dispositivoDetalles.biometricos && dispositivoDetalles.biometricos.length > 0 && (
-                                                    <div className="bg-gray-50 rounded-lg border border-gray-100 p-2 space-y-2">
-                                                        {dispositivoDetalles.biometricos.map((bio, idx) => (
-                                                            <div key={idx} className="flex items-center justify-between text-xs p-2 bg-white rounded border border-gray-200">
-                                                                <span className="font-medium text-gray-700">{bio.nombre}</span>
-                                                                <span className="text-gray-500">{bio.tipo}</span>
-                                                            </div>
-                                                        ))}
+                                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="p-2 bg-white rounded-md shadow-sm text-gray-500"><Cpu className="w-4 h-4" /></div>
+                                                        <span className="text-sm font-medium text-gray-700">Dirección MAC</span>
                                                     </div>
-                                                )}
+                                                    <span className="text-sm font-mono text-gray-900">{dispositivoDetalles.mac || 'N/A'}</span>
+                                                </div>
                                             </div>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
+                                        </div>
 
-                            <div>
-                                <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2 mb-4">Información Adicional</h4>
-                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                                    {dispositivoDetalles.descripcion && (
-                                        <div className="mb-3">
-                                            <p className="text-xs text-gray-500 uppercase mb-1">Descripción</p>
-                                            <p className="text-sm text-gray-800 bg-white p-3 rounded border border-gray-100">{dispositivoDetalles.descripcion}</p>
+                                        <div className="space-y-4">
+                                            <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">Sistema Operativo</h4>
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="p-2 bg-white rounded-md shadow-sm text-gray-500"><Server className="w-4 h-4" /></div>
+                                                        <span className="text-sm font-medium text-gray-700">OS</span>
+                                                    </div>
+                                                    <span className="text-sm font-semibold text-gray-900">{dispositivoDetalles.sistema_operativo || 'N/A'}</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                    )}
-                                    {dispositivoDetalles.correo && (
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                                            <Mail className="w-4 h-4" /> {dispositivoDetalles.correo}
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2 mb-4">Información Adicional</h4>
+                                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                                            {dispositivoDetalles.descripcion && (
+                                                <div className="mb-3">
+                                                    <p className="text-xs text-gray-500 uppercase mb-1">Descripción</p>
+                                                    <p className="text-sm text-gray-800 bg-white p-3 rounded border border-gray-100">{dispositivoDetalles.descripcion}</p>
+                                                </div>
+                                            )}
+                                            {dispositivoDetalles.correo && (
+                                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                    <Mail className="w-4 h-4" /> {dispositivoDetalles.correo}
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                            </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50">
@@ -717,7 +712,7 @@ const Dispositivos = () => {
 
             {/* MODAL DE ACEPTAR/RECHAZAR */}
             {modalOpen && createPortal(
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
                             <h2 className="text-xl font-semibold text-gray-900">

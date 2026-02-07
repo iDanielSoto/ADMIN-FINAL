@@ -203,14 +203,14 @@ const DepartamentsModal = ({ isOpen, onClose, mode, initialData, usuarios, onSav
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl max-w-5xl w-full max-h-[95vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-5xl w-full max-h-[95vh] flex flex-col">
                 {/* Header */}
-                <div className="flex justify-between items-center px-6 py-4 border-b">
-                    <h2 className="text-xl font-bold text-gray-800">
+                <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-white">
                         {mode === 'create' ? 'Nuevo Departamento' : 'Editar Departamento'}
                     </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><FiX size={20} /></button>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400"><FiX size={20} /></button>
                 </div>
 
                 {/* Body */}
@@ -219,31 +219,31 @@ const DepartamentsModal = ({ isOpen, onClose, mode, initialData, usuarios, onSav
                         {/* Columna Izquierda: Formulario */}
                         <div className="space-y-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre *</label>
                                 <input
                                     type="text"
                                     value={formData.nombre}
                                     onChange={e => setFormData({ ...formData, nombre: e.target.value })}
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                     placeholder="Ej: Recursos Humanos"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
                                 <textarea
                                     value={formData.descripcion}
                                     onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
                                     rows={3}
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
                                 />
                             </div>
 
                             {/* Color Picker */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Color Identificador</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Color Identificador</label>
                                 <div className="flex items-center gap-4">
-                                    <div className="relative overflow-hidden w-16 h-10 rounded-lg border border-gray-300 shadow-sm">
+                                    <div className="relative overflow-hidden w-16 h-10 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm">
                                         <input
                                             type="color"
                                             value={`#${formData.color}`}
@@ -260,12 +260,12 @@ const DepartamentsModal = ({ isOpen, onClose, mode, initialData, usuarios, onSav
 
                             {/* Selector de Jefes */}
                             <div className="relative">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Jefes de Departamento</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Jefes de Departamento</label>
                                 <div className="flex flex-wrap gap-2 mb-2">
                                     {formData.jefes.map(id => {
                                         const u = getUsuarioInfo(id);
                                         return u ? (
-                                            <span key={id} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-sm">
+                                            <span key={id} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-md text-sm">
                                                 {u.nombre}
                                                 <button onClick={() => removeJefe(id)} className="hover:text-red-500"><FiX size={14} /></button>
                                             </span>
@@ -279,16 +279,16 @@ const DepartamentsModal = ({ isOpen, onClose, mode, initialData, usuarios, onSav
                                         value={searchJefe}
                                         onChange={e => { setSearchJefe(e.target.value); setShowJefeDropdown(true); }}
                                         onFocus={() => setShowJefeDropdown(true)}
-                                        className="w-full pl-10 pr-4 py-2 border rounded-lg"
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                                         placeholder="Buscar usuario..."
                                     />
                                     {showJefeDropdown && searchJefe && (
-                                        <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                                        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-40 overflow-y-auto">
                                             {filteredUsuarios.map(u => (
                                                 <button
                                                     key={u.id}
                                                     onClick={() => addJefe(u)}
-                                                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
+                                                    className="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 text-sm text-gray-900 dark:text-white"
                                                 >
                                                     {u.nombre}
                                                 </button>
@@ -303,17 +303,17 @@ const DepartamentsModal = ({ isOpen, onClose, mode, initialData, usuarios, onSav
                         {/* Columna Derecha: Mapa */}
                         <div className="flex flex-col h-full min-h-[400px]">
                             <div className="flex justify-between items-center mb-2">
-                                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
                                     <FiMapPin /> Zonas Geográficas ({zonas.length})
                                 </label>
-                                <button onClick={clearMap} className="text-xs text-red-600 hover:underline flex items-center gap-1">
+                                <button onClick={clearMap} className="text-xs text-red-600 dark:text-red-400 hover:underline flex items-center gap-1">
                                     <FiRefreshCw size={12} /> Limpiar mapa
                                 </button>
                             </div>
-                            <div className="flex-1 border rounded-lg overflow-hidden relative">
+                            <div className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden relative">
                                 <div ref={mapRef} className="w-full h-full z-0" />
                             </div>
-                            <p className="text-xs text-gray-500 mt-2">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                                 Usa las herramientas de dibujo para delimitar las zonas.
                             </p>
                         </div>
@@ -323,8 +323,8 @@ const DepartamentsModal = ({ isOpen, onClose, mode, initialData, usuarios, onSav
                 {alertMsg && <ConfirmBox message={alertMsg} onConfirm={() => setAlertMsg(null)} />}
 
                 {/* Footer */}
-                <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
-                    <button onClick={onClose} className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors">Cancelar</button>
+                <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3">
+                    <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">Cancelar</button>
                     <button
                         onClick={handleSubmit}
                         disabled={saving}

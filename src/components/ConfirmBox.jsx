@@ -13,24 +13,27 @@ function ConfirmBox({ message, onConfirm, onCancel }) {
             />
 
             {/* Modal */}
-            <div className="relative bg-white rounded-xl shadow-2xl max-w-sm w-full animate-[fadeIn_0.15s_ease-out] overflow-hidden">
+            <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-sm w-full animate-[fadeIn_0.15s_ease-out] overflow-hidden">
                 {/* Barra superior de color */}
                 <div className={`h-1 ${isConfirm ? 'bg-yellow-500' : 'bg-blue-500'}`} />
 
                 <div className="p-6">
                     {/* Icono + Mensaje */}
                     <div className="flex items-start gap-4">
-                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${isConfirm ? 'bg-yellow-50 text-yellow-600' : 'bg-blue-50 text-blue-600'}`}>
+                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${isConfirm
+                                ? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
+                                : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                            }`}>
                             {isConfirm
                                 ? <FiAlertCircle className="w-5 h-5" />
                                 : <FiInfo className="w-5 h-5" />
                             }
                         </div>
                         <div className="flex-1 pt-1">
-                            <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
                                 {isConfirm ? 'Confirmar acción' : 'Aviso'}
                             </h3>
-                            <p className="text-sm text-gray-600 leading-relaxed">{message}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{message}</p>
                         </div>
                     </div>
 
@@ -40,7 +43,7 @@ function ConfirmBox({ message, onConfirm, onCancel }) {
                             <>
                                 <button
                                     onClick={onCancel}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                                 >
                                     Cancelar
                                 </button>

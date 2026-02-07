@@ -4,8 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "vite --mode development",
+    "build": "vite build --mode production",
+    "build:staging": "vite build --mode staging",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -14,7 +15,7 @@
     "file-saver": "^2.0.5",
     "html2canvas": "^1.4.1",
     "install": "^0.13.0",
-    "jspdf": "^4.0.0",
+    "jspdf": "^4.1.0",
     "jspdf-autotable": "^5.0.7",
     "leaflet": "^1.9.4",
     "leaflet-draw": "^1.0.4",

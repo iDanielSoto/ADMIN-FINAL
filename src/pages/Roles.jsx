@@ -48,6 +48,7 @@ const Roles = () => {
     const [permisosCatalogo, setPermisosCatalogo] = useState({ lista: [], por_categoria: {} });
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
+    const [filtroEstado, setFiltroEstado] = useState('activo');
 
     // Modal states
     const [modalOpen, setModalOpen] = useState(false);
@@ -116,9 +117,6 @@ const Roles = () => {
             setLoading(false);
         }
     };
-
-    // ... (Funciones openCreateModal, openEditModal, openViewModal, handleSubmit, handleDelete igual que antes) ...
-    // Para abreviar, incluyo solo las funciones modificadas o relevantes para la lógica de reordenamiento
 
     const openCreateModal = () => {
         setFormData({
@@ -201,9 +199,19 @@ const Roles = () => {
 
     const handleDelete = (rol, e) => {
         e.stopPropagation();
-        if (rol.usuarios_count > 0) { setAlertMsg(`No se puede eliminar: tiene ${rol.usuarios_count} usuarios asignados`); return; }
+
+        if (isRoleFixed(rol)) {
+            setAlertMsg("Este es un rol de sistema protegido y no se puede desactivar.");
+            return;
+        }
+
+        const hasUsers = rol.usuarios_count > 0;
+        const warning = hasUsers
+            ? `\n(Hay ${rol.usuarios_count} usuarios asignados que perderán sus permisos)`
+            : '';
+
         setConfirmAction({
-            message: `¿Desactivar el rol "${rol.nombre}"?`,
+            message: `¿Desactivar el rol "${rol.nombre}"?${warning}`,
             onConfirm: async () => {
                 setConfirmAction(null);
                 try {
@@ -264,10 +272,16 @@ const Roles = () => {
 
     const getPermisosCount = (permisos_lista) => permisos_lista?.length || 0;
 
-    const filteredRoles = roles.filter(r =>
-        r.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
-        r.descripcion?.toLowerCase().includes(busqueda.toLowerCase())
-    );
+    const filteredRoles = roles.filter(r => {
+        const matchesBusqueda = r.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
+            r.descripcion?.toLowerCase().includes(busqueda.toLowerCase());
+
+        if (!matchesBusqueda) return false;
+
+        if (filtroEstado === 'activo') return r.es_activo !== false;
+        if (filtroEstado === 'inactivo') return r.es_activo === false;
+        return true;
+    });
 
     // --- LÓGICA DE REORDENAMIENTO CORREGIDA ---
 
@@ -436,33 +450,33 @@ const Roles = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col h-full">
-                        <div className="mb-6 pb-6 border-b border-gray-100">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 flex flex-col h-full transition-colors duration-200">
+                        <div className="mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
                             <div className="flex items-center gap-4 mb-3">
                                 <div className="w-14 h-14 rounded-xl flex items-center justify-center shadow-sm" style={{ backgroundColor: `${viewingRole.color}20` }}>
                                     <FiShield className="w-7 h-7" style={{ color: viewingRole.color }} />
                                 </div>
                                 <div>
-                                    <h1 className="text-2xl font-bold text-gray-900">{viewingRole.nombre}</h1>
+                                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{viewingRole.nombre}</h1>
                                     <div className="flex gap-2 mt-1">
-                                        <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded">Jerarquía: {viewingRole.posicion}</span>
-                                        {viewingRole.es_admin && <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-50 border border-red-100 px-2 py-0.5 rounded"><FiLock className="w-3 h-3" /> Admin Total</span>}
+                                        <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">Jerarquía: {viewingRole.posicion}</span>
+                                        {viewingRole.es_admin && <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 px-2 py-0.5 rounded"><FiLock className="w-3 h-3" /> Admin Total</span>}
                                     </div>
                                 </div>
                             </div>
-                            <p className="text-gray-600 text-sm leading-relaxed">{viewingRole.descripcion || "Sin descripción asignada para este rol."}</p>
+                            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{viewingRole.descripcion || "Sin descripción asignada para este rol."}</p>
                         </div>
-                        <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><FiShield className="w-5 h-5 text-gray-400" /> Permisos Activos ({viewingRole.permisos_lista?.length || 0})</h2>
+                        <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"><FiShield className="w-5 h-5 text-gray-400" /> Permisos Activos ({viewingRole.permisos_lista?.length || 0})</h2>
                         <div className="flex-1 overflow-y-auto pr-2 space-y-4 max-h-[600px]">
                             {Object.entries(permisosCatalogo.por_categoria || {}).map(([categoria, permisos]) => {
                                 const permisosActivos = permisos.filter(p => permisoEstaActivo(p, viewingRole.permisos_lista));
                                 if (permisosActivos.length === 0) return null;
                                 const Icon = CATEGORIA_ICONS[categoria.toUpperCase()] || FiShield;
                                 return (
-                                    <div key={categoria} className="border border-gray-100 rounded-lg overflow-hidden">
-                                        <div className="bg-gray-50 px-3 py-2 border-b border-gray-100 flex items-center gap-2"><Icon className="w-4 h-4 text-gray-500" /><h3 className="text-xs font-bold text-gray-700 uppercase tracking-wide">{categoria}</h3></div>
+                                    <div key={categoria} className="border border-gray-100 dark:border-gray-700 rounded-lg overflow-hidden">
+                                        <div className="bg-gray-50 dark:bg-gray-700/50 px-3 py-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2"><Icon className="w-4 h-4 text-gray-500 dark:text-gray-400" /><h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide">{categoria}</h3></div>
                                         <div className="p-3 flex flex-wrap gap-2">
-                                            {permisosActivos.map(p => (<span key={p.codigo} className="inline-flex items-center gap-1.5 text-xs bg-white border border-green-200 text-green-700 px-2.5 py-1 rounded-md shadow-sm"><FiCheck className="w-3 h-3 text-green-500" />{p.nombre}</span>))}
+                                            {permisosActivos.map(p => (<span key={p.codigo} className="inline-flex items-center gap-1.5 text-xs bg-white dark:bg-gray-700 dark:text-gray-200 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-2.5 py-1 rounded-md shadow-sm"><FiCheck className="w-3 h-3 text-green-500" />{p.nombre}</span>))}
                                         </div>
                                     </div>
                                 );
@@ -470,22 +484,22 @@ const Roles = () => {
                         </div>
                     </div>
 
-                    <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col h-full">
+                    <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 flex flex-col h-full transition-colors duration-200">
                         <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><FiUsers className="w-5 h-5 text-gray-400" /> Usuarios Asignados ({roleUsuarios.length})</h2>
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2"><FiUsers className="w-5 h-5 text-gray-400" /> Usuarios Asignados ({roleUsuarios.length})</h2>
                             <button onClick={openAssignModal} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 shadow-sm transition-colors text-sm font-medium"><FiUserPlus className="w-4 h-4" /> Asignar Usuarios</button>
                         </div>
                         {loadingUsuarios ? <div className="flex justify-center py-12 flex-1"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div></div> : roleUsuarios.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-12 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-200 flex-1"><div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4"><FiUsers className="w-8 h-8 text-gray-300" /></div><p className="font-medium">No hay usuarios con este rol</p></div>
+                            <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 flex-1"><div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4"><FiUsers className="w-8 h-8 text-gray-300 dark:text-gray-600" /></div><p className="font-medium">No hay usuarios con este rol</p></div>
                         ) : (
                             <div className="space-y-3 overflow-y-auto max-h-[700px] pr-2">
                                 {roleUsuarios.map(usuario => (
-                                    <div key={usuario.id} className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-shadow group">
+                                    <div key={usuario.id} className="flex items-center gap-4 p-4 bg-white dark:bg-gray-700/30 border border-gray-100 dark:border-gray-700 rounded-xl hover:shadow-md transition-shadow group">
                                         <div className="flex-shrink-0">
                                             {usuario.foto ? <img src={usuario.foto} alt={usuario.nombre} className="w-12 h-12 rounded-full object-cover border border-gray-200" /> : <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm" style={{ backgroundColor: viewingRole.color }}>{getInitials(usuario.nombre)}</div>}
                                         </div>
-                                        <div className="flex-1 min-w-0"><p className="font-semibold text-gray-900 truncate">{usuario.nombre}</p><p className="text-sm text-gray-500 truncate flex items-center gap-1"><FiMail className="w-3 h-3" /> {usuario.correo}</p></div>
-                                        <div className="flex items-center gap-3"><span className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wide border ${usuario.estado_cuenta === 'activo' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>{usuario.estado_cuenta}</span></div>
+                                        <div className="flex-1 min-w-0"><p className="font-semibold text-gray-900 dark:text-white truncate">{usuario.nombre}</p><p className="text-sm text-gray-500 dark:text-gray-400 truncate flex items-center gap-1"><FiMail className="w-3 h-3" /> {usuario.correo}</p></div>
+                                        <div className="flex items-center gap-3"><span className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wide border ${usuario.estado_cuenta === 'activo' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-100 dark:border-green-800' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'}`}>{usuario.estado_cuenta}</span></div>
                                     </div>
                                 ))}
                             </div>
@@ -496,12 +510,12 @@ const Roles = () => {
                 {/* Assign Modal */}
                 {showAssignModal && createPortal(
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowAssignModal(false)}></div>
-                        <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col relative z-10">
-                            <div className="p-6 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+                        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm" onClick={() => setShowAssignModal(false)}></div>
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col relative z-10 transition-colors duration-200">
+                            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between flex-shrink-0">
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-900">Asignar Usuarios</h2>
-                                    <p className="text-sm text-gray-500">Rol: {viewingRole.nombre}</p>
+                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Asignar Usuarios</h2>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Rol: {viewingRole.nombre}</p>
                                 </div>
                                 <button onClick={() => setShowAssignModal(false)} className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg">
                                     <FiX className="w-5 h-5" />
@@ -510,16 +524,16 @@ const Roles = () => {
                             <div className="p-6 flex-1 overflow-hidden flex flex-col">
                                 <div className="relative mb-4 flex-shrink-0">
                                     <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input type="text" value={searchUsuario} onChange={(e) => setSearchUsuario(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg" placeholder="Buscar usuario..." />
+                                    <input type="text" value={searchUsuario} onChange={(e) => setSearchUsuario(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg" placeholder="Buscar usuario..." />
                                 </div>
                                 <div className="flex-1 overflow-y-auto space-y-2">
                                     {filteredUsuariosForAssign.map(usuario => {
                                         const isSelected = selectedUsuarios.includes(usuario.id);
                                         return (
-                                            <button key={usuario.id} onClick={() => setSelectedUsuarios(prev => isSelected ? prev.filter(id => id !== usuario.id) : [...prev, usuario.id])} className={`w-full p-3 rounded-lg border-2 text-left transition-all ${isSelected ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                                            <button key={usuario.id} onClick={() => setSelectedUsuarios(prev => isSelected ? prev.filter(id => id !== usuario.id) : [...prev, usuario.id])} className={`w-full p-3 rounded-lg border-2 text-left transition-all ${isSelected ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-500'}`}>
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-medium ${isSelected ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-600'}`}>{getInitials(usuario.nombre)}</div>
-                                                    <div className="flex-1"><p className="font-medium text-gray-900">{usuario.nombre}</p><p className="text-sm text-gray-500">{usuario.correo}</p></div>
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-medium ${isSelected ? 'bg-primary-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-200'}`}>{getInitials(usuario.nombre)}</div>
+                                                    <div className="flex-1"><p className="font-medium text-gray-900 dark:text-white">{usuario.nombre}</p><p className="text-sm text-gray-500 dark:text-gray-400">{usuario.correo}</p></div>
                                                     {isSelected && <div className="w-6 h-6 rounded-full flex items-center justify-center text-white bg-primary-600"><FiCheck className="w-4 h-4" /></div>}
                                                 </div>
                                             </button>
@@ -527,10 +541,10 @@ const Roles = () => {
                                     })}
                                 </div>
                             </div>
-                            <div className="border-t p-4 bg-gray-50 rounded-b-xl flex justify-between items-center flex-shrink-0">
-                                <span className="text-sm text-gray-600">{selectedUsuarios.length} usuarios seleccionados</span>
+                            <div className="border-t p-4 bg-gray-50 dark:bg-gray-900/50 dark:border-gray-700 rounded-b-xl flex justify-between items-center flex-shrink-0">
+                                <span className="text-sm text-gray-600 dark:text-gray-400">{selectedUsuarios.length} usuarios seleccionados</span>
                                 <div className="flex gap-3">
-                                    <button onClick={() => setShowAssignModal(false)} className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg">Cancelar</button>
+                                    <button onClick={() => setShowAssignModal(false)} className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">Cancelar</button>
                                     <button onClick={handleAssignSave} disabled={saving} className="flex items-center gap-2 px-4 py-2 text-white rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-70">{saving ? 'Guardando...' : <><FiSave className="w-4 h-4" /> Guardar</>}</button>
                                 </div>
                             </div>
@@ -541,34 +555,34 @@ const Roles = () => {
 
                 {/* Edit Modal - Reutilizado abajo */}
                 {modalOpen && createPortal(
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
-                            <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
-                                <h2 className="text-xl font-semibold text-gray-900">{modalMode === 'create' ? 'Nuevo Rol' : 'Editar Rol'}</h2>
-                                <button onClick={() => setModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg"><FiX className="w-5 h-5" /></button>
+                    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col transition-colors duration-200">
+                            <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+                                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{modalMode === 'create' ? 'Nuevo Rol' : 'Editar Rol'}</h2>
+                                <button onClick={() => setModalOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg text-gray-500 dark:text-gray-400"><FiX className="w-5 h-5" /></button>
                             </div>
                             <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto flex-1">
-                                <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                                    <h3 className="font-medium text-gray-900 flex items-center gap-2"><FiFileText className="w-5 h-5" /> Información Básica</h3>
+                                <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 space-y-4">
+                                    <h3 className="font-medium text-gray-900 dark:text-white flex items-center gap-2"><FiFileText className="w-5 h-5" /> Información Básica</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Rol *</label><input type="text" value={formData.nombre} onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))} className="w-full px-4 py-2 border border-gray-300 rounded-lg" /></div>
-                                        <div><label className="block text-sm font-medium text-gray-700 mb-1">Color</label><div className="flex items-center gap-3"><input type="color" value={formData.color} onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))} className="h-10 w-20 p-1 rounded border border-gray-300 cursor-pointer" /><span className="text-sm text-gray-500 font-mono uppercase">{formData.color}</span></div></div>
+                                        <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del Rol *</label><input type="text" value={formData.nombre} onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg" /></div>
+                                        <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label><div className="flex items-center gap-3"><input type="color" value={formData.color} onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))} className="h-10 w-20 p-1 rounded border border-gray-300 dark:border-gray-600 cursor-pointer" /><span className="text-sm text-gray-500 dark:text-gray-400 font-mono uppercase">{formData.color}</span></div></div>
                                     </div>
-                                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label><textarea value={formData.descripcion} onChange={(e) => setFormData(prev => ({ ...prev, descripcion: e.target.value }))} className="w-full px-4 py-2 border border-gray-300 rounded-lg resize-none" rows={3} /></div>
-                                    <div className="flex gap-6"><label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={formData.es_admin} onChange={(e) => setFormData(prev => ({ ...prev, es_admin: e.target.checked }))} className="w-4 h-4 rounded border-gray-300" /><span className="text-sm text-gray-700">Es Administrador</span></label><label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={formData.es_empleado} onChange={(e) => setFormData(prev => ({ ...prev, es_empleado: e.target.checked }))} className="w-4 h-4 rounded border-gray-300" /><span className="text-sm text-gray-700">Es Empleado</span></label></div>
+                                    <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción</label><textarea value={formData.descripcion} onChange={(e) => setFormData(prev => ({ ...prev, descripcion: e.target.value }))} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg resize-none" rows={3} /></div>
+                                    <div className="flex gap-6"><label className="flex items-center gap-2 cursor-pointer dropdown-item"><input type="checkbox" checked={formData.es_admin} onChange={(e) => setFormData(prev => ({ ...prev, es_admin: e.target.checked }))} className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700" /><span className="text-sm text-gray-700 dark:text-gray-300">Es Administrador</span></label><label className="flex items-center gap-2 cursor-pointer dropdown-item"><input type="checkbox" checked={formData.es_empleado} onChange={(e) => setFormData(prev => ({ ...prev, es_empleado: e.target.checked }))} className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700" /><span className="text-sm text-gray-700 dark:text-gray-300">Es Empleado</span></label></div>
                                 </div>
-                                <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                                    <h3 className="font-medium text-gray-900 flex items-center gap-2"><FiShield className="w-5 h-5" /> Permisos por Módulo</h3>
+                                <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 space-y-4">
+                                    <h3 className="font-medium text-gray-900 dark:text-white flex items-center gap-2"><FiShield className="w-5 h-5" /> Permisos por Módulo</h3>
                                     <div className="space-y-4">
                                         {Object.entries(permisosCatalogo.por_categoria || {}).map(([categoria, permisos]) => {
                                             const Icon = CATEGORIA_ICONS[categoria.toUpperCase()] || FiShield;
                                             const todosSeleccionados = permisos.every(p => formData.permisos.some(fp => normalizePermiso(fp) === normalizePermiso(p.codigo)));
                                             return (
-                                                <div key={categoria} className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-                                                    <div className="bg-gray-100 p-3 flex items-center justify-between"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${formData.color}20` }}><Icon className="w-5 h-5" style={{ color: formData.color }} /></div><div><h4 className="font-medium text-gray-900">{categoria}</h4><p className="text-xs text-gray-500">{permisos.filter(p => formData.permisos.some(fp => normalizePermiso(fp) === normalizePermiso(p.codigo))).length}/{permisos.length} permisos</p></div></div><button type="button" onClick={() => toggleCategoriaCompleta(categoria, permisos)} className={`text-xs px-3 py-1 rounded transition-colors ${todosSeleccionados ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-primary-600 hover:bg-primary-700 text-white'}`}>{todosSeleccionados ? 'Desmarcar todo' : 'Marcar todo'}</button></div>
+                                                <div key={categoria} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800">
+                                                    <div className="bg-gray-100 dark:bg-gray-700/50 p-3 flex items-center justify-between"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${formData.color}20` }}><Icon className="w-5 h-5" style={{ color: formData.color }} /></div><div><h4 className="font-medium text-gray-900 dark:text-white">{categoria}</h4><p className="text-xs text-gray-500 dark:text-gray-400">{permisos.filter(p => formData.permisos.some(fp => normalizePermiso(fp) === normalizePermiso(p.codigo))).length}/{permisos.length} permisos</p></div></div><button type="button" onClick={() => toggleCategoriaCompleta(categoria, permisos)} className={`text-xs px-3 py-1 rounded transition-colors ${todosSeleccionados ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-primary-600 hover:bg-primary-700 text-white'}`}>{todosSeleccionados ? 'Desmarcar todo' : 'Marcar todo'}</button></div>
                                                     <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
                                                         {permisos.map(permiso => (
-                                                            <label key={permiso.codigo} className="flex items-center gap-2 cursor-pointer group"><input type="checkbox" checked={formData.permisos.some(fp => normalizePermiso(fp) === normalizePermiso(permiso.codigo))} onChange={() => togglePermiso(permiso.codigo)} className="w-4 h-4 rounded border-gray-300" /><span className="text-sm text-gray-700 group-hover:text-gray-900">{permiso.nombre}</span></label>
+                                                            <label key={permiso.codigo} className="flex items-center gap-2 cursor-pointer group"><input type="checkbox" checked={formData.permisos.some(fp => normalizePermiso(fp) === normalizePermiso(permiso.codigo))} onChange={() => togglePermiso(permiso.codigo)} className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700" /><span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">{permiso.nombre}</span></label>
                                                         ))}
                                                     </div>
                                                 </div>
@@ -576,15 +590,26 @@ const Roles = () => {
                                         })}
                                     </div>
                                 </div>
-                                <div className="flex justify-end gap-3 pt-4 border-t"><button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Cancelar</button><button type="submit" disabled={saving} className="flex items-center gap-2 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50">{saving ? 'Guardando...' : <><FiSave className="w-5 h-5" /> Guardar Cambios</>}</button></div>
+                                <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700"><button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">Cancelar</button><button type="submit" disabled={saving} className="flex items-center gap-2 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50">{saving ? 'Guardando...' : <><FiSave className="w-5 h-5" /> Guardar Cambios</>}</button></div>
                             </form>
                         </div>
                     </div>,
                     document.body
                 )}
 
-                {alertMsg && <ConfirmBox message={alertMsg} onConfirm={() => setAlertMsg(null)} />}
-                {confirmAction && <ConfirmBox message={confirmAction.message} onConfirm={confirmAction.onConfirm} onCancel={() => setConfirmAction(null)} />}
+                {alertMsg && createPortal(
+                    <ConfirmBox message={alertMsg} onConfirm={() => setAlertMsg(null)} />,
+                    document.body
+                )}
+
+                {confirmAction && createPortal(
+                    <ConfirmBox
+                        message={confirmAction.message}
+                        onConfirm={confirmAction.onConfirm}
+                        onCancel={() => setConfirmAction(null)}
+                    />,
+                    document.body
+                )}
             </div>
         );
     }
@@ -596,15 +621,26 @@ const Roles = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-between">
                 {!isReordering ? (
                     <>
-                        <div className="relative flex-1 max-w-md">
-                            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Buscar rol..."
-                                value={busqueda}
-                                onChange={(e) => setBusqueda(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                            />
+                        <div className="flex flex-1 gap-3">
+                            <div className="relative flex-1 max-w-md">
+                                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar rol..."
+                                    value={busqueda}
+                                    onChange={(e) => setBusqueda(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500"
+                                />
+                            </div>
+                            <select
+                                value={filtroEstado}
+                                onChange={(e) => setFiltroEstado(e.target.value)}
+                                className="px-4 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500"
+                            >
+                                <option value="">Todos los estados</option>
+                                <option value="activo">Activos</option>
+                                <option value="inactivo">Inactivos</option>
+                            </select>
                         </div>
                         <div className="flex gap-3">
                             <button
@@ -660,14 +696,14 @@ const Roles = () => {
                                 onDragEnd={handleDragEnd}
                                 onClick={() => !isReordering && openViewModal(rol)}
                                 className={`rounded-xl border transition-all overflow-hidden group
-                                    ${rol.es_activo === false ? 'bg-gray-50 opacity-70' : 'bg-white'}
+                                    ${rol.es_activo === false ? 'bg-gray-50 dark:bg-gray-900 opacity-70' : 'bg-white dark:bg-gray-800'}
                                     ${isReordering
                                         ? esFijo
-                                            ? 'border-gray-200 opacity-60 bg-gray-50'
-                                            : 'cursor-move border-purple-300 hover:border-purple-400 shadow-sm'
+                                            ? 'border-gray-200 dark:border-gray-700 opacity-60 bg-gray-50 dark:bg-gray-900'
+                                            : 'cursor-move border-purple-300 hover:border-purple-400 dark:border-purple-700/50 dark:hover:border-purple-500 shadow-sm'
                                         : rol.es_activo === false
-                                            ? 'border-red-200 hover:border-red-300 cursor-pointer'
-                                            : 'border-gray-200 hover:border-gray-300 hover:shadow-md cursor-pointer'
+                                            ? 'border-red-200 dark:border-red-900/30 hover:border-red-300 cursor-pointer'
+                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md cursor-pointer'
                                     }
                                     ${draggedIndex === index ? 'opacity-50' : ''}`}
                                 style={{
@@ -684,7 +720,7 @@ const Roles = () => {
                                                 <FiMove className="w-6 h-6 text-purple-500 cursor-move" />
                                             )}
                                             <div className={`w-8 h-8 rounded-full font-bold text-sm flex items-center justify-center
-                                                ${esFijo ? 'bg-gray-200 text-gray-600' : 'bg-purple-100 text-purple-700'}`}>
+                                                ${esFijo ? 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'}`}>
                                                 {index + 1}
                                             </div>
                                         </div>
@@ -699,17 +735,17 @@ const Roles = () => {
 
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <h3 className={`font-semibold text-lg ${rol.es_activo === false ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{rol.nombre}</h3>
-                                            {rol.es_activo === false && <span className="inline-flex items-center gap-1 text-xs text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded">Desactivado</span>}
-                                            {rol.es_admin && <span className="inline-flex items-center gap-1 text-xs text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded"><FiLock className="w-3 h-3" /> Admin</span>}
+                                            <h3 className={`font-semibold text-lg ${rol.es_activo === false ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-white'}`}>{rol.nombre}</h3>
+                                            {rol.es_activo === false && <span className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded">Desactivado</span>}
+                                            {rol.es_admin && <span className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded"><FiLock className="w-3 h-3" /> Admin</span>}
                                         </div>
-                                        <p className="text-gray-500 text-sm mb-2 line-clamp-1">{rol.descripcion || 'Sin descripción'}</p>
+                                        <p className="text-gray-500 dark:text-gray-400 text-sm mb-2 line-clamp-1">{rol.descripcion || 'Sin descripción'}</p>
                                         <div className="flex items-center gap-6 text-sm">
-                                            <div className="flex items-center gap-2 text-gray-600">
+                                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                                                 <FiUsers className="w-4 h-4" />
                                                 <span className="font-medium">{rol.usuarios_count || 0}</span> usuarios
                                             </div>
-                                            <div className="flex items-center gap-2 text-gray-600">
+                                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                                                 <FiShield className="w-4 h-4" />
                                                 <span className="font-medium">{getPermisosCount(rol.permisos_lista)}</span> permisos
                                             </div>
@@ -718,11 +754,11 @@ const Roles = () => {
 
                                     {/* Action Buttons */}
                                     {!isReordering && (
-                                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="flex items-center gap-2 relative z-10">
                                             {rol.es_activo === false ? (
                                                 <button
                                                     onClick={(e) => handleReactivar(rol, e)}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors"
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-green-700 bg-green-50 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50 border border-green-200 dark:border-green-800 rounded-lg transition-colors"
                                                     title="Reactivar rol"
                                                 >
                                                     <FiRefreshCw className="w-4 h-4" /> Reactivar
@@ -731,16 +767,15 @@ const Roles = () => {
                                                 <>
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); openEditModal(rol); }}
-                                                        className="p-2 text-gray-500 hover:bg-primary-50 hover:text-primary-600 rounded-lg transition-colors"
+                                                        className="p-2 text-gray-500 hover:bg-primary-50 hover:text-primary-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-primary-400 rounded-lg transition-colors"
                                                         title="Editar"
                                                     >
                                                         <FiEdit2 className="w-5 h-5" />
                                                     </button>
                                                     <button
                                                         onClick={(e) => { handleDelete(rol, e); }}
-                                                        disabled={rol.usuarios_count > 0}
-                                                        className={`p-2 rounded-lg transition-colors ${rol.usuarios_count > 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-red-50 hover:text-red-600'}`}
-                                                        title={rol.usuarios_count > 0 ? 'No se puede eliminar' : 'Desactivar'}
+                                                        className={`p-2 rounded-lg transition-colors ${esFijo ? 'text-gray-400 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700' : 'text-gray-500 dark:text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400'}`}
+                                                        title={esFijo ? "Rol de sistema protegido" : "Desactivar"}
                                                     >
                                                         <FiTrash2 className="w-5 h-5" />
                                                     </button>
@@ -763,69 +798,69 @@ const Roles = () => {
 
             {/* Create/Edit Modal - Reutilizado */}
             {modalOpen && createPortal(
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
-                        <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
-                            <h2 className="text-xl font-semibold text-gray-900">{modalMode === 'create' ? 'Nuevo Rol' : 'Editar Rol'}</h2>
-                            <button onClick={() => setModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg"><FiX className="w-5 h-5" /></button>
+                <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col transition-colors duration-200">
+                        <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{modalMode === 'create' ? 'Nuevo Rol' : 'Editar Rol'}</h2>
+                            <button onClick={() => setModalOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg text-gray-500 dark:text-gray-400"><FiX className="w-5 h-5" /></button>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto flex-1">
                             {/* Formulario con Color Picker */}
                             {mensaje && (
-                                <div className={`p-4 rounded-lg ${mensaje.tipo === 'error' ? 'bg-red-50 text-red-800 border border-red-200' : 'bg-green-50 text-green-800 border border-green-200'}`}>
+                                <div className={`p-4 rounded-lg ${mensaje.tipo === 'error' ? 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800' : 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800'}`}>
                                     {mensaje.texto}
                                 </div>
                             )}
-                            <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                                <h3 className="font-medium text-gray-900 flex items-center gap-2"><FiFileText className="w-5 h-5" /> Información Básica</h3>
+                            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 space-y-4">
+                                <h3 className="font-medium text-gray-900 dark:text-white flex items-center gap-2"><FiFileText className="w-5 h-5" /> Información Básica</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Rol *</label>
-                                        <input type="text" value={formData.nombre} onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del Rol *</label>
+                                        <input type="text" value={formData.nombre} onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg" />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
                                         <div className="flex items-center gap-3">
                                             <input
                                                 type="color"
                                                 value={formData.color}
                                                 onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                                                className="h-10 w-20 p-1 rounded border border-gray-300 cursor-pointer"
+                                                className="h-10 w-20 p-1 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
                                             />
-                                            <span className="text-sm text-gray-500 font-mono uppercase">{formData.color}</span>
+                                            <span className="text-sm text-gray-500 dark:text-gray-400 font-mono uppercase">{formData.color}</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                                    <textarea value={formData.descripcion} onChange={(e) => setFormData(prev => ({ ...prev, descripcion: e.target.value }))} className="w-full px-4 py-2 border border-gray-300 rounded-lg resize-none" rows={3} />
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
+                                    <textarea value={formData.descripcion} onChange={(e) => setFormData(prev => ({ ...prev, descripcion: e.target.value }))} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg resize-none" rows={3} />
                                 </div>
                                 <div className="flex gap-6">
-                                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={formData.es_admin} onChange={(e) => setFormData(prev => ({ ...prev, es_admin: e.target.checked }))} className="w-4 h-4 rounded border-gray-300" /><span className="text-sm text-gray-700">Es Administrador</span></label>
-                                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={formData.es_empleado} onChange={(e) => setFormData(prev => ({ ...prev, es_empleado: e.target.checked }))} className="w-4 h-4 rounded border-gray-300" /><span className="text-sm text-gray-700">Es Empleado</span></label>
+                                    <label className="flex items-center gap-2 cursor-pointer dropdown-item"><input type="checkbox" checked={formData.es_admin} onChange={(e) => setFormData(prev => ({ ...prev, es_admin: e.target.checked }))} className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700" /><span className="text-sm text-gray-700 dark:text-gray-300">Es Administrador</span></label>
+                                    <label className="flex items-center gap-2 cursor-pointer dropdown-item"><input type="checkbox" checked={formData.es_empleado} onChange={(e) => setFormData(prev => ({ ...prev, es_empleado: e.target.checked }))} className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700" /><span className="text-sm text-gray-700 dark:text-gray-300">Es Empleado</span></label>
                                 </div>
                             </div>
                             {/* Permisos */}
-                            <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                                <h3 className="font-medium text-gray-900 flex items-center gap-2"><FiShield className="w-5 h-5" /> Permisos por Módulo</h3>
+                            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 space-y-4">
+                                <h3 className="font-medium text-gray-900 dark:text-white flex items-center gap-2"><FiShield className="w-5 h-5" /> Permisos por Módulo</h3>
                                 <div className="space-y-4">
                                     {Object.entries(permisosCatalogo.por_categoria || {}).map(([categoria, permisos]) => {
                                         const Icon = CATEGORIA_ICONS[categoria.toUpperCase()] || FiShield;
                                         const todosSeleccionados = permisos.every(p => formData.permisos.some(fp => normalizePermiso(fp) === normalizePermiso(p.codigo)));
                                         return (
-                                            <div key={categoria} className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-                                                <div className="bg-gray-100 p-3 flex items-center justify-between">
+                                            <div key={categoria} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800">
+                                                <div className="bg-gray-100 dark:bg-gray-700/50 p-3 flex items-center justify-between">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${formData.color}20` }}><Icon className="w-5 h-5" style={{ color: formData.color }} /></div>
-                                                        <div><h4 className="font-medium text-gray-900">{categoria}</h4><p className="text-xs text-gray-500">{permisos.filter(p => formData.permisos.some(fp => normalizePermiso(fp) === normalizePermiso(p.codigo))).length}/{permisos.length} permisos</p></div>
+                                                        <div><h4 className="font-medium text-gray-900 dark:text-white">{categoria}</h4><p className="text-xs text-gray-500 dark:text-gray-400">{permisos.filter(p => formData.permisos.some(fp => normalizePermiso(fp) === normalizePermiso(p.codigo))).length}/{permisos.length} permisos</p></div>
                                                     </div>
                                                     <button type="button" onClick={() => toggleCategoriaCompleta(categoria, permisos)} className={`text-xs px-3 py-1 rounded transition-colors ${todosSeleccionados ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-primary-600 hover:bg-primary-700 text-white'}`}>{todosSeleccionados ? 'Desmarcar todo' : 'Marcar todo'}</button>
                                                 </div>
                                                 <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
                                                     {permisos.map(permiso => (
                                                         <label key={permiso.codigo} className="flex items-center gap-2 cursor-pointer group">
-                                                            <input type="checkbox" checked={formData.permisos.some(fp => normalizePermiso(fp) === normalizePermiso(permiso.codigo))} onChange={() => togglePermiso(permiso.codigo)} className="w-4 h-4 rounded border-gray-300" />
-                                                            <span className="text-sm text-gray-700 group-hover:text-gray-900">{permiso.nombre}</span>
+                                                            <input type="checkbox" checked={formData.permisos.some(fp => normalizePermiso(fp) === normalizePermiso(permiso.codigo))} onChange={() => togglePermiso(permiso.codigo)} className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
+                                                            <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">{permiso.nombre}</span>
                                                         </label>
                                                     ))}
                                                 </div>
@@ -834,8 +869,8 @@ const Roles = () => {
                                     })}
                                 </div>
                             </div>
-                            <div className="flex justify-end gap-3 pt-4 border-t">
-                                <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Cancelar</button>
+                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
+                                <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">Cancelar</button>
                                 <button type="submit" disabled={saving} className="flex items-center gap-2 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50">{saving ? 'Guardando...' : <><FiSave className="w-5 h-5" /> Guardar Cambios</>}</button>
                             </div>
                         </form>
@@ -844,7 +879,19 @@ const Roles = () => {
                 document.body
             )}
 
-            {alertMsg && <ConfirmBox message={alertMsg} onConfirm={() => setAlertMsg(null)} />}
+            {alertMsg && createPortal(
+                <ConfirmBox message={alertMsg} onConfirm={() => setAlertMsg(null)} />,
+                document.body
+            )}
+
+            {confirmAction && createPortal(
+                <ConfirmBox
+                    message={confirmAction.message}
+                    onConfirm={confirmAction.onConfirm}
+                    onCancel={() => setConfirmAction(null)}
+                />,
+                document.body
+            )}
         </div>
     );
 };

@@ -68,19 +68,19 @@ const MainLayout = ({ children }) => {
     };
 
     return (
-        <div className="select-none flex min-h-screen bg-gray-50">
+        <div className="select-none flex min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
             {/* Sidebar con autenticación */}
             <SidebarWithAuth />
 
             {/* Contenido principal */}
             <main className="flex-1 overflow-auto">
                 {/* Header */}
-                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-20">
+                <header className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 sticky top-0 z-20 transition-colors duration-200">
                     <div>
-                        <h1 className="text-xl font-semibold text-gray-800">
+                        <h1 className="text-xl font-semibold text-gray-800 dark:text-white">
                             {currentPage.titulo}
                         </h1>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                             {currentPage.descripcion}
                         </p>
                     </div>
@@ -89,14 +89,14 @@ const MainLayout = ({ children }) => {
                     <div className="flex items-center gap-4">
 
                         {/* Perfil de Usuario */}
-                        <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-1.5 rounded-lg transition-colors"
+                        <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-1.5 rounded-lg transition-colors"
                             onClick={() => navigate(`/empleados/usuario/${user?.usuario?.usuario}`)}
                         >
                             <div className="text-right hidden md:block">
-                                <p className="text-sm font-semibold text-gray-800 leading-none">
+                                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 leading-none">
                                     {user?.usuario?.nombre}
                                 </p>
-                                <p className="text-xs text-gray-500 mt-1">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                     {user?.roles?.[0]?.nombre || 'Usuario'}
                                 </p>
                             </div>
@@ -110,12 +110,12 @@ const MainLayout = ({ children }) => {
                         </div>
 
                         {/* Separador vertical para Logout */}
-                        <div className="h-8 w-px bg-gray-200 mx-1"></div>
+                        <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
 
                         {/* Botón Logout */}
                         <button
                             onClick={handleLogout}
-                            className="p-2 text-red-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors"
+                            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400 rounded-lg transition-colors"
                             title="Cerrar Sesión"
                         >
                             <LogOut className="w-5 h-5" />

@@ -20,6 +20,7 @@ const menuItems = [
     { id: 'registros', nombre: 'Registros', icono: Book, ruta: '/registros' },
 ];
 
+
 /**
  * Sidebar con menú estático y Configuración en el footer
  */
@@ -80,8 +81,8 @@ const Sidebar = () => {
                     w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
                     transition-all duration-200 group relative
                     ${isActive
-                        ? 'bg-primary-50 text-primary-700 shadow-sm'
-                        : 'text-gray-700 hover:bg-gray-100'
+                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 shadow-sm'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }
                     ${isCollapsed ? 'justify-center' : ''}
                 `}
@@ -92,13 +93,13 @@ const Sidebar = () => {
                 )}
 
                 <IconComponent
-                    className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary-600' : 'text-gray-500 group-hover:text-gray-700'
+                    className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200'
                         }`}
                 />
 
                 {!isCollapsed && (
                     <div className="flex-1 text-left min-w-0">
-                        <div className={`font-medium text-sm truncate ${isActive ? 'text-primary-700' : 'text-gray-700'
+                        <div className={`font-medium text-sm truncate ${isActive ? 'text-primary-700 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300'
                             }`}>
                             {item.nombre}
                         </div>
@@ -119,18 +120,18 @@ const Sidebar = () => {
             {/* Botón hamburguesa móvil */}
             <button
                 onClick={toggleMobile}
-                className="select-none lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 p-2 bg-white rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.35)] border border-gray-200">
+                className="select-none lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.35)] border border-gray-200 dark:border-gray-700">
                 {isMobileOpen ? (
-                    <X className="w-6 h-6 text-gray-700" />
+                    <X className="w-6 h-6 text-gray-700 dark:text-gray-200" />
                 ) : (
-                    <Menu className="w-6 h-6 text-gray-700" />
+                    <Menu className="w-6 h-6 text-gray-700 dark:text-gray-200" />
                 )}
             </button>
 
             {/* Overlay móvil */}
             {isMobileOpen && (
                 <div
-                    className="select-none lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+                    className="select-none lg:hidden fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-30"
                     onClick={toggleMobile}
                 />
             )}
@@ -138,7 +139,7 @@ const Sidebar = () => {
             {/* Sidebar */}
             <aside
                 className={`
-          select-none fixed lg:sticky top-0 left-0 h-screen bg-white border-r border-gray-200 
+          select-none fixed lg:sticky top-0 left-0 h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 
           transition-all duration-300 z-40 flex flex-col
           ${isCollapsed ? 'w-20' : 'w-64'}
           ${isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}
@@ -148,7 +149,7 @@ const Sidebar = () => {
 
 
                 {/* Header con logo y nombre de empresa */}
-                <div className={`h-16 flex items-center border-b border-gray-200 flex-shrink-0 ${isCollapsed ? 'justify-center' : 'justify-between px-4'}`}>
+                <div className={`h-16 flex items-center border-b border-gray-200 dark:border-gray-700 flex-shrink-0 ${isCollapsed ? 'justify-center' : 'justify-between px-4'}`}>
                     {!isCollapsed ? (
                         <>
                             <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -166,22 +167,22 @@ const Sidebar = () => {
                                     </div>
                                 )}
                                 <div className="min-w-0 flex-1">
-                                    <span className="font-bold text-sm text-gray-800 block leading-tight truncate">
+                                    <span className="font-bold text-sm text-gray-800 dark:text-white block leading-tight truncate">
                                         {empresa?.nombre || 'Cargando...'}
                                     </span>
                                 </div>
                             </div>
                             <button
                                 onClick={toggleCollapsed}
-                                className="hidden lg:block p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                                className="hidden lg:block p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
                             >
-                                <ChevronLeft className="w-5 h-5 text-gray-600" />
+                                <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                             </button>
                         </>
                     ) : (
                         <button
                             onClick={toggleCollapsed}
-                            className="hidden lg:flex w-12 h-12 items-center justify-center hover:bg-gray-100 rounded-xl transition-colors"
+                            className="hidden lg:flex w-12 h-12 items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
                             title={empresa?.nombre || 'Expandir'}
                         >
                             {empresa?.logo ? (
@@ -209,7 +210,7 @@ const Sidebar = () => {
                 </div>
 
                 {/* Footer del Sidebar (Configuración) */}
-                <div className={`flex-shrink-0 border-t border-gray-200 bg-white ${isCollapsed ? 'px-2 py-2' : 'px-3 py-3'}`}>
+                <div className={`flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 ${isCollapsed ? 'px-2 py-2' : 'px-3 py-3'}`}>
                     <OfflineIndicator isCollapsed={isCollapsed} />
                     <nav className="space-y-1">
                         {renderMenuButton({
