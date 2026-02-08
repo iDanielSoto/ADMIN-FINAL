@@ -63,10 +63,10 @@ const EscritorioProfile = ({ dispositivo }) => {
                     </div>
                     <div>
                         <h2 className="text-2xl font-bold">{dispositivo.nombre_equipo || 'PC Sin Nombre'}</h2>
-                        <div className="flex flex-wrap gap-4 mt-2 text-blue-100 text-sm">
-                            <span className="flex items-center gap-1"><FiWifi className="w-4 h-4" /> {dispositivo.ip || '0.0.0.0'}</span>
-                            <span className="flex items-center gap-1"><FiCpu className="w-4 h-4" /> {dispositivo.sistema_operativo || 'Desconocido'}</span>
-                            <span className="flex items-center gap-1"><FiHardDrive className="w-4 h-4" /> MAC: {dispositivo.mac || 'N/A'}</span>
+                        <div className="flex flex-col gap-2 mt-2 text-blue-100 text-sm">
+                            <span className="flex items-start gap-2 break-all"><FiWifi className="w-4 h-4 mt-0.5 flex-shrink-0" /> {dispositivo.ip || '0.0.0.0'}</span>
+                            <span className="flex items-center gap-2"><FiCpu className="w-4 h-4 flex-shrink-0" /> {dispositivo.sistema_operativo || 'Desconocido'}</span>
+                            <span className="flex items-start gap-2 break-all"><FiHardDrive className="w-4 h-4 mt-0.5 flex-shrink-0" /> MAC: {dispositivo.mac || 'N/A'}</span>
                         </div>
                     </div>
                 </div>

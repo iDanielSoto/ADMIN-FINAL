@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useConfig } from '../context/ConfigContext';
+import DynamicLoader from '../components/common/DynamicLoader';
 import {
     FiUser,
     FiLock,
@@ -200,10 +201,7 @@ const Login = () => {
                                 className="btn-primary w-full py-3 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isSubmitting || loading ? (
-                                    <span className="flex items-center justify-center gap-2">
-                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                        Iniciando sesión...
-                                    </span>
+                                    <DynamicLoader text="Iniciando sesión..." size="tiny" layout="row" />
                                 ) : (
                                     'Iniciar Sesión'
                                 )}

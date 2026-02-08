@@ -9,6 +9,7 @@ import {
 import { API_CONFIG } from '../config/Apiconfig';
 const API_URL = API_CONFIG.BASE_URL;
 import { useConfig } from '../context/ConfigContext';
+import DynamicLoader from '../components/common/DynamicLoader';
 
 // --- CONFIGURACIÓN DE CONSTANTES (Igual que antes) ---
 const CATEGORIAS = {
@@ -210,8 +211,8 @@ const Registros = () => {
             </div>
 
             {/* Contenido */}
-            {loading && eventos.length === 0 ? (
-                <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div>
+            {loading ? (
+                <DynamicLoader text="Cargando registros..." />
             ) : eventos.length === 0 ? (
                 <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-600">
                     <div className="bg-gray-50 dark:bg-gray-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">

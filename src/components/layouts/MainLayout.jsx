@@ -4,6 +4,7 @@ import SidebarWithAuth from '../Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { Bell, LogOut } from 'lucide-react' // Importamos LogOut
 import ConfirmBox from '../ConfirmBox';
+import NotificationBell from '../NotificationBell';
 
 // Configuración de páginas
 const pageConfig = {
@@ -87,6 +88,9 @@ const MainLayout = ({ children }) => {
 
                     {/* Acciones del header */}
                     <div className="flex items-center gap-4">
+
+                        {/* Notifications */}
+                        <NotificationBell />
 
                         {/* Perfil de Usuario */}
                         <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-1.5 rounded-lg transition-colors"

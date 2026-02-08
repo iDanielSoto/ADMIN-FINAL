@@ -12,6 +12,8 @@ import {
     FiUser,
     FiFileText
 } from 'react-icons/fi';
+import { useConfig } from '../context/ConfigContext';
+import DynamicLoader from '../components/common/DynamicLoader';
 import ConfirmBox from '../components/ConfirmBox';
 import Pagination from '../components/Pagination';
 
@@ -277,14 +279,7 @@ const Incidencias = () => {
     };
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600 mx-auto mb-3"></div>
-                    <p className="text-sm text-gray-500">Cargando incidencias...</p>
-                </div>
-            </div>
-        );
+        return <DynamicLoader text="Cargando incidencias..." />;
     }
 
     return (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiCalendar, FiPlus, FiTrash2, FiEdit2, FiRefreshCw, FiX } from 'react-icons/fi';
 import { API_CONFIG } from '../../config/Apiconfig';
+import DynamicLoader from '../common/DynamicLoader';
 
 const API_URL = API_CONFIG.BASE_URL;
 
@@ -200,9 +201,7 @@ const HolidaysCalendar = () => {
 
             {/* Calendar Grid */}
             {loading ? (
-                <div className="flex justify-center py-12">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-                </div>
+                <DynamicLoader text="Cargando calendario..." />
             ) : holidays.length === 0 ? (
                 <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
                     <FiCalendar className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />

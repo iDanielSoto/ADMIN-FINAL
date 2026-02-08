@@ -27,6 +27,8 @@ import { AiFillAndroid } from 'react-icons/ai';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 import { API_CONFIG } from '../config/Apiconfig';
+import { useConfig } from '../context/ConfigContext';
+import DynamicLoader from '../components/common/DynamicLoader';
 const API_URL = API_CONFIG.BASE_URL;
 
 const DIAS_SEMANA = [
@@ -229,7 +231,7 @@ const PerfilUsuario = () => {
         ].filter(item => item.value > 0);
     }, [estadisticas]);
 
-    if (loading) return <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div></div>;
+    if (loading) return <DynamicLoader text="Cargando perfil..." />;
     if (error) return <div className="p-8 text-center text-red-600">{error}</div>;
 
     const estadoBadge = getEstadoBadge(usuario?.estado_cuenta);

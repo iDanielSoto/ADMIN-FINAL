@@ -44,8 +44,10 @@ const MapaDepartamentos = ({ departamentos, focusedDepto }) => {
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
         });
 
-        // Init Map
-        const map = L.map(mapRef.current).setView([17.9577, -102.2006], 13);
+        // map.setView([17.9577, -102.2006], 13); // Centrado inicial
+        // No hardcodeamos la vista inicial, dejaremos que updatePolygons haga el fitBounds si hay zonas,
+        // o un fallback si no hay ninguna.
+        const map = L.map(mapRef.current).setView([17.9577, -102.2006], 13); // Fallback inicial
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap'
@@ -93,6 +95,14 @@ const MapaDepartamentos = ({ departamentos, focusedDepto }) => {
                 });
             }
         });
+
+        // --- ZOOM AUTOMÁTICO A TODAS LAS ZONAS ---
+        if (layerGroupRef.current.getLayers().length > 0) {
+            const bounds = layerGroupRef.current.getBounds();
+            if (bounds.isValid()) {
+                mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+            }
+        }
     };
 
     const zoomToDepto = (depto) => {
@@ -117,20 +127,30 @@ const MapaDepartamentos = ({ departamentos, focusedDepto }) => {
         }
     };
 
-    return (
-        <>
-            {/* Estilos para quitar el recuadro blanco del tooltip y dejar solo el texto */}
-            <style jsx global>{`
+    // Inject custom styles for map labels
+    useEffect(() => {
+        const styleId = 'map-label-styles';
+        if (!document.getElementById(styleId)) {
+            const style = document.createElement('style');
+            style.id = styleId;
+            style.innerHTML = `
                 .label-departamento {
                     background: transparent !important;
                     border: none !important;
                     box-shadow: none !important;
                     font-weight: bold;
-                    color: #374151; /* Gray-700 */
-                    text-shadow: 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff; /* Borde blanco al texto para lectura */
+                    color: #374151;
+                    text-shadow: 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff;
                     font-size: 12px;
                 }
-            `}</style>
+            `;
+            document.head.appendChild(style);
+        }
+    }, []);
+
+    return (
+        <>
+            {/* Estilos para quitar el recuadro blanco del tooltip y dejar solo el texto */}
             <div ref={mapRef} className="w-full h-full z-0" />
         </>
     );

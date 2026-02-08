@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, Book, Users, Calendar, Settings, BarChart3, AlertCircle, Menu, X, ChevronLeft, Building2, Shield, Cpu, WifiOff } from 'lucide-react'
 import { useRealTime } from '../hooks/useRealTime';
 import { useNetwork } from '../context/NetworkContext';
+import { useNotifications } from '../context/NotificationContext';
+import { useCompany } from '../context/CompanyContext';
 
 import { API_CONFIG } from '../config/Apiconfig';
 const API_URL = API_CONFIG.BASE_URL;
@@ -29,36 +31,8 @@ const Sidebar = () => {
     const location = useLocation();
     const [isCollapsed, setIsCollapsed] = useState(true);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
-    const [empresa, setEmpresa] = useState(null);
-
-    // Cargar datos de la empresa
-    useEffect(() => {
-        const fetchEmpresa = async () => {
-            try {
-                const token = localStorage.getItem('auth_token');
-                const response = await fetch(`${API_URL}/api/empresas?es_activo=true`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                const result = await response.json();
-                if (result.success && result.data?.length > 0) {
-                    setEmpresa(result.data[0]);
-                }
-            } catch (err) {
-                console.error('Error al cargar empresa:', err);
-            }
-        };
-        fetchEmpresa();
-    }, []);
-
-    useRealTime({
-        'empresa-actualizada': (data) => {
-            if (data && data.es_activo) {
-                setEmpresa(prev => ({ ...prev, ...data }));
-            }
-        }
-    });
+    const { unreadCount } = useNotifications();
+    const { empresa } = useCompany();
 
     const handleMenuClick = (ruta) => {
         setIsMobileOpen(false);
@@ -103,6 +77,16 @@ const Sidebar = () => {
                             }`}>
                             {item.nombre}
                         </div>
+                    </div>
+                )}
+
+                {/* Badge de notificaciones para Dispositivos */}
+                {item.id === 'dispositivos' && unreadCount > 0 && (
+                    <div className={`
+                        flex items-center justify-center bg-red-500 text-white font-bold rounded-full
+                        ${isCollapsed ? 'absolute top-2 right-2 w-2.5 h-2.5 p-0' : 'w-5 h-5 text-xs ml-2'}
+                    `}>
+                        {!isCollapsed && (unreadCount > 9 ? '+9' : unreadCount)}
                     </div>
                 )}
 

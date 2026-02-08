@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { FiX, FiPlus, FiTrash2, FiAlertCircle, FiLayers, FiClock, FiZap, FiChevronDown } from 'react-icons/fi';
 import ConfirmBox from '../ConfirmBox';
+import DynamicLoader from '../common/DynamicLoader';
 import { fusionarBloquesContinuos, DIAS_SEMANA } from '../../utils/scheduleUtils';
 
 // --- UTILIDADES DE TIEMPO ---
@@ -464,7 +465,7 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
                             className="px-6 py-2.5 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all flex items-center gap-2"
                         >
                             {saving ? (
-                                <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Guardando...</>
+                                <DynamicLoader text="Guardando..." size="tiny" layout="row" />
                             ) : (
                                 'Guardar Horario'
                             )}

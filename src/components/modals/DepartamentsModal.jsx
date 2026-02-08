@@ -5,6 +5,7 @@ import {
     FiRefreshCw, FiSave, FiAlertCircle
 } from 'react-icons/fi';
 import ConfirmBox from '../ConfirmBox';
+import DynamicLoader from '../common/DynamicLoader';
 
 const DepartamentsModal = ({ isOpen, onClose, mode, initialData, usuarios, onSave, saving }) => {
     const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ const DepartamentsModal = ({ isOpen, onClose, mode, initialData, usuarios, onSav
     const [searchJefe, setSearchJefe] = useState('');
     const [showJefeDropdown, setShowJefeDropdown] = useState(false);
     const [alertMsg, setAlertMsg] = useState(null);
+    const [mapReady, setMapReady] = useState(false);
 
     // Map Refs
     const mapRef = useRef(null);
@@ -26,6 +28,7 @@ const DepartamentsModal = ({ isOpen, onClose, mode, initialData, usuarios, onSav
 
     useEffect(() => {
         if (isOpen) {
+            setMapReady(false); // Reset map ready state
             if (mode === 'edit' && initialData) {
                 setFormData({
                     nombre: initialData.nombre || '',
@@ -63,13 +66,14 @@ const DepartamentsModal = ({ isOpen, onClose, mode, initialData, usuarios, onSav
                 mapInstanceRef.current.remove();
                 mapInstanceRef.current = null;
                 drawnItemsRef.current = null;
+                setMapReady(false);
             }
         };
     }, [isOpen]);
 
     // Actualizar zonas en el mapa y HACER ZOOM si es necesario
     useEffect(() => {
-        if (mapInstanceRef.current && drawnItemsRef.current && window.L) {
+        if (mapReady && mapInstanceRef.current && drawnItemsRef.current && window.L) {
             // 1. Limpiar y redibujar
             drawnItemsRef.current.clearLayers();
 
@@ -90,15 +94,15 @@ const DepartamentsModal = ({ isOpen, onClose, mode, initialData, usuarios, onSav
                         // Pequeño delay para asegurar que el modal terminó su animación de renderizado
                         setTimeout(() => {
                             mapInstanceRef.current.invalidateSize(); // Crucial para modales
-                            mapInstanceRef.current.fitBounds(bounds, { padding: [20, 20] });
-                        }, 300);
+                            mapInstanceRef.current.fitBounds(bounds, { padding: [10, 10], maxZoom: 18 });
+                        }, 500);
                     }
                     // Desactivamos la bandera para que no haga zoom cada vez que dibujamos algo nuevo manualmente
                     shouldFitBoundsRef.current = false;
                 }
             }
         }
-    }, [zonas, formData.color]);
+    }, [zonas, formData.color, mapReady]);
 
     const initMap = async () => {
         if (typeof window === 'undefined') return;
@@ -145,6 +149,7 @@ const DepartamentsModal = ({ isOpen, onClose, mode, initialData, usuarios, onSav
         map.on('draw:deleted', () => updateZonasFromMap(drawnItems));
 
         mapInstanceRef.current = map;
+        setMapReady(true); // Signal that map is ready
 
         // Corrección visual para mapas dentro de modales
         setTimeout(() => {
@@ -330,7 +335,7 @@ const DepartamentsModal = ({ isOpen, onClose, mode, initialData, usuarios, onSav
                         disabled={saving}
                         className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2 disabled:opacity-50"
                     >
-                        {saving ? 'Guardando...' : <><FiSave /> Guardar</>}
+                        {saving ? <DynamicLoader text="Guardando..." size="tiny" layout="row" /> : <><FiSave /> Guardar</>}
                     </button>
                 </div>
             </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useConfig } from '../context/ConfigContext';
+import DynamicLoader from '../components/common/DynamicLoader';
 import { compressImage } from '../utils/imageUtils';
 import {
     FiSave, FiUpload, FiTrash2, FiImage, FiGlobe, FiClock,
@@ -41,7 +42,7 @@ const Configuracion = () => {
     const [tolerancia, setTolerancia] = useState(null);
     const [tolerancias, setTolerancias] = useState([]);
     const [roles, setRoles] = useState([]);
-    const [toleranciaSeleccionada, setToleranciaSeleccionada] = useState(null);
+    const [selectedRoleId, setSelectedRoleId] = useState(null); // null = General
 
     // Estados de UI
     const [loading, setLoading] = useState(true);
@@ -121,38 +122,38 @@ const Configuracion = () => {
         });
     };
 
-    const handleSeleccionarTolerancia = (tolId) => {
-        const tol = tolerancias.find(t => t.id === tolId);
-        if (tol) {
-            setTolerancia(tol);
-            setToleranciaSeleccionada(tolId);
-            cargarFormTolerancia(tol);
+    const handleSeleccionarRol = (rolId) => {
+        setSelectedRoleId(rolId);
+
+        // Buscar si ya existe tolerancia para este rol
+        // rolId null es "General" (buscamos tolerancia con rol_id === null)
+        const existingTol = tolerancias.find(t => t.rol_id === rolId);
+
+        if (existingTol) {
+            setTolerancia(existingTol);
+            cargarFormTolerancia(existingTol);
+        } else {
+            // Inicializar nueva configuración para este rol
+            const rolNombre = rolId ? roles.find(r => r.id === rolId)?.nombre : 'General';
+            setTolerancia(null); // No ID yet
+            setFormTolerancia({
+                nombre: rolNombre,
+                minutos_retardo: 10,
+                minutos_falta: 30,
+                permite_registro_anticipado: true,
+                minutos_anticipado_max: 60,
+                aplica_tolerancia_entrada: true,
+                aplica_tolerancia_salida: false,
+                dias_aplica: {
+                    lunes: true, martes: true, miercoles: true,
+                    jueves: true, viernes: true, sabado: false, domingo: false
+                },
+                rol_id: rolId
+            });
         }
     };
 
-    const handleNuevaTolerancia = async () => {
-        try {
-            const token = localStorage.getItem('auth_token');
-            const res = await fetch(`${API_URL}/api/tolerancias`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ nombre: 'Nueva Tolerancia' })
-            });
-            const data = await res.json();
-            if (data.success) {
-                setTolerancias(prev => [...prev, data.data]);
-                setTolerancia(data.data);
-                setToleranciaSeleccionada(data.data.id);
-                cargarFormTolerancia(data.data);
-            }
-        } catch (err) {
-            console.error('Error al crear tolerancia:', err);
-            setMensaje({ tipo: 'error', texto: 'Error al crear tolerancia' });
-        }
-    };
+
 
     const handleEliminarTolerancia = async (tolId) => {
         try {
@@ -165,8 +166,8 @@ const Configuracion = () => {
             if (data.success) {
                 const nuevas = tolerancias.filter(t => t.id !== tolId);
                 setTolerancias(nuevas);
-                if (nuevas.length > 0) {
-                    handleSeleccionarTolerancia(nuevas[0].id);
+                if (nuevas.length >= 0) {
+                    handleSeleccionarRol(null);
                 }
             } else {
                 setMensaje({ tipo: 'error', texto: data.message || 'No se pudo eliminar' });
@@ -267,11 +268,17 @@ const Configuracion = () => {
 
             if (dataTol.success && dataTol.data?.length > 0) {
                 setTolerancias(dataTol.data);
-                // Seleccionar la primera (general, sin rol) como activa por defecto
-                const general = dataTol.data.find(t => !t.rol_id) || dataTol.data[0];
-                setTolerancia(general);
-                setToleranciaSeleccionada(general.id);
-                cargarFormTolerancia(general);
+                // Cargar General por defecto
+                const general = dataTol.data.find(t => !t.rol_id);
+                if (general) {
+                    setTolerancia(general);
+                    cargarFormTolerancia(general);
+                } else {
+                    // Si no existe general, inicializar defaults
+                    handleSeleccionarRol(null);
+                }
+            } else {
+                handleSeleccionarRol(null);
             }
 
         } catch (err) {
@@ -447,19 +454,42 @@ const Configuracion = () => {
             }
 
             // Guardar Tolerancia actual
+            const tokenTol = localStorage.getItem('auth_token');
+
+            // Determinar si es crear o actualizar
             if (tolerancia?.id) {
+                // UPDATE
                 const resTol = await fetch(`${API_URL}/api/tolerancias/${tolerancia.id}`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tokenTol}` },
                     body: JSON.stringify(formTolerancia)
                 });
                 const dataTol = await resTol.json();
                 if (!dataTol.success) throw new Error('Error al actualizar tolerancia');
-                // Actualizar en la lista local
-                setTolerancias(prev => prev.map(t => t.id === tolerancia.id ? { ...t, ...formTolerancia } : t));
+
+                // Actualizar local
+                setTolerancias(prev => prev.map(t => t.id === tolerancia.id ? dataTol.data : t));
+                setTolerancia(dataTol.data);
+            } else {
+                // CREATE (si no existe ID para este rol)
+                // Asegurarse que el rol_id y nombre sean correctos
+                const payload = {
+                    ...formTolerancia,
+                    rol_id: selectedRoleId,
+                    nombre: selectedRoleId ? roles.find(r => r.id === selectedRoleId)?.nombre : 'Tolerancia General'
+                };
+
+                const resTol = await fetch(`${API_URL}/api/tolerancias`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tokenTol}` },
+                    body: JSON.stringify(payload)
+                });
+                const dataTol = await resTol.json();
+                if (!dataTol.success) throw new Error('Error al crear tolerancia');
+
+                // Agregar a local
+                setTolerancias(prev => [...prev, dataTol.data]);
+                setTolerancia(dataTol.data);
             }
 
             // NOTA: No se guarda 'listaRedes' porque solo es plantilla por ahora.
@@ -476,11 +506,7 @@ const Configuracion = () => {
     };
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-            </div>
-        );
+        return <DynamicLoader text="Cargando configuración..." />;
     }
 
     const currentSection = SECCIONES.find(s => s.id === activeTab);
@@ -541,7 +567,7 @@ const Configuracion = () => {
                             className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {saving ? (
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                <DynamicLoader size="tiny" layout="row" />
                             ) : (
                                 <FiSave className="w-4 h-4" />
                             )}
@@ -835,56 +861,90 @@ const Configuracion = () => {
                         {activeTab === 'tolerancia' && (
                             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
 
-                                {/* Selector de tolerancias */}
+                                {/* Selector de Roles */}
                                 <div>
-                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Tolerancias por Rol</h3>
+                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Roles Configurados:</h3>
                                     <div className="flex flex-wrap items-center gap-2 mb-4">
-                                        {tolerancias.map(tol => (
+                                        {/* Opción General (Siempre visible) */}
+                                        <button
+                                            onClick={() => handleSeleccionarRol(null)}
+                                            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${selectedRoleId === null
+                                                ? 'bg-blue-600 text-white border-blue-600'
+                                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            General (Todos)
+                                            {tolerancias.some(t => t.rol_id === null) && <span className="ml-2 text-xs opacity-70">●</span>}
+                                        </button>
+
+                                        {/* Lista de Roles con Configuración Activa */}
+                                        {roles.filter(r => tolerancias.some(t => t.rol_id === r.id)).map(rol => (
                                             <button
-                                                key={tol.id}
-                                                onClick={() => handleSeleccionarTolerancia(tol.id)}
-                                                className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${toleranciaSeleccionada === tol.id
-                                                    ? 'bg-blue-600 text-white border-blue-600'
+                                                key={rol.id}
+                                                onClick={() => handleSeleccionarRol(rol.id)}
+                                                className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${selectedRoleId === rol.id
+                                                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                                                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                                                     }`}
                                             >
-                                                {tol.nombre}
-                                                {tol.rol_nombre && <span className="ml-1 opacity-70">({tol.rol_nombre})</span>}
+                                                {rol.nombre}
                                             </button>
                                         ))}
-                                        <button
-                                            onClick={handleNuevaTolerancia}
-                                            className="px-4 py-2 rounded-lg text-sm font-medium border border-dashed border-gray-400 text-gray-500 hover:bg-gray-50 transition-colors"
-                                        >
-                                            + Nueva
-                                        </button>
+
+                                        {/* Botón temporal si estamos editando uno nuevo (no guardado aún) */}
+                                        {selectedRoleId && !tolerancias.some(t => t.rol_id === selectedRoleId) && (
+                                            <button
+                                                className="px-4 py-2 rounded-lg text-sm font-medium border bg-blue-600 text-white border-blue-600 shadow-sm animate-pulse"
+                                            >
+                                                {roles.find(r => r.id === selectedRoleId)?.nombre} (Nuevo)
+                                            </button>
+                                        )}
                                     </div>
 
-                                    {/* Asignar rol */}
-                                    <div className="flex items-center gap-4 mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Asignar a rol:</label>
-                                        <select
-                                            value={formTolerancia.rol_id || ''}
-                                            onChange={(e) => setFormTolerancia(prev => ({ ...prev, rol_id: e.target.value || null }))}
-                                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                                        >
-                                            <option value="">General (todos los roles)</option>
-                                            {roles.map(rol => (
-                                                <option key={rol.id} value={rol.id}>
-                                                    {rol.nombre}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        {tolerancias.length > 1 && tolerancia?.rol_id && (
+                                    {/* Dropdown para agregar nuevo rol */}
+                                    <div className="mb-6">
+                                        <div className="flex items-center gap-2 max-w-md">
+                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Agregar regla para:</label>
+                                            <select
+                                                value=""
+                                                onChange={(e) => {
+                                                    if (e.target.value) handleSeleccionarRol(e.target.value);
+                                                }}
+                                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                                            >
+                                                <option value="">-- Seleccionar Rol --</option>
+                                                {roles.filter(r => !tolerancias.some(t => t.rol_id === r.id)).map(rol => (
+                                                    <option key={rol.id} value={rol.id}>
+                                                        {rol.nombre}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-between items-center mb-6 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                        <div className="flex items-center gap-2">
+                                            <FiAlertCircle className="text-blue-500" />
+                                            <span className="text-sm text-gray-700">
+                                                {selectedRoleId === null
+                                                    ? "Editando configuración general / por defecto."
+                                                    : `Configurando reglas específicas para: ${roles.find(r => r.id === selectedRoleId)?.nombre}`
+                                                }
+                                            </span>
+                                        </div>
+                                        {/* Botón de eliminar solo si existe configuración específica (y no es la vista de creación) */}
+                                        {tolerancia?.id && selectedRoleId !== null && (
                                             <button
                                                 onClick={() => handleEliminarTolerancia(tolerancia.id)}
-                                                className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg border border-red-200 text-sm"
+                                                className="text-red-600 hover:text-red-800 text-sm font-medium underline flex items-center gap-1"
                                             >
-                                                <FiTrash2 className="inline mr-1" />Eliminar
+                                                <FiTrash2 className="w-4 h-4" /> Eliminar Regla
                                             </button>
                                         )}
                                     </div>
                                 </div>
+
+
 
                                 <div>
                                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Reglas de Tiempo</h3>

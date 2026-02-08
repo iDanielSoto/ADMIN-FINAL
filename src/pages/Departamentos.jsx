@@ -4,6 +4,7 @@ import ConfirmBox from '../components/ConfirmBox';
 import DepartamentsCard from '../components/cards/DepartamentsCard';
 import DepartamentsModal from '../components/modals/DepartamentsModal';
 import MapaDepartamentos from '../components/DepartamentsMap';
+import DynamicLoader from '../components/common/DynamicLoader';
 
 import { API_CONFIG } from '../config/Apiconfig';
 const API_URL = API_CONFIG.BASE_URL;
@@ -113,7 +114,7 @@ const Departamentos = () => {
 
     const handleDelete = (depto) => {
         setConfirmAction({
-            message: `¿Desactivar el departamento "${depto.nombre}"?`,
+            message: `¿Desactivar el departamento "${depto.nombre}" ? `,
             onConfirm: async () => {
                 setConfirmAction(null);
                 try {
@@ -133,7 +134,7 @@ const Departamentos = () => {
 
     const handleReactivar = (depto) => {
         setConfirmAction({
-            message: `¿Reactivar el departamento "${depto.nombre}"?`,
+            message: `¿Reactivar el departamento "${depto.nombre}" ? `,
             onConfirm: async () => {
                 setConfirmAction(null);
                 try {
@@ -206,7 +207,7 @@ const Departamentos = () => {
                 {/* Listado de Tarjetas Scrollable */}
                 <div className="overflow-y-auto pr-2 pb-4">
                     {loading ? (
-                        <div className="flex justify-center p-10"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>
+                        <DynamicLoader text="Cargando departamentos..." />
                     ) : filteredDepartamentos.length === 0 ? (
                         <div className="text-center p-10 text-gray-500 dark:text-gray-400">No se encontraron departamentos</div>
                     ) : (

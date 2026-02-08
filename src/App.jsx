@@ -4,6 +4,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { NetworkProvider } from './context/NetworkContext';
 import { ConfigProvider } from './context/ConfigContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { NotificationProvider } from './context/NotificationContext';
+import { CompanyProvider } from './context/CompanyContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './components/layouts/MainLayout';
 import { protectedRoutes, specialRoutes } from './config/routes';
@@ -11,16 +13,8 @@ import { protectedRoutes, specialRoutes } from './config/routes';
 // Páginas que no usan lazy loading (críticas para UX)
 import Login from './pages/InicioSesion';
 import Error404 from './pages/Error404';
+import DynamicLoader from './components/common/DynamicLoader';
 
-// Componente de loading para Suspense
-const LoadingScreen = () => (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando...</p>
-        </div>
-    </div>
-);
 
 function App() {
     return (
@@ -29,7 +23,11 @@ function App() {
                 <NetworkProvider>
                     <ConfigProvider>
                         <ThemeProvider>
-                            <AppRoutes />
+                            <CompanyProvider>
+                                <NotificationProvider>
+                                    <AppRoutes />
+                                </NotificationProvider>
+                            </CompanyProvider>
                         </ThemeProvider>
                     </ConfigProvider>
                 </NetworkProvider>
@@ -44,11 +42,11 @@ function AppRoutes() {
 
     // Mostrar loading mientras se verifica la autenticación
     if (loading) {
-        return <LoadingScreen />;
+        return <DynamicLoader text="Verificando sesión..." />;
     }
 
     return (
-        <Suspense fallback={<LoadingScreen />}>
+        <Suspense fallback={<DynamicLoader />}>
             <Routes>
                 {/* Ruta de Login */}
                 <Route

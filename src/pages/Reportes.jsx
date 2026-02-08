@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useConfig } from '../context/ConfigContext';
+import DynamicLoader from '../components/common/DynamicLoader';
 import ConfirmBox from '../components/ConfirmBox';
 import {
     BarChart3, Settings, Filter, PieChart as PieIcon, X,
@@ -306,7 +308,7 @@ const Reportes = () => {
                                 className="w-full xl:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                             >
                                 {dashboardLoading ? (
-                                    <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                                    <DynamicLoader size="tiny" layout="row" />
                                 ) : (
                                     <RefreshCw className="w-5 h-5" />
                                 )}
@@ -317,9 +319,14 @@ const Reportes = () => {
                 </div>
 
                 {/* --- CONTENIDO DEL DASHBOARD --- */}
+                {exporting && (
+                    <div className="mb-6">
+                        <DynamicLoader text="Generando reporte..." />
+                    </div>
+                )}
                 {dashboardLoading ? (
                     <div className="h-96 flex flex-col items-center justify-center text-gray-400">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mb-4"></div>
+                        <DynamicLoader size="medium" />
                         <p>Analizando datos...</p>
                     </div>
                 ) : dashboardStats ? (
@@ -547,7 +554,7 @@ const Reportes = () => {
 
                             {exporting ? (
                                 <div className="py-6 text-center bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-2"></div>
+                                    <DynamicLoader size="small" />
                                     <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Generando documento...</p>
                                 </div>
                             ) : (

@@ -4,6 +4,7 @@ import ConfirmBox from '../components/ConfirmBox';
 import Pagination from '../components/Pagination';
 import ScheduleCard from '../components/cards/ScheduleCard';
 import ScheduleModal from '../components/modals/ScheduleModal';
+import DynamicLoader from '../components/common/DynamicLoader';
 import HolidaysCalendar from '../components/schedules/HolidaysCalendar';
 
 import { API_CONFIG } from '../config/Apiconfig';
@@ -252,9 +253,7 @@ const Horarios = () => {
             {vista === 'festivos' ? (
                 <HolidaysCalendar />
             ) : loading ? (
-                <div className="flex justify-center py-12">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-                </div>
+                <DynamicLoader text="Cargando horarios..." />
             ) : filteredHorarios.length === 0 ? (
                 <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
                     <FiClock className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
@@ -282,7 +281,8 @@ const Horarios = () => {
                         onChange={setPagina}
                     />
                 </>
-            )}
+            )
+            }
 
             {alertMsg && <ConfirmBox message={alertMsg} onConfirm={() => setAlertMsg(null)} />}
             {confirmAction && <ConfirmBox message={confirmAction.message} onConfirm={confirmAction.onConfirm} onCancel={() => setConfirmAction(null)} />}
@@ -296,7 +296,7 @@ const Horarios = () => {
                 onSave={handleSave}
                 saving={saving}
             />
-        </div>
+        </div >
     );
 };
 

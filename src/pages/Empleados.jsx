@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import {
     FiPlus, FiSearch, FiUser
 } from 'react-icons/fi';
+import { useConfig } from '../context/ConfigContext';
+import DynamicLoader from '../components/common/DynamicLoader';
 import ConfirmBox from '../components/ConfirmBox';
 import Pagination from '../components/Pagination';
 import { useNavigate } from 'react-router-dom';
@@ -186,9 +188,7 @@ const Empleados = () => {
             {/* LISTA DE USUARIOS */}
             <div className="flex-1">
                 {loading ? (
-                    <div className="flex justify-center py-12">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
-                    </div>
+                    <DynamicLoader text="Cargando empleados..." />
                 ) : usuarios.length === 0 ? (
                     <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                         <FiUser className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />

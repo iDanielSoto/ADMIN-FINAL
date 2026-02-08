@@ -24,6 +24,8 @@ import {
     FiBarChart2,
     FiRefreshCw
 } from 'react-icons/fi';
+import { useConfig } from '../context/ConfigContext';
+import DynamicLoader from '../components/common/DynamicLoader';
 import ConfirmBox from '../components/ConfirmBox';
 
 import { API_CONFIG } from '../config/Apiconfig';
@@ -489,7 +491,7 @@ const Roles = () => {
                             <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2"><FiUsers className="w-5 h-5 text-gray-400" /> Usuarios Asignados ({roleUsuarios.length})</h2>
                             <button onClick={openAssignModal} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 shadow-sm transition-colors text-sm font-medium"><FiUserPlus className="w-4 h-4" /> Asignar Usuarios</button>
                         </div>
-                        {loadingUsuarios ? <div className="flex justify-center py-12 flex-1"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div></div> : roleUsuarios.length === 0 ? (
+                        {loadingUsuarios ? <div className="flex justify-center py-12 flex-1"><DynamicLoader size="small" /></div> : roleUsuarios.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 flex-1"><div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4"><FiUsers className="w-8 h-8 text-gray-300 dark:text-gray-600" /></div><p className="font-medium">No hay usuarios con este rol</p></div>
                         ) : (
                             <div className="space-y-3 overflow-y-auto max-h-[700px] pr-2">
@@ -679,9 +681,7 @@ const Roles = () => {
 
             {/* List */}
             {loading ? (
-                <div className="flex justify-center py-12">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
-                </div>
+                <DynamicLoader text="Cargando roles..." />
             ) : (
                 <div className="space-y-3">
                     {(isReordering ? reorderedRoles : filteredRoles).map((rol, index) => {

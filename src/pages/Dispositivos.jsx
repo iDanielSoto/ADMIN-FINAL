@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
 import ConfirmBox from '../components/ConfirmBox';
 import { useSolicitudesSSE } from '../hooks/useSolicitudesSSE';
 import {
@@ -28,6 +29,7 @@ import {
 } from 'lucide-react';
 
 import EscritorioProfile from '../components/EscritorioProfile';
+import DynamicLoader from '../components/common/DynamicLoader';
 
 import { API_CONFIG } from '../config/Apiconfig';
 const API_URL = API_CONFIG.BASE_URL;
@@ -52,8 +54,9 @@ const Dispositivos = () => {
     const [filtroEstado, setFiltroEstado] = useState('activo');
     const [tabActiva, setTabActiva] = useState('escritorio');
 
-    // Estado para controlar el desplegable del historial
+    // Estado para controlar el desplegable del historial y solicitudes
     const [historialOpen, setHistorialOpen] = useState(false);
+    const [pendientesOpen, setPendientesOpen] = useState(false); // Por defecto cerrado para priorizar los activos
 
     // Modal de aceptar/rechazar
     const [modalOpen, setModalOpen] = useState(false);
@@ -129,6 +132,32 @@ const Dispositivos = () => {
         onNuevaSolicitud: () => fetchData(true),
         onSolicitudActualizada: () => fetchData(true)
     });
+
+    // --- Lógica de Enrutado (Deep Linking) ---
+    const [searchParams, setSearchParams] = useSearchParams();
+    const solicitudIdParam = searchParams.get('solicitudId');
+    const tipoParam = searchParams.get('tipo');
+
+    useEffect(() => {
+        if (solicitudIdParam && tipoParam) {
+            // Cambiar de tab si es necesario
+            if (tipoParam !== tabActiva) {
+                setTabActiva(tipoParam);
+                return; // Esperar a que cambie el tab y se recarguen los datos
+            }
+
+            // Buscar la solicitud en la lista cargada
+            if (!loading && solicitudes.length > 0) {
+                const solicitud = solicitudes.find(s => s.id.toString() === solicitudIdParam);
+                if (solicitud) {
+                    // Abrir modal de detalles automáticamente
+                    openDetallesModal(solicitud, true);
+                    // Limpiar URL para no reabrir al recargar
+                    setSearchParams({});
+                }
+            }
+        }
+    }, [solicitudIdParam, tipoParam, tabActiva, loading, solicitudes, setSearchParams]);
 
     // --- Lógica Modales ---
     const openAceptarModal = (solicitud) => {
@@ -383,114 +412,11 @@ const Dispositivos = () => {
             </div>
 
             {loading ? (
-                <div className="flex justify-center py-12">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-                </div>
+                <DynamicLoader text="Cargando dispositivos..." />
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-8">
 
-                    {/* === COLUMNA 1: SOLICITUDES === */}
-                    <div className="space-y-6">
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-700">
-                                <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                                    <Clock className="w-5 h-5 text-orange-500" />
-                                    Solicitudes Pendientes
-                                </h2>
-                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${pendientesList.length > 0 ? 'bg-orange-100 text-orange-700 animate-pulse' : 'bg-gray-100 text-gray-500'}`}>
-                                    {pendientesList.length}
-                                </span>
-                            </div>
-
-                            {pendientesList.length === 0 ? (
-                                <div className="text-center py-6 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                                    <p className="text-sm text-gray-500">No hay solicitudes pendientes</p>
-                                </div>
-                            ) : (
-                                pendientesList.map((solicitud) => {
-                                    const IconoTipo = solicitud.tipo === 'movil' ? Smartphone : Monitor;
-                                    return (
-                                        <div key={solicitud.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-orange-200 dark:border-orange-900/50 p-4 hover:shadow-md transition-shadow relative">
-                                            <div className="absolute top-4 right-4 w-2 h-2 bg-orange-500 rounded-full"></div>
-                                            <div className="flex items-start justify-between mb-3 pr-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 rounded-lg bg-orange-50 dark:bg-orange-900/20">
-                                                        <IconoTipo className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{solicitud.nombre}</h3>
-                                                        <p className="text-xs text-gray-500 dark:text-gray-400">{solicitud.correo}</p>
-                                                    </div>
-                                                </div>
-                                                {/* Badge de Biométricos en Solicitud */}
-                                                {(solicitud.biometricos_count > 0) && (
-                                                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-50 text-purple-600 border border-purple-100 absolute top-4 right-8" title="Incluye biométricos">
-                                                        <Fingerprint className="w-3 h-3" />
-                                                        <span className="text-[10px] font-bold">{solicitud.biometricos_count}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex gap-2 mt-3">
-                                                <button onClick={() => openDetallesModal(solicitud, true)} className="flex-1 py-1.5 text-xs bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600">
-                                                    Revisar Ficha
-                                                </button>
-                                                <button onClick={() => openAceptarModal(solicitud)} className="p-1.5 text-green-600 hover:bg-green-50 rounded border border-transparent hover:border-green-200 transition-colors">
-                                                    <Check className="w-4 h-4" />
-                                                </button>
-                                                <button onClick={() => openRechazarModal(solicitud)} className="p-1.5 text-red-600 hover:bg-red-50 rounded border border-transparent hover:border-red-200 transition-colors">
-                                                    <X className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    );
-                                })
-                            )}
-                        </div>
-
-                        {/* Historial Desplegable */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                            <button
-                                onClick={() => setHistorialOpen(!historialOpen)}
-                                className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                            >
-                                <div className="flex items-center gap-2">
-                                    <FileText className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                                    <h2 className="text-sm font-bold text-gray-700 dark:text-gray-200">Historial de Solicitudes</h2>
-                                    <span className="bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full text-xs">
-                                        {historialList.length}
-                                    </span>
-                                </div>
-                                {historialOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
-                            </button>
-
-                            {historialOpen && (
-                                <div className="p-4 bg-gray-50/50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 max-h-[400px] overflow-y-auto space-y-3">
-                                    {historialList.length === 0 ? (
-                                        <p className="text-center text-xs text-gray-500 py-4">No hay historial disponible.</p>
-                                    ) : (
-                                        historialList.map(solicitud => (
-                                            <div key={solicitud.id} className="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700 flex items-center justify-between opacity-80 hover:opacity-100 transition-opacity">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`p-1.5 rounded ${solicitud.estado === 'aceptado' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                                                        {solicitud.estado === 'aceptado' ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">{solicitud.nombre}</p>
-                                                        <p className="text-[10px] text-gray-500 dark:text-gray-400">{new Date(solicitud.fecha_registro).toLocaleDateString()}</p>
-                                                    </div>
-                                                </div>
-                                                <button onClick={() => openDetallesModal(solicitud, true)} className="text-xs text-blue-600 hover:underline">
-                                                    Ver ficha
-                                                </button>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* === COLUMNA 2: ACTIVOS === */}
+                    {/* === SECCIÓN PRINCIPAL: LISTADO DE DISPOSITIVOS === */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-700">
                             <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
@@ -503,11 +429,11 @@ const Dispositivos = () => {
                         </div>
 
                         {activosList.length === 0 ? (
-                            <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                            <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
                                 <p className="text-gray-500">No hay dispositivos activos</p>
                             </div>
                         ) : (
-                            <div className="grid gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                 {activosList.map((dispositivo) => {
                                     if (tabActiva === 'movil') {
                                         return (
@@ -533,10 +459,10 @@ const Dispositivos = () => {
                                                     <div className="bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded"><span className="font-medium text-gray-500 dark:text-gray-300">Reg:</span> {new Date(dispositivo.fecha_registro).toLocaleDateString()}</div>
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <button onClick={() => openDetallesModal(dispositivo, false)} className="flex-1 py-1.5 text-xs bg-white dark:bg-gray-800 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 rounded hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors">Ver Ficha Técnica</button>
+                                                    <button onClick={() => openDetallesModal(dispositivo, false)} className="flex-1 py-1.5 text-xs bg-white dark:bg-gray-800 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 rounded hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors">Ver Ficha</button>
                                                     {dispositivo.es_activo === false ? (
                                                         <button onClick={() => handleReactivarDispositivo(dispositivo)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded transition-colors">
-                                                            <RefreshCw className="w-3.5 h-3.5" /> Reactivar
+                                                            <RefreshCw className="w-3.5 h-3.5" />
                                                         </button>
                                                     ) : (
                                                         <button onClick={() => handleDesactivarDispositivo(dispositivo)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 rounded transition-colors" title="Desactivar">
@@ -557,7 +483,7 @@ const Dispositivos = () => {
                                                         </div>
                                                         <div>
                                                             <h3 className={`font-semibold text-sm ${dispositivo.es_activo === false ? 'text-gray-400 line-through' : 'text-gray-900 dark:text-white'}`}>{dispositivo.nombre}</h3>
-                                                            <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">{dispositivo.ip}</p>
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400 font-mono break-all">{dispositivo.ip}</p>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-1">
@@ -571,22 +497,22 @@ const Dispositivos = () => {
                                                     </div>
                                                 </div>
                                                 <div className="space-y-2 mb-3">
-                                                    <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded">
+                                                    <div className="flex flex-col text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded">
                                                         <span className="font-medium text-gray-500 dark:text-gray-300">MAC:</span>
-                                                        <span className="font-mono text-[10px]">{dispositivo.mac}</span>
+                                                        <span className="font-mono text-[10px] break-all">{dispositivo.mac}</span>
                                                     </div>
-                                                    <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded">
+                                                    <div className="flex flex-col text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded">
                                                         <span className="font-medium text-gray-500 dark:text-gray-300">OS:</span>
                                                         <span>{dispositivo.sistema_operativo}</span>
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">
                                                     <button onClick={() => openDetallesModal(dispositivo, false)} className="flex-1 py-1.5 text-xs bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
-                                                        Ver Ficha Técnica
+                                                        Ver Ficha
                                                     </button>
                                                     {dispositivo.es_activo === false ? (
                                                         <button onClick={() => handleReactivarDispositivo(dispositivo)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded transition-colors">
-                                                            <RefreshCw className="w-3.5 h-3.5" /> Reactivar
+                                                            <RefreshCw className="w-3.5 h-3.5" />
                                                         </button>
                                                     ) : (
                                                         <button onClick={() => handleDesactivarDispositivo(dispositivo)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 rounded transition-colors" title="Desactivar">
@@ -600,6 +526,123 @@ const Dispositivos = () => {
                                 })}
                             </div>
                         )}
+                    </div>
+
+                    {/* === SECCIÓN SUPERIOR: GESTIÓN DE SOLICITUDES === */}
+                    <div className="space-y-4">
+
+                        {/* 1. Solicitudes Pendientes (Colapsible) */}
+                        <div className="bg-white dark:bg-gray-800 rounded-lg border border-orange-200 dark:border-orange-900/50 overflow-hidden">
+                            <button
+                                onClick={() => setPendientesOpen(!pendientesOpen)}
+                                className="w-full flex items-center justify-between p-4 bg-orange-50 dark:bg-orange-900/10 hover:bg-orange-100 dark:hover:bg-orange-900/20 transition-colors"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Clock className="w-5 h-5 text-orange-500" />
+                                    <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200">Solicitudes Pendientes</h2>
+                                    {pendientesList.length > 0 && (
+                                        <span className="bg-orange-500 text-white px-2 py-0.5 rounded-full text-xs animate-pulse">
+                                            {pendientesList.length}
+                                        </span>
+                                    )}
+                                </div>
+                                {pendientesOpen ? <ChevronUp className="w-5 h-5 text-orange-400" /> : <ChevronDown className="w-5 h-5 text-orange-400" />}
+                            </button>
+
+                            {pendientesOpen && (
+                                <div className="p-4 bg-gray-50/50 dark:bg-gray-900/50 border-t border-orange-100 dark:border-orange-900/30">
+                                    {pendientesList.length === 0 ? (
+                                        <div className="text-center py-4">
+                                            <p className="text-sm text-gray-500">No hay solicitudes pendientes</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {pendientesList.map((solicitud) => {
+                                                const IconoTipo = solicitud.tipo === 'movil' ? Smartphone : Monitor;
+                                                return (
+                                                    <div key={solicitud.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-orange-200 dark:border-orange-900/50 p-4 hover:shadow-md transition-shadow relative">
+                                                        <div className="absolute top-4 right-4 w-2 h-2 bg-orange-500 rounded-full"></div>
+                                                        <div className="flex items-start justify-between mb-3 pr-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="p-2 rounded-lg bg-orange-50 dark:bg-orange-900/20">
+                                                                    <IconoTipo className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                                                                </div>
+                                                                <div>
+                                                                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{solicitud.nombre}</h3>
+                                                                    <p className="text-xs text-gray-500 dark:text-gray-400">{solicitud.correo}</p>
+                                                                </div>
+                                                            </div>
+                                                            {/* Badge de Biométricos en Solicitud */}
+                                                            {(solicitud.biometricos_count > 0) && (
+                                                                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-50 text-purple-600 border border-purple-100 absolute top-4 right-8" title="Incluye biométricos">
+                                                                    <Fingerprint className="w-3 h-3" />
+                                                                    <span className="text-[10px] font-bold">{solicitud.biometricos_count}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex gap-2 mt-3">
+                                                            <button onClick={() => openDetallesModal(solicitud, true)} className="flex-1 py-1.5 text-xs bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600">
+                                                                Revisar
+                                                            </button>
+                                                            <button onClick={() => openAceptarModal(solicitud)} className="p-1.5 text-green-600 hover:bg-green-50 rounded border border-transparent hover:border-green-200 transition-colors">
+                                                                <Check className="w-4 h-4" />
+                                                            </button>
+                                                            <button onClick={() => openRechazarModal(solicitud)} className="p-1.5 text-red-600 hover:bg-red-50 rounded border border-transparent hover:border-red-200 transition-colors">
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 2. Historial de Solicitudes (Colapsible) */}
+                        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                            <button
+                                onClick={() => setHistorialOpen(!historialOpen)}
+                                className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <FileText className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                                    <h2 className="text-sm font-bold text-gray-700 dark:text-gray-200">Historial de Solicitudes</h2>
+                                    <span className="bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                                        {historialList.length}
+                                    </span>
+                                </div>
+                                {historialOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                            </button>
+
+                            {historialOpen && (
+                                <div className="p-4 bg-gray-50/50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 max-h-[400px] overflow-y-auto">
+                                    {historialList.length === 0 ? (
+                                        <p className="text-center text-xs text-gray-500 py-4">No hay historial disponible.</p>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                            {historialList.map(solicitud => (
+                                                <div key={solicitud.id} className="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700 flex items-center justify-between opacity-80 hover:opacity-100 transition-opacity">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`p-1.5 rounded ${solicitud.estado === 'aceptado' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                                            {solicitud.estado === 'aceptado' ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">{solicitud.nombre}</p>
+                                                            <p className="text-[10px] text-gray-500 dark:text-gray-400">{new Date(solicitud.fecha_registro).toLocaleDateString()}</p>
+                                                        </div>
+                                                    </div>
+                                                    <button onClick={() => openDetallesModal(solicitud, true)} className="text-xs text-blue-600 hover:underline">
+                                                        Ver ficha
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
@@ -649,19 +692,19 @@ const Dispositivos = () => {
                                         <div className="space-y-4">
                                             <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">Conectividad</h4>
                                             <div className="space-y-3">
-                                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                                    <div className="flex items-center gap-3">
+                                                <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                                    <div className="flex items-center gap-3 mb-1">
                                                         <div className="p-2 bg-white rounded-md shadow-sm text-gray-500"><Wifi className="w-4 h-4" /></div>
                                                         <span className="text-sm font-medium text-gray-700">Dirección IP</span>
                                                     </div>
-                                                    <span className="text-sm font-mono text-gray-900">{dispositivoDetalles.ip || 'N/A'}</span>
+                                                    <span className="block text-sm font-mono text-gray-900 break-all whitespace-pre-wrap pl-11">{dispositivoDetalles.ip || 'N/A'}</span>
                                                 </div>
-                                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                                    <div className="flex items-center gap-3">
+                                                <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                                    <div className="flex items-center gap-3 mb-1">
                                                         <div className="p-2 bg-white rounded-md shadow-sm text-gray-500"><Cpu className="w-4 h-4" /></div>
                                                         <span className="text-sm font-medium text-gray-700">Dirección MAC</span>
                                                     </div>
-                                                    <span className="text-sm font-mono text-gray-900">{dispositivoDetalles.mac || 'N/A'}</span>
+                                                    <span className="block text-sm font-mono text-gray-900 break-all whitespace-pre-wrap pl-11">{dispositivoDetalles.mac || 'N/A'}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -775,7 +818,7 @@ const Dispositivos = () => {
                                 disabled={procesando}
                                 className={`px-6 py-2 text-white rounded-lg transition-colors flex items-center gap-2 ${modalAction === 'aceptar' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'} disabled:opacity-50 disabled:cursor-not-allowed`}
                             >
-                                {procesando ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : (modalAction === 'aceptar' ? 'Aceptar' : 'Rechazar')}
+                                {procesando ? <DynamicLoader size="tiny" layout="row" /> : (modalAction === 'aceptar' ? 'Aceptar' : 'Rechazar')}
                             </button>
                         </div>
                     </div>
