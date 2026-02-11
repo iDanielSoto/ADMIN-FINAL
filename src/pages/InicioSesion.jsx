@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useConfig } from '../context/ConfigContext';
+import { useAuth } from '../context/AuthContext';
 import DynamicLoader from '../components/common/DynamicLoader';
 import {
     FiUser,

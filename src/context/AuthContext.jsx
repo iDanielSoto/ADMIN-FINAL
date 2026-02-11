@@ -55,14 +55,54 @@ export const AuthProvider = ({ children }) => {
     /**
      * Verificar si hay una sesión activa
      */
+    /**
+     * Verificar si hay una sesión activa y validarla con el servidor
+     */
     const checkAuth = async () => {
         try {
             const token = localStorage.getItem('auth_token');
             const userData = localStorage.getItem('user_data');
 
-            if (token && userData) {
-                // Restaurar datos del usuario desde localStorage
-                setUser(JSON.parse(userData));
+            if (token) {
+                // Verificar con el servidor si el token es válido y obtener datos frescos
+                try {
+                    const response = await fetch(`${API_URL}/api/auth/verificar`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success) {
+                            // Actualizar con datos frescos del servidor
+                            setUser(data.data);
+                            localStorage.setItem('user_data', JSON.stringify(data.data));
+                        } else {
+                            throw new Error('Token inválido');
+                        }
+                    } else {
+                        // Si falla la verificación (401, 403), cerrar sesión
+                        if (response.status === 401 || response.status === 403) {
+                            throw new Error('Sesión expirada');
+                        }
+                        // Si es otro error (500, red), usar datos locales si existen
+                        if (userData) {
+                            console.warn('Usando datos en caché debido a error de red');
+                            setUser(JSON.parse(userData));
+                        }
+                    }
+                } catch (networkError) {
+                    console.error('Error de red al verificar auth:', networkError);
+                    // Fallback a localStorage si hay error de red
+                    if (userData) {
+                        setUser(JSON.parse(userData));
+                    } else {
+                        logout();
+                    }
+                }
             }
         } catch (error) {
             console.error('Error al verificar autenticación:', error);
