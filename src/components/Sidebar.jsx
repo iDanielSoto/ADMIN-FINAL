@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Book, Users, Calendar, Settings, BarChart3, AlertCircle, Menu, X, ChevronLeft, Building2, Shield, Cpu, WifiOff } from 'lucide-react'
+import { Home, Book, Users, Calendar, Settings, BarChart3, AlertCircle, Menu, X, ChevronLeft, Building2, Shield, Cpu, WifiOff, MessageSquare } from 'lucide-react'
 import { useRealTime } from '../hooks/useRealTime';
 import { useNetwork } from '../context/NetworkContext';
 import { useNotifications } from '../context/NotificationContext';
@@ -12,6 +12,7 @@ const API_URL = API_CONFIG.BASE_URL;
 // Menú principal (Sin configuración)
 const menuItems = [
     { id: 'dashboard', nombre: 'Dashboard', icono: Home, ruta: '/dashboard' },
+    { id: 'avisos', nombre: 'Avisos', icono: MessageSquare, ruta: '/avisos' },
     { id: 'empleados', nombre: 'Empleados', icono: Users, ruta: '/empleados' },
     { id: 'roles', nombre: 'Roles', icono: Shield, ruta: '/roles' },
     { id: 'horarios', nombre: 'Horarios', icono: Calendar, ruta: '/horarios' },

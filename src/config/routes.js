@@ -12,10 +12,12 @@ const Reportes = lazy(() => import('../pages/Reportes'));
 const Registros = lazy(() => import('../pages/Registros'));
 const Configuracion = lazy(() => import('../pages/Configuracion'));
 const PerfilUsuario = lazy(() => import('../pages/PerfilUsuario'));
+const Avisos = lazy(() => import('../pages/Avisos'));
 
 export const protectedRoutes = [
     { path: '/', component: Dashboard },
     { path: '/dashboard', component: Dashboard },
+    { path: '/avisos', component: Avisos },
     { path: '/empleados', component: Empleados },
     { path: '/horarios', component: Horarios },
     { path: '/departamentos', component: Departamentos },
