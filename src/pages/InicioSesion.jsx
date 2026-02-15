@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useConfig } from '../context/ConfigContext';
 import { useAuth } from '../context/AuthContext';
 import DynamicLoader from '../components/common/DynamicLoader';
 import {
@@ -8,11 +7,12 @@ import {
     FiEye,
     FiEyeOff,
     FiAlertCircle,
-    FiClock
+    FiArrowRight
 } from 'react-icons/fi';
 
+
 /**
- * Componente de Login para el sistema Checador
+ * Componente de Login rediseñado estilo App Móvil
  */
 const Login = () => {
     const { login, loading, error: authError } = useAuth();
@@ -72,161 +72,121 @@ const Login = () => {
         }
     };
 
-    // Toggle mostrar/ocultar contraseña
-    const toggleShowPassword = () => {
-        setShowPassword(!showPassword);
-    };
-
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-            {/* Contenedor principal */}
-            <div className="w-full max-w-md">
-                {/* Card de Login */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
-                    {/* Header con logo */}
-                    <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-8 py-10 text-center">
-                        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                            <FiClock className="w-10 h-10 text-primary-600" />
+        <div className="min-h-screen bg-[#1a73e8] flex flex-col items-center justify-center p-4 font-sans">
+
+            {/* Sección de Logo y Marca */}
+            <div className="flex flex-col items-center mb-8">
+                <h1 className="text-3xl font-bold text-white tracking-wide">FASITLAC™</h1>
+                <p className="text-blue-100 text-sm mt-1">Fábrica de Software del ITLAC</p>
+            </div>
+
+            {/* Card del Formulario */}
+            <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
+                <div className="p-8">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-6">
+                        Iniciar Sesión
+                    </h2>
+
+                    {/* Mensaje de error */}
+                    {(error || authError) && (
+                        <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-start gap-3">
+                            <FiAlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                            <p className="text-sm text-red-600 font-medium">
+                                {error || authError}
+                            </p>
                         </div>
-                        <h1 className="text-3xl font-bold text-white mb-2">
-                            Checador
-                        </h1>
-                        <p className="text-blue-100 text-sm">
-                            Sistema de Control de Asistencias
-                        </p>
-                    </div>
+                    )}
 
-                    {/* Formulario */}
-                    <div className="px-8 py-8">
-                        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center">
-                            Iniciar Sesión
-                        </h2>
-
-                        {/* Mensaje de error */}
-                        {(error || authError) && (
-                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-                                <FiAlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                                <div className="flex-1">
-                                    <p className="text-sm text-red-800 font-medium">
-                                        {error || authError}
-                                    </p>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Usuario */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-600 ml-1">
+                                Usuario o Correo
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <FiUser className="w-5 h-5 text-[#1a73e8]" />
                                 </div>
+                                <input
+                                    type="text"
+                                    name="usuario"
+                                    value={formData.usuario}
+                                    onChange={handleChange}
+                                    className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-all outline-none font-medium"
+                                    placeholder="edgaryahir@gmail.com"
+                                    autoComplete="username"
+                                />
                             </div>
-                        )}
+                        </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-5">
-                            {/* Campo Usuario */}
-                            <div>
-                                <label htmlFor="usuario" className="label">
-                                    Usuario o Correo
-                                </label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <FiUser className="w-5 h-5 text-gray-400" />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        id="usuario"
-                                        name="usuario"
-                                        value={formData.usuario}
-                                        onChange={handleChange}
-                                        className="input pl-10"
-                                        placeholder="tu.usuario o correo@ejemplo.com"
-                                        autoComplete="username"
-                                        autoFocus
-                                        disabled={isSubmitting}
-                                    />
+                        {/* Contraseña */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-600 ml-1">
+                                Contraseña
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <FiLock className="w-5 h-5 text-[#1a73e8]" />
                                 </div>
-                            </div>
-
-                            {/* Campo Contraseña */}
-                            <div>
-                                <label htmlFor="contraseña" className="label">
-                                    Contraseña
-                                </label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <FiLock className="w-5 h-5 text-gray-400" />
-                                    </div>
-                                    <input
-                                        type={showPassword ? 'text' : 'password'}
-                                        id="contraseña"
-                                        name="contraseña"
-                                        value={formData.contraseña}
-                                        onChange={handleChange}
-                                        className="input pl-10 pr-10"
-                                        placeholder="••••••••"
-                                        autoComplete="current-password"
-                                        disabled={isSubmitting}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={toggleShowPassword}
-                                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                                        tabIndex={-1}
-                                    >
-                                        {showPassword ? (
-                                            <FiEyeOff className="w-5 h-5 text-gray-400 hover:text-gray-600" />
-                                        ) : (
-                                            <FiEye className="w-5 h-5 text-gray-400 hover:text-gray-600" />
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Recordar sesión */}
-                            <div className="flex items-center justify-between">
-                                <label className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                                        defaultChecked
-                                    />
-                                    <span className="ml-2 text-sm text-gray-600">
-                                        Recordar sesión
-                                    </span>
-                                </label>
-
-                                <a
-                                    href="#"
-                                    className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    name="contraseña"
+                                    value={formData.contraseña}
+                                    onChange={handleChange}
+                                    className="w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-all outline-none font-medium"
+                                    placeholder="••••••••"
+                                    autoComplete="current-password"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
                                 >
-                                    ¿Olvidaste tu contraseña?
-                                </a>
+                                    {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
+                                </button>
                             </div>
+                        </div>
 
-                            {/* Botón de submit */}
-                            <button
-                                type="submit"
-                                disabled={isSubmitting || loading}
-                                className="btn-primary w-full py-3 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {isSubmitting || loading ? (
-                                    <DynamicLoader text="Iniciando sesión..." size="tiny" layout="row" />
-                                ) : (
-                                    'Iniciar Sesión'
-                                )}
-                            </button>
-                        </form>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="px-8 py-6 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700">
-                        <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-                            ¿No tienes cuenta?{' '}
-                            <a href="#" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
-                                Contacta al administrador
+                        {/* Olvidaste contraseña */}
+                        <div className="flex justify-end pt-1">
+                            <a href="#" className="text-sm font-semibold text-[#1a73e8] hover:text-blue-700 transition-colors">
+                                ¿Olvidaste tu contraseña?
                             </a>
-                        </p>
-                    </div>
-                </div>
+                        </div>
 
-                {/* Info adicional */}
-                <div className="mt-6 text-center">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                        <span className="font-medium">FASITLAC</span> © 2026 - Sistema Checador v2.0
-                    </p>
+                        {/* Botón Submit */}
+                        <button
+                            type="submit"
+                            disabled={isSubmitting || loading}
+                            className="w-full py-4 bg-[#1a73e8] hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+                        >
+                            {isSubmitting || loading ? (
+                                <DynamicLoader text="Iniciando..." size="tiny" color="white" />
+                            ) : (
+                                <>
+                                    <span>Iniciar Sesión</span>
+                                    <FiArrowRight className="w-5 h-5" />
+                                </>
+                            )}
+                        </button>
+
+                        {/* Footer en Card */}
+                        <div className="pt-4 text-center">
+                            <p className="text-sm text-gray-500">
+                                ¿No tienes cuenta?{' '}
+                                <a href="#" className="text-[#1a73e8] font-bold hover:underline">
+                                    Contacta al admin
+                                </a>
+                            </p>
+                        </div>
+                    </form>
                 </div>
+            </div>
+
+            {/* Copyright Footer */}
+            <div className="mt-8 text-center text-blue-200 text-xs font-medium">
+                © 2026 FASITLAC™
             </div>
         </div>
     );
