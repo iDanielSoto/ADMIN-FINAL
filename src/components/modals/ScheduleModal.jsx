@@ -274,7 +274,6 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
                                 value={formData.empleado_id}
                                 onChange={(e) => setFormData(prev => ({ ...prev, empleado_id: e.target.value }))}
                                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none"
-                                disabled={mode === 'edit'}
                             >
                                 <option value="">Seleccionar empleado...</option>
                                 {empleados.map(emp => (

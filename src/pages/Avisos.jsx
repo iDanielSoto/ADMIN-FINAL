@@ -13,6 +13,7 @@ const Avisos = () => {
     const [empleados, setEmpleados] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
+    const [busquedaEmpleados, setBusquedaEmpleados] = useState('');
 
     // Estados del Modal
     const [modalOpen, setModalOpen] = useState(false);
@@ -167,9 +168,16 @@ const Avisos = () => {
     };
 
     // Filtrar avisos
+    // Filtrar avisos en lista principal
     const avisosFiltrados = avisos.filter(a =>
         a.titulo.toLowerCase().includes(busqueda.toLowerCase()) ||
         a.contenido.toLowerCase().includes(busqueda.toLowerCase())
+    );
+
+    // Filtrar empleados en modal
+    const empleadosFiltrados = empleados.filter(e =>
+        (e.nombre?.toLowerCase() || '').includes(busquedaEmpleados.toLowerCase()) ||
+        (e.apellidos?.toLowerCase() || '').includes(busquedaEmpleados.toLowerCase())
     );
 
     return (
@@ -262,10 +270,11 @@ const Avisos = () => {
                 </div>
             )}
 
+
             {/* MODAL CREAR/EDITAR */}
             {modalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+                    <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full ${!formData.es_global ? 'max-w-4xl' : 'max-w-lg'} overflow-hidden flex flex-col max-h-[90vh] transition-all duration-300`}>
                         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                                 {editingAviso ? 'Editar Aviso' : 'Nuevo Aviso'}
@@ -282,87 +291,128 @@ const Avisos = () => {
                                 </div>
                             )}
 
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título</label>
-                                    <input
-                                        type="text"
-                                        value={formData.titulo}
-                                        onChange={e => setFormData({ ...formData, titulo: e.target.value })}
-                                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white"
-                                        placeholder="Ej: Mantenimiento programado"
-                                        required
-                                    />
+                            <div className={`grid ${!formData.es_global ? 'grid-cols-1 md:grid-cols-2 gap-6' : 'grid-cols-1 gap-4'}`}>
+                                {/* LEFT COLUMN: GENERAL INFO */}
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título</label>
+                                        <input
+                                            type="text"
+                                            value={formData.titulo}
+                                            onChange={e => setFormData({ ...formData, titulo: e.target.value })}
+                                            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white"
+                                            placeholder="Ej: Mantenimiento programado"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contenido</label>
+                                        <textarea
+                                            value={formData.contenido}
+                                            onChange={e => setFormData({ ...formData, contenido: e.target.value })}
+                                            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white h-32 resize-none"
+                                            placeholder="Escribe el contenido del aviso..."
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg border border-gray-200 dark:border-gray-700">
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData(prev => ({ ...prev, es_global: true }))}
+                                            className={`flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${formData.es_global
+                                                ? 'bg-white shadow-sm text-primary-600'
+                                                : 'text-gray-500 hover:text-gray-700'
+                                                }`}
+                                        >
+                                            <Globe className="w-4 h-4" /> Global
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData(prev => ({ ...prev, es_global: false }))}
+                                            className={`flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${!formData.es_global
+                                                ? 'bg-white shadow-sm text-primary-600'
+                                                : 'text-gray-500 hover:text-gray-700'
+                                                }`}
+                                        >
+                                            <Users className="w-4 h-4" /> Específico
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contenido</label>
-                                    <textarea
-                                        value={formData.contenido}
-                                        onChange={e => setFormData({ ...formData, contenido: e.target.value })}
-                                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white h-32 resize-none"
-                                        placeholder="Escribe el contenido del aviso..."
-                                        required
-                                    />
-                                </div>
-
-                                <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg border border-gray-200 dark:border-gray-700">
-                                    <button
-                                        type="button"
-                                        onClick={() => setFormData(prev => ({ ...prev, es_global: true }))}
-                                        className={`flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${formData.es_global
-                                            ? 'bg-white shadow-sm text-primary-600'
-                                            : 'text-gray-500 hover:text-gray-700'
-                                            }`}
-                                    >
-                                        <Globe className="w-4 h-4" /> Global
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setFormData(prev => ({ ...prev, es_global: false }))}
-                                        className={`flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${!formData.es_global
-                                            ? 'bg-white shadow-sm text-primary-600'
-                                            : 'text-gray-500 hover:text-gray-700'
-                                            }`}
-                                    >
-                                        <Users className="w-4 h-4" /> Específico
-                                    </button>
-                                </div>
-
-                                {/* SELECTOR DE EMPLEADOS */}
+                                {/* RIGHT COLUMN: EMPLOYEE SELECTION */}
                                 {!formData.es_global && (
-                                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                            Seleccionar Destinatarios
-                                        </label>
-                                        <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 divide-y divide-gray-100 dark:divide-gray-600">
-                                            {empleados.map(emp => (
-                                                <div
-                                                    key={emp.id}
-                                                    onClick={() => toggleEmpleado(emp.id)}
-                                                    className={`px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors ${formData.empleados.includes(emp.id) ? 'bg-primary-50 dark:bg-primary-900/20' : ''
-                                                        }`}
-                                                >
-                                                    <div className="flex items-center gap-2 overflow-hidden">
-                                                        <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300">
-                                                            {emp.nombre?.charAt(0) || '?'}{emp.apellidos?.charAt(0) || '?'}
-                                                        </div>
-                                                        <span className="text-sm text-gray-700 dark:text-gray-200 truncate">
-                                                            {emp.nombre} {emp.apellidos}
-                                                        </span>
-                                                    </div>
-                                                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${formData.empleados.includes(emp.id)
-                                                        ? 'bg-primary-500 border-primary-500 text-white'
-                                                        : 'border-gray-300 dark:border-gray-500'
-                                                        }`}>
-                                                        {formData.empleados.includes(emp.id) && <Check className="w-3.5 h-3.5" />}
-                                                    </div>
-                                                </div>
-                                            ))}
+                                    <div className="space-y-3 flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-300">
+                                        <div className="flex justify-between items-center">
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                Seleccionar Destinatarios
+                                            </label>
+                                            <span className="text-xs bg-primary-50 text-primary-700 px-2 py-1 rounded-full font-medium">
+                                                {formData.empleados.length} seleccionados
+                                            </span>
                                         </div>
-                                        <p className="text-xs text-gray-500">
-                                            {formData.empleados.length} empleados seleccionados
-                                        </p>
+
+                                        <div className="relative">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            <input
+                                                type="text"
+                                                placeholder="Buscar empleado..."
+                                                value={busquedaEmpleados}
+                                                onChange={(e) => setBusquedaEmpleados(e.target.value)}
+                                                className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:border-primary-500 transition-colors"
+                                            />
+                                        </div>
+
+                                        <div className="flex-1 min-h-[300px] max-h-[400px] overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 divide-y divide-gray-100 dark:divide-gray-600 shadow-inner">
+                                            {empleadosFiltrados.length > 0 ? (
+                                                empleadosFiltrados.map(emp => (
+                                                    <div
+                                                        key={emp.id}
+                                                        onClick={() => toggleEmpleado(emp.id)}
+                                                        className={`px-3 py-2.5 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors ${formData.empleados.includes(emp.id) ? 'bg-primary-50 dark:bg-primary-900/20' : ''
+                                                            }`}
+                                                    >
+                                                        <div className="flex items-center gap-3 overflow-hidden">
+                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${formData.empleados.includes(emp.id)
+                                                                ? 'bg-primary-100 text-primary-700'
+                                                                : 'bg-gray-100 text-gray-500 dark:bg-gray-600 dark:text-gray-300'
+                                                                }`}>
+                                                                {emp.nombre?.charAt(0) || '?'}{emp.apellidos?.charAt(0) || '?'}
+                                                            </div>
+                                                            <div className="flex flex-col truncate">
+                                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">
+                                                                    {emp.nombre} {emp.apellidos}
+                                                                </span>
+                                                                <span className="text-xs text-gray-400">
+                                                                    {emp.id}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${formData.empleados.includes(emp.id)
+                                                            ? 'bg-primary-500 border-primary-500 text-white scale-110'
+                                                            : 'border-gray-300 dark:border-gray-500'
+                                                            }`}>
+                                                            {formData.empleados.includes(emp.id) && <Check className="w-3.5 h-3.5" />}
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="p-8 text-center text-gray-400 text-sm">
+                                                    No se encontraron empleados
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="text-right">
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData(prev => ({ ...prev, empleados: [] }))}
+                                                className="text-xs text-red-500 hover:text-red-700 hover:underline"
+                                            >
+                                                Limpiar selección
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>

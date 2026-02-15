@@ -18,7 +18,8 @@ const pageConfig = {
     '/incidencias': { titulo: 'Incidencias', descripcion: 'Gestión de incidencias' },
     '/reportes': { titulo: 'Reportes', descripcion: 'Reportes y estadísticas' },
     '/configuracion': { titulo: 'Configuración', descripcion: 'Configuración del sistema' },
-    '/empleados/usuario/': { titulo: 'Perfil de usuario', descripcion: 'Datos generales del usuario' }
+    '/avisos': { titulo: 'Avisos', descripcion: 'Gestión de avisos y notificaciones' },
+    '/registros': { titulo: 'Registros', descripcion: 'Historial de registros del sistema' },
 };
 
 // Obtiene la configuración de página, incluyendo rutas dinámicas
@@ -28,9 +29,19 @@ const getPageConfig = (pathname) => {
         return pageConfig[pathname];
     }
     // Ruta dinámica de perfil de usuario
-    if (pathname.startsWith('/usuario/')) {
-        return { titulo: 'Perfil de Usuario', descripcion: 'Información del usuario' };
+    if (pathname.startsWith('/empleados/usuario/')) {
+        return { titulo: 'Perfil de Usuario', descripcion: 'Información detallada del usuario' };
     }
+
+    // Fallback: Generar título basado en la ruta si no existe en la configuración
+    const pathParts = pathname.split('/').filter(Boolean);
+    if (pathParts.length > 0) {
+        const lastPart = pathParts[pathParts.length - 1];
+        // Capitalizar la primera letra y reemplazar guiones/bajos con espacios
+        const generatedTitle = lastPart.charAt(0).toUpperCase() + lastPart.slice(1).replace(/[-_]/g, ' ');
+        return { titulo: generatedTitle, descripcion: '' };
+    }
+
     return { titulo: 'Página', descripcion: '' };
 };
 

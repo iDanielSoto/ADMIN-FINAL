@@ -21,7 +21,11 @@ import {
     FiAlertTriangle,
     FiFilter,
     FiRefreshCw,
-    FiChevronDown // Nuevo icono importado
+    FiChevronDown, // Nuevo icono importado
+    FiEdit2,
+    FiSave,
+    FiLock,
+    FiUnlock
 } from 'react-icons/fi';
 import { AiFillAndroid } from 'react-icons/ai';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
@@ -71,6 +75,36 @@ const PerfilUsuario = () => {
     const [loading, setLoading] = useState(true);
     const [loadingStats, setLoadingStats] = useState(false);
     const [error, setError] = useState(null);
+
+    // Estado de edición
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState({});
+    const [credenciales, setCredenciales] = useState({
+        tiene_pin: false,
+        tiene_dactilar: false,
+        tiene_facial: false
+    });
+    const [newPin, setNewPin] = useState('');
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        if (usuario) {
+            setFormData({
+                nombre: usuario.nombre || '',
+                usuario: usuario.usuario || '',
+                correo: usuario.correo || '',
+                telefono: usuario.telefono || '',
+                rfc: usuario.rfc || '',
+                nss: usuario.nss || ''
+            });
+        }
+    }, [usuario]);
+
+    useEffect(() => {
+        if (empleadoId) {
+            fetchCredenciales(empleadoId);
+        }
+    }, [empleadoId]);
 
     useEffect(() => {
         fetchUsuario();
@@ -189,6 +223,87 @@ const PerfilUsuario = () => {
         }
     };
 
+    const fetchCredenciales = async (idEmpleado) => {
+        try {
+            const token = localStorage.getItem('auth_token');
+            const response = await fetch(`${API_URL}/api/credenciales/empleado/${idEmpleado}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await response.json();
+            if (result.success) {
+                setCredenciales(result.data);
+            }
+        } catch (err) {
+            console.error('Error al cargar credenciales:', err);
+        }
+    };
+
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            const token = localStorage.getItem('auth_token');
+
+            // 1. Actualizar datos de usuario
+            const userUpdate = {
+                nombre: formData.nombre,
+                usuario: formData.usuario,
+                correo: formData.correo,
+                telefono: formData.telefono,
+                rfc: formData.rfc, // Si es empleado, el backend lo maneja
+                nss: formData.nss,
+                es_empleado: usuario.es_empleado // Mantener estado
+            };
+
+            const responseUser = await fetch(`${API_URL}/api/usuarios/${usuario.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(userUpdate)
+            });
+
+            const resultUser = await responseUser.json();
+            if (!resultUser.success) {
+                throw new Error(resultUser.message || 'Error al actualizar usuario');
+            }
+
+            // 2. Actualizar PIN si se proporcionó
+            if (newPin && empleadoId) {
+                if (newPin.length !== 6 || !/^\d+$/.test(newPin)) {
+                    throw new Error('El PIN debe ser numérico de 6 dígitos');
+                }
+
+                const responsePin = await fetch(`${API_URL}/api/credenciales/pin`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        empleado_id: empleadoId,
+                        pin: newPin
+                    })
+                });
+                const resultPin = await responsePin.json();
+                if (!resultPin.success) {
+                    throw new Error(resultPin.message || 'Error al actualizar PIN');
+                }
+            }
+
+            // Recargar datos
+            await fetchUsuario();
+            setIsEditing(false);
+            setNewPin('');
+
+        } catch (err) {
+            console.error('Error al guardar:', err);
+            alert(err.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const handleActualizarEstadisticas = () => {
         if (!empleadoId) return;
         const token = localStorage.getItem('auth_token');
@@ -239,10 +354,55 @@ const PerfilUsuario = () => {
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">
-            <div>
-                <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors font-medium">
+            <div className="flex justify-between items-center">
+                <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors font-medium">
                     <FiArrowLeft className="w-5 h-5" /> Volver
                 </button>
+
+                {!isEditing ? (
+                    <button
+                        onClick={() => setIsEditing(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+                    >
+                        <FiEdit2 className="w-4 h-4" /> Editar Perfil
+                    </button>
+                ) : (
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => {
+                                setIsEditing(false);
+                                setNewPin('');
+                                setFormData({
+                                    nombre: usuario.nombre || '',
+                                    usuario: usuario.usuario || '',
+                                    correo: usuario.correo || '',
+                                    telefono: usuario.telefono || '',
+                                    rfc: usuario.rfc || '',
+                                    nss: usuario.nss || ''
+                                });
+                            }}
+                            className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium"
+                            disabled={saving}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {saving ? (
+                                <>
+                                    <FiRefreshCw className="w-4 h-4 animate-spin" /> Guardando...
+                                </>
+                            ) : (
+                                <>
+                                    <FiSave className="w-4 h-4" /> Guardar Cambios
+                                </>
+                            )}
+                        </button>
+                    </div>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -262,23 +422,65 @@ const PerfilUsuario = () => {
                                     )}
                                 </div>
                                 <div className="flex-1 min-w-0 pt-1">
-                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                        <h1 className="text-xl font-bold text-gray-900 dark:text-white leading-tight truncate">{usuario?.nombre}</h1>
+                                    <div className="flex items-center gap-2 mb-1 flex-wrap w-full">
+                                        {isEditing ? (
+                                            <div className="w-full mb-2">
+                                                <input
+                                                    type="text"
+                                                    value={formData.nombre}
+                                                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                                                    className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-lg font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                                    placeholder="Nombre completo"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <h1 className="text-xl font-bold text-gray-900 dark:text-white leading-tight truncate">{usuario?.nombre}</h1>
+                                        )}
                                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${estadoBadge.bg} ${estadoBadge.text} border-transparent`}>
                                             {estadoBadge.label}
                                         </span>
                                     </div>
-                                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">@{usuario?.usuario}</p>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={formData.usuario}
+                                            onChange={(e) => setFormData({ ...formData, usuario: e.target.value })}
+                                            className="w-full px-3 py-1 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-600 dark:text-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                            placeholder="Usuario"
+                                        />
+                                    ) : (
+                                        <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">@{usuario?.usuario}</p>
+                                    )}
                                 </div>
                             </div>
                             <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700 space-y-3">
                                 <div className="flex items-center gap-3 text-sm group">
                                     <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-700 flex items-center justify-center text-gray-400"><FiMail className="w-4 h-4" /></div>
-                                    <span className="text-gray-600 dark:text-gray-300 truncate">{usuario?.correo || 'Sin correo'}</span>
+                                    {isEditing ? (
+                                        <input
+                                            type="email"
+                                            value={formData.correo}
+                                            onChange={(e) => setFormData({ ...formData, correo: e.target.value })}
+                                            className="w-full px-2 py-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                            placeholder="Correo electrónico"
+                                        />
+                                    ) : (
+                                        <span className="text-gray-600 dark:text-gray-300 truncate">{usuario?.correo || 'Sin correo'}</span>
+                                    )}
                                 </div>
                                 <div className="flex items-center gap-3 text-sm group">
                                     <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-700 flex items-center justify-center text-gray-400"><FiPhone className="w-4 h-4" /></div>
-                                    <span className="text-gray-600 dark:text-gray-300">{usuario?.telefono || 'Sin teléfono'}</span>
+                                    {isEditing ? (
+                                        <input
+                                            type="tel"
+                                            value={formData.telefono}
+                                            onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                                            className="w-full px-2 py-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                            placeholder="Teléfono"
+                                        />
+                                    ) : (
+                                        <span className="text-gray-600 dark:text-gray-300">{usuario?.telefono || 'Sin teléfono'}</span>
+                                    )}
                                 </div>
                                 <div className="flex items-center gap-3 text-sm group">
                                     <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-700 flex items-center justify-center text-gray-400"><FiCalendar className="w-4 h-4" /></div>
@@ -296,11 +498,83 @@ const PerfilUsuario = () => {
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center py-2 border-b border-gray-50 dark:border-gray-700">
                                     <span className="text-sm text-gray-500 dark:text-gray-400">RFC</span>
-                                    <span className="text-sm font-mono font-medium text-gray-900 dark:text-white">{usuario?.rfc || 'N/A'}</span>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={formData.rfc}
+                                            onChange={(e) => setFormData({ ...formData, rfc: e.target.value })}
+                                            className="w-32 px-2 py-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm font-mono text-right focus:ring-2 focus:ring-blue-500 outline-none"
+                                            placeholder="RFC"
+                                        />
+                                    ) : (
+                                        <span className="text-sm font-mono font-medium text-gray-900 dark:text-white">{usuario?.rfc || 'N/A'}</span>
+                                    )}
                                 </div>
                                 <div className="flex justify-between items-center py-2 border-b border-gray-50 dark:border-gray-700">
                                     <span className="text-sm text-gray-500 dark:text-gray-400">NSS</span>
-                                    <span className="text-sm font-mono font-medium text-gray-900 dark:text-white">{usuario?.nss || 'N/A'}</span>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={formData.nss}
+                                            onChange={(e) => setFormData({ ...formData, nss: e.target.value })}
+                                            className="w-32 px-2 py-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm font-mono text-right focus:ring-2 focus:ring-blue-500 outline-none"
+                                            placeholder="NSS"
+                                        />
+                                    ) : (
+                                        <span className="text-sm font-mono font-medium text-gray-900 dark:text-white">{usuario?.nss || 'N/A'}</span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {usuario?.es_empleado && (
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wide mb-4 flex items-center gap-2">
+                                <FiLock className="w-4 h-4 text-purple-500" /> Credenciales de Acceso
+                            </h3>
+                            <div className="space-y-4">
+                                <div className="flex flex-col gap-1 py-2 border-b border-gray-50 dark:border-gray-700">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm text-gray-500 dark:text-gray-400">PIN de Acceso</span>
+                                        {isEditing ? (
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="password"
+                                                    value={newPin}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                                                        setNewPin(val);
+                                                    }}
+                                                    className="w-32 px-2 py-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm font-mono text-center focus:ring-2 focus:ring-purple-500 outline-none"
+                                                    placeholder="Nuevo PIN"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${credenciales.tiene_pin ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' : 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600'}`}>
+                                                {credenciales.tiene_pin ? 'Configurado' : 'No configurado'}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {isEditing && <span className="text-xs text-gray-400">Ingrese 6 dígitos para cambiar. Dejar vacío para mantener.</span>}
+                                </div>
+                                <div className="flex justify-between items-center py-2 border-b border-gray-50 dark:border-gray-700">
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">Huella Dactilar</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${credenciales.tiene_dactilar ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' : 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600'}`}>
+                                            {credenciales.tiene_dactilar ? 'Registrada' : 'No registrada'}
+                                        </span>
+                                        {isEditing && <span className="text-xs text-gray-400 italic hidden sm:inline">(Solo lectura)</span>}
+                                    </div>
+                                </div>
+                                <div className="flex justify-between items-center py-2 border-b border-gray-50 dark:border-gray-700">
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">Reconocimiento Facial</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${credenciales.tiene_facial ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' : 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600'}`}>
+                                            {credenciales.tiene_facial ? 'Registrado' : 'No registrado'}
+                                        </span>
+                                        {isEditing && <span className="text-xs text-gray-400 italic hidden sm:inline">(Solo lectura)</span>}
+                                    </div>
                                 </div>
                             </div>
                         </div>
