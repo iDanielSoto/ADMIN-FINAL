@@ -612,11 +612,11 @@ const Configuracion = () => {
                                         <div className="flex-1 space-y-2">
                                             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" id="logo-upload" />
                                             <label htmlFor="logo-upload"
-                                                className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors shadow-sm">
+                                                className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer transition-colors shadow-sm">
                                                 <FiUpload className="w-4 h-4" />
                                                 Subir imagen
                                             </label>
-                                            <p className="text-xs text-gray-500">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
                                                 Se recomienda una imagen cuadrada (PNG, JPG).<br />
                                                 Tamaño máximo: 2MB.
                                             </p>
@@ -634,12 +634,12 @@ const Configuracion = () => {
                                     </div>
 
                                     <div>
-                                        <label htmlFor="telefono" className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label htmlFor="telefono" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             <span className="flex items-center gap-2"><FiPhone className="w-4 h-4" /> Teléfono de contacto</span>
                                         </label>
                                         <input type="tel" id="telefono" value={formEmpresa.telefono}
                                             onChange={(e) => setFormEmpresa(prev => ({ ...prev, telefono: e.target.value }))}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                                            className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
                                             placeholder="+52 55 1234 5678" />
                                     </div>
 
@@ -664,17 +664,17 @@ const Configuracion = () => {
                                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Políticas de Acceso</h3>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                 <span className="flex items-center gap-2"><FiLock className="w-4 h-4" /> Intentos máximos de inicio de sesión</span>
                                             </label>
                                             <input type="number" min="1" max="10" value={formConfig.intentos_maximos}
                                                 onChange={(e) => setFormConfig(prev => ({ ...prev, intentos_maximos: parseInt(e.target.value) }))}
-                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                 placeholder="Ej. 3" />
-                                            <p className="text-xs text-gray-500 mt-1">Bloquea temporalmente la cuenta tras fallos consecutivos.</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Bloquea temporalmente la cuenta tras fallos consecutivos.</p>
                                         </div>
 
-                                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 rounded-lg p-4">
                                             <div className="flex items-start gap-3">
                                                 <div className="pt-0.5">
                                                     <input type="checkbox" id="mantenimiento" checked={formConfig.es_mantenimiento}
@@ -682,10 +682,10 @@ const Configuracion = () => {
                                                         className="w-5 h-5 text-yellow-600 border-gray-300 rounded focus:ring-2 focus:ring-yellow-500" />
                                                 </div>
                                                 <div>
-                                                    <label htmlFor="mantenimiento" className="block text-sm font-medium text-gray-900 mb-1">
+                                                    <label htmlFor="mantenimiento" className="block text-sm font-medium text-gray-900 dark:text-yellow-100 mb-1">
                                                         Modo Mantenimiento
                                                     </label>
-                                                    <p className="text-xs text-gray-600 leading-relaxed">
+                                                    <p className="text-xs text-gray-600 dark:text-yellow-200/70 leading-relaxed">
                                                         Al activar esta opción, <strong>solo los administradores</strong> podrán acceder al sistema. Los empleados verán una pantalla de "En Mantenimiento".
                                                     </p>
                                                 </div>
@@ -694,11 +694,11 @@ const Configuracion = () => {
                                     </div>
                                     <div className="space-y-4">
                                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Prioridad de Autenticación</h3>
-                                        <p className="text-sm text-gray-500">
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">
                                             Activa o desactiva los métodos de validación y define su prioridad para el reloj checador.
                                         </p>
 
-                                        <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                                        <div className="space-y-3 bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
                                             {getMetodosOrdenados().map((metodo, index) => {
                                                 const metodoInfo = METODOS_AUTH.find(m => m.id === metodo.id) || { label: metodo.id, icon: '' };
                                                 const ordenados = getMetodosOrdenados();
@@ -707,8 +707,8 @@ const Configuracion = () => {
                                                     <div
                                                         key={metodo.id}
                                                         className={`flex items-center justify-between p-4 rounded-lg border shadow-sm transition-all ${metodo.activo
-                                                            ? 'bg-white border-gray-200 hover:border-blue-300'
-                                                            : 'bg-gray-100 border-gray-300 opacity-60'
+                                                            ? 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500'
+                                                            : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 opacity-60'
                                                             }`}
                                                     >
                                                         <div className="flex items-center gap-4">
@@ -723,7 +723,7 @@ const Configuracion = () => {
                                                             {/* Icono y nombre */}
                                                             <div className="flex items-center gap-3">
                                                                 <span className="text-2xl">{metodoInfo.icon}</span>
-                                                                <span className={`text-sm font-medium ${metodo.activo ? 'text-gray-700' : 'text-gray-500 line-through'}`}>
+                                                                <span className={`text-sm font-medium ${metodo.activo ? 'text-gray-700 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400 line-through'}`}>
                                                                     {metodoInfo.label}
                                                                 </span>
                                                             </div>
@@ -781,10 +781,10 @@ const Configuracion = () => {
                                 <div className="space-y-6">
                                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Apariencia</h3>
 
-                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <h4 className="font-medium text-gray-900">Modo Oscuro</h4>
+                                                <h4 className="font-medium text-gray-900 dark:text-gray-100">Modo Oscuro</h4>
                                                 <p className="text-xs text-gray-500 mt-1">Cambia la apariencia de la interfaz a colores oscuros.</p>
                                             </div>
                                             <button
@@ -803,22 +803,22 @@ const Configuracion = () => {
                                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider pt-4">Regionalización</h3>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             <span className="flex items-center gap-2"><FiGlobe className="w-4 h-4" /> Idioma del Sistema</span>
                                         </label>
                                         <select value={formConfig.idioma}
                                             onChange={(e) => setFormConfig(prev => ({ ...prev, idioma: e.target.value }))}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                            className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                                             <option value="es">Español</option>
                                             <option value="en">English</option>
                                         </select>
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Zona Horaria</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Zona Horaria</label>
                                         <select value={formConfig.zona_horaria}
                                             onChange={(e) => setFormConfig(prev => ({ ...prev, zona_horaria: e.target.value }))}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                            className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                                             <option value="America/Mexico_City">Ciudad de México (GMT-6)</option>
                                             <option value="America/Cancun">Cancún (GMT-5)</option>
                                             <option value="America/Tijuana">Tijuana (GMT-8)</option>
@@ -832,10 +832,10 @@ const Configuracion = () => {
                                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Formatos</h3>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Formato de Fecha</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Formato de Fecha</label>
                                         <select value={formConfig.formato_fecha}
                                             onChange={(e) => setFormConfig(prev => ({ ...prev, formato_fecha: e.target.value }))}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                            className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                                             <option value="DD/MM/YYYY">DD/MM/YYYY (Ej: 31/12/2023)</option>
                                             <option value="MM/DD/YYYY">MM/DD/YYYY (Ej: 12/31/2023)</option>
                                             <option value="YYYY/MM/DD">YYYY/MM/DD (Ej: 2023/12/31)</option>
@@ -843,12 +843,12 @@ const Configuracion = () => {
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             <span className="flex items-center gap-2"><FiClock className="w-4 h-4" /> Formato de Hora</span>
                                         </label>
                                         <select value={formConfig.formato_hora}
                                             onChange={(e) => setFormConfig(prev => ({ ...prev, formato_hora: e.target.value }))}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                            className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                                             <option value="12">12 horas (AM/PM)</option>
                                             <option value="24">24 horas (Militar)</option>
                                         </select>
@@ -870,7 +870,7 @@ const Configuracion = () => {
                                             onClick={() => handleSeleccionarRol(null)}
                                             className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${selectedRoleId === null
                                                 ? 'bg-blue-600 text-white border-blue-600'
-                                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
                                                 }`}
                                         >
                                             General (Todos)
@@ -884,7 +884,7 @@ const Configuracion = () => {
                                                 onClick={() => handleSeleccionarRol(rol.id)}
                                                 className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${selectedRoleId === rol.id
                                                     ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
                                                     }`}
                                             >
                                                 {rol.nombre}
@@ -904,13 +904,13 @@ const Configuracion = () => {
                                     {/* Dropdown para agregar nuevo rol */}
                                     <div className="mb-6">
                                         <div className="flex items-center gap-2 max-w-md">
-                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Agregar regla para:</label>
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Agregar regla para:</label>
                                             <select
                                                 value=""
                                                 onChange={(e) => {
                                                     if (e.target.value) handleSeleccionarRol(e.target.value);
                                                 }}
-                                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                                                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                                             >
                                                 <option value="">-- Seleccionar Rol --</option>
                                                 {roles.filter(r => !tolerancias.some(t => t.rol_id === r.id)).map(rol => (
@@ -922,10 +922,10 @@ const Configuracion = () => {
                                         </div>
                                     </div>
 
-                                    <div className="flex justify-between items-center mb-6 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                    <div className="flex justify-between items-center mb-6 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800">
                                         <div className="flex items-center gap-2">
                                             <FiAlertCircle className="text-blue-500" />
-                                            <span className="text-sm text-gray-700">
+                                            <span className="text-sm text-gray-700 dark:text-gray-300">
                                                 {selectedRoleId === null
                                                     ? "Editando configuración general / por defecto."
                                                     : `Configurando reglas específicas para: ${roles.find(r => r.id === selectedRoleId)?.nombre}`
@@ -949,29 +949,29 @@ const Configuracion = () => {
                                 <div>
                                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Reglas de Tiempo</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Retardo (min)</label>
+                                        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Retardo (min)</label>
                                             <input type="number" min="0" max="60" value={formTolerancia.minutos_retardo}
                                                 onChange={(e) => setFormTolerancia(prev => ({ ...prev, minutos_retardo: parseInt(e.target.value) }))}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-                                            <p className="text-xs text-gray-500 mt-2">Margen permitido después de la hora de entrada.</p>
+                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500" />
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Margen permitido después de la hora de entrada.</p>
                                         </div>
 
-                                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Falta (min)</label>
+                                        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Falta (min)</label>
                                             <input type="number" min="0" max="120" value={formTolerancia.minutos_falta}
                                                 onChange={(e) => setFormTolerancia(prev => ({ ...prev, minutos_falta: parseInt(e.target.value) }))}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-                                            <p className="text-xs text-gray-500 mt-2">Tiempo límite para considerar ausencia.</p>
+                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500" />
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Tiempo límite para considerar ausencia.</p>
                                         </div>
 
-                                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Anticipación (min)</label>
+                                        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Anticipación (min)</label>
                                             <input type="number" min="0" max="180" value={formTolerancia.minutos_anticipado_max}
                                                 onChange={(e) => setFormTolerancia(prev => ({ ...prev, minutos_anticipado_max: parseInt(e.target.value) }))}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                                                 disabled={!formTolerancia.permite_registro_anticipado} />
-                                            <p className="text-xs text-gray-500 mt-2">Tiempo máximo para checar antes de hora.</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Tiempo máximo para checar antes de hora.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -980,25 +980,25 @@ const Configuracion = () => {
                                     <div>
                                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Comportamiento</h3>
                                         <div className="space-y-3">
-                                            <div className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                                            <div className="flex items-center gap-3 p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                                 <input type="checkbox" id="anticipado" checked={formTolerancia.permite_registro_anticipado}
                                                     onChange={(e) => setFormTolerancia(prev => ({ ...prev, permite_registro_anticipado: e.target.checked }))}
                                                     className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500" />
-                                                <label htmlFor="anticipado" className="text-sm font-medium text-gray-700 cursor-pointer w-full">Permitir registro anticipado</label>
+                                                <label htmlFor="anticipado" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer w-full">Permitir registro anticipado</label>
                                             </div>
 
-                                            <div className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                                            <div className="flex items-center gap-3 p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                                 <input type="checkbox" id="entrada" checked={formTolerancia.aplica_tolerancia_entrada}
                                                     onChange={(e) => setFormTolerancia(prev => ({ ...prev, aplica_tolerancia_entrada: e.target.checked }))}
                                                     className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500" />
-                                                <label htmlFor="entrada" className="text-sm font-medium text-gray-700 cursor-pointer w-full">Aplicar tolerancia en entrada</label>
+                                                <label htmlFor="entrada" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer w-full">Aplicar tolerancia en entrada</label>
                                             </div>
 
-                                            <div className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                                            <div className="flex items-center gap-3 p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                                 <input type="checkbox" id="salida" checked={formTolerancia.aplica_tolerancia_salida}
                                                     onChange={(e) => setFormTolerancia(prev => ({ ...prev, aplica_tolerancia_salida: e.target.checked }))}
                                                     className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500" />
-                                                <label htmlFor="salida" className="text-sm font-medium text-gray-700 cursor-pointer w-full">Aplicar tolerancia en salida</label>
+                                                <label htmlFor="salida" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer w-full">Aplicar tolerancia en salida</label>
                                             </div>
                                         </div>
                                     </div>
@@ -1014,7 +1014,7 @@ const Configuracion = () => {
                                                             dias_aplica: { ...prev.dias_aplica, [dia]: e.target.checked }
                                                         }))}
                                                         className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500" />
-                                                    <label htmlFor={dia} className="text-sm text-gray-700 capitalize cursor-pointer">{dia}</label>
+                                                    <label htmlFor={dia} className="text-sm text-gray-700 dark:text-gray-300 capitalize cursor-pointer">{dia}</label>
                                                 </div>
                                             ))}
                                         </div>
@@ -1030,8 +1030,8 @@ const Configuracion = () => {
                                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Configuración de Nodos</h3>
 
                                     {/* Input de IP */}
-                                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 mb-6">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-xl border border-gray-200 dark:border-gray-600 mb-6">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Agregar nuevo punto de acceso (CIDR)
                                         </label>
                                         <div className="flex gap-3">
@@ -1041,7 +1041,7 @@ const Configuracion = () => {
                                                     value={nuevaIP}
                                                     onChange={(e) => setNuevaIP(e.target.value)}
                                                     onKeyDown={(e) => e.key === 'Enter' && handleAgregarRed()}
-                                                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 outline-none transition-all font-mono text-sm ${errorIP ? 'border-red-300 focus:ring-red-200 bg-red-50' : 'border-gray-300 focus:ring-blue-500 bg-white'
+                                                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 outline-none transition-all font-mono text-sm dark:text-white ${errorIP ? 'border-red-300 focus:ring-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-700' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 bg-white dark:bg-gray-800'
                                                         }`}
                                                     placeholder="Ej: 192.168.10.5/24"
                                                 />
@@ -1058,34 +1058,34 @@ const Configuracion = () => {
                                                 Agregar
                                             </button>
                                         </div>
-                                        <p className="text-xs text-gray-500 mt-3">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
                                             El sistema validará que la IP tenga el formato correcto y su máscara de subred (0-32).
                                         </p>
                                     </div>
 
                                     {/* Lista de IPs */}
                                     <div>
-                                        <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center justify-between">
+                                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center justify-between">
                                             <span>Nodos activos en la malla</span>
-                                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                            <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-2 py-0.5 rounded-full">
                                                 {listaRedes.length} Total
                                             </span>
                                         </h4>
 
                                         {listaRedes.length === 0 ? (
-                                            <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
-                                                <FiWifi className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                                <p className="text-gray-500 text-sm">No hay puntos de red configurados aún.</p>
+                                            <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800">
+                                                <FiWifi className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                                                <p className="text-gray-500 dark:text-gray-400 text-sm">No hay puntos de red configurados aún.</p>
                                             </div>
                                         ) : (
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                 {listaRedes.map((ip, index) => (
-                                                    <div key={index} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm group hover:border-blue-300 transition-all">
+                                                    <div key={index} className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm group hover:border-blue-300 dark:hover:border-blue-500 transition-all">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
-                                                                <FiGlobe className="w-4 h-4 text-blue-600" />
+                                                            <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                                                                <FiGlobe className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                                             </div>
-                                                            <span className="font-mono text-sm text-gray-700">{ip}</span>
+                                                            <span className="font-mono text-sm text-gray-700 dark:text-gray-200">{ip}</span>
                                                         </div>
                                                         <button
                                                             onClick={() => handleEliminarRed(ip)}

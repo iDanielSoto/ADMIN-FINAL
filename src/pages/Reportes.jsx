@@ -355,9 +355,9 @@ const Reportes = () => {
                                     </span>
                                 </div>
 
-                                <div className="h-[350px] w-full">
+                                <div className="w-full h-[350px] min-h-[350px]">
                                     {statsDepartamentos.length > 0 ? (
-                                        <ResponsiveContainer width="100%" height="100%">
+                                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                                             <BarChart
                                                 data={statsDepartamentos}
                                                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
@@ -407,8 +407,8 @@ const Reportes = () => {
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">Puntuales vs Retardos vs Faltas</p>
 
                                 {chartData.pieData.length > 0 ? (
-                                    <div className="flex-1 min-h-[300px]">
-                                        <ResponsiveContainer width="100%" height="100%">
+                                    <div className="flex-1 h-[300px] min-h-[300px]">
+                                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                                             <PieChart>
                                                 <Pie
                                                     data={chartData.pieData}
@@ -492,8 +492,8 @@ const Reportes = () => {
                                     <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
                                         <AlertTriangle className="w-5 h-5 text-gray-400" /> Historial de Incidencias
                                     </h3>
-                                    <div className="flex-1 min-h-[300px]">
-                                        <ResponsiveContainer width="100%" height="100%">
+                                    <div className="flex-1 h-[300px] min-h-[300px]">
+                                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                             <BarChart data={chartData.incidenciasData}>
                                                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} vertical={false} />
                                                 <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={12} />

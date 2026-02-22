@@ -11,6 +11,12 @@ const API_URL = API_CONFIG.BASE_URL;
  */
 export function useSolicitudesSSE({ onNuevaSolicitud, onSolicitudActualizada }) {
     const eventSourceRef = useRef(null);
+    const callbacksRef = useRef({ onNuevaSolicitud, onSolicitudActualizada });
+
+    // Actualizar refs para evitar clausuras obsoletas sin reconectar
+    useEffect(() => {
+        callbacksRef.current = { onNuevaSolicitud, onSolicitudActualizada };
+    }, [onNuevaSolicitud, onSolicitudActualizada]);
 
     useEffect(() => {
         const token = localStorage.getItem('auth_token');
@@ -23,7 +29,7 @@ export function useSolicitudesSSE({ onNuevaSolicitud, onSolicitudActualizada }) 
         es.addEventListener('nueva-solicitud', (e) => {
             try {
                 const data = JSON.parse(e.data);
-                onNuevaSolicitud?.(data);
+                callbacksRef.current.onNuevaSolicitud?.(data);
             } catch (err) {
                 console.error('Error parsing SSE nueva-solicitud:', err);
             }
@@ -32,15 +38,14 @@ export function useSolicitudesSSE({ onNuevaSolicitud, onSolicitudActualizada }) 
         es.addEventListener('solicitud-actualizada', (e) => {
             try {
                 const data = JSON.parse(e.data);
-                onSolicitudActualizada?.(data);
+                callbacksRef.current.onSolicitudActualizada?.(data);
             } catch (err) {
                 console.error('Error parsing SSE solicitud-actualizada:', err);
             }
         });
 
         es.onerror = () => {
-            // EventSource se reconecta automáticamente
-            console.warn('SSE conexión perdida, reconectando...');
+            // console.warn('SSE conexión perdida, reconectando...');
         };
 
         return () => {

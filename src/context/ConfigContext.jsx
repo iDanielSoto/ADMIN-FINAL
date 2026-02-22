@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { API_CONFIG } from '../config/Apiconfig';
 
 const ConfigContext = createContext();
 
@@ -20,8 +21,9 @@ export const ConfigProvider = ({ children }) => {
         es_mantenimiento: false
     });
 
-    // Cargar configuración inicial (podría venir de localStorage o una API pública si existiera)
+    // Cargar configuración inicial
     useEffect(() => {
+        // 1. Cargar desde localStorage
         const savedConfig = localStorage.getItem('app_config');
         if (savedConfig) {
             try {
@@ -30,6 +32,20 @@ export const ConfigProvider = ({ children }) => {
                 console.error("Error parsing saved config", e);
             }
         }
+
+        // 2. Verificar estado de mantenimiento desde API
+        fetch(`${API_CONFIG.BASE_URL}/api/configuracion/public/status`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setConfig(prev => ({
+                        ...prev,
+                        es_mantenimiento: data.maintenance
+                    }));
+                }
+            })
+            .catch(err => console.error("Error checking maintenance mod", err));
+
     }, []);
 
     // Función para actualizar la configuración

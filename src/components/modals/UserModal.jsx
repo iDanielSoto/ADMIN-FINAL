@@ -383,7 +383,7 @@ const UserModal = ({
 
                                 {/* Sección: Datos de Empleado (Condicional) */}
                                 {formData.es_empleado && (
-                                    <section className="bg-gray-50 dark:bg-gray-900/50 p-5 rounded-xl border border-gray-200 dark:border-gray-700 animate-fadeIn">
+                                    <section className="bg-gray-50 dark:bg-gray-900/50 p-5 pb-32 rounded-xl border border-gray-200 dark:border-gray-700 animate-fadeIn">
                                         <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                                             <span className="bg-primary-100 dark:bg-primary-900/30 p-1 rounded text-primary-600 dark:text-primary-400"><FiBriefcase className="w-4 h-4" /></span>
                                             Datos Laborales
@@ -506,7 +506,7 @@ const UserModal = ({
                                                                     className="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors border-b border-gray-50 dark:border-gray-700 last:border-0"
                                                                 >
                                                                     {dep.color && <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: dep.color }} />}
-                                                                    <span className="text-gray-700">{dep.nombre}</span>
+                                                                    <span className="text-gray-700 dark:text-gray-200">{dep.nombre}</span>
                                                                     <span className="ml-auto text-xs text-gray-400 opacity-0 group-hover:opacity-100"><FiPlus /></span>
                                                                 </button>
                                                             ))

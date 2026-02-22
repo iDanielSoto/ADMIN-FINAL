@@ -79,8 +79,8 @@ const TimeInput = ({ value, onChange, error, placeholder }) => {
                     onFocus={() => setIsOpen(true)}
                     placeholder={placeholder || "HH:MM"}
                     className={`w-full py-2 pl-3 pr-8 border rounded-md text-sm font-medium focus:ring-2 outline-none transition-all ${error
-                        ? 'bg-red-50 border-red-300 text-red-700 focus:ring-red-200'
-                        : 'bg-white border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-gray-700'
+                        ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 focus:ring-red-200'
+                        : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 text-gray-700 dark:text-white'
                         }`}
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:text-blue-500 transition-colors">
@@ -89,7 +89,7 @@ const TimeInput = ({ value, onChange, error, placeholder }) => {
             </div>
 
             {isOpen && filteredOptions.length > 0 && (
-                <ul className="absolute z-50 w-full max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg mt-1 text-sm animate-fadeIn">
+                <ul className="absolute z-50 w-full max-h-48 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg mt-1 text-sm animate-fadeIn">
                     {filteredOptions.map((time) => (
                         <li
                             key={time}
@@ -97,7 +97,7 @@ const TimeInput = ({ value, onChange, error, placeholder }) => {
                                 onChange(time);
                                 setIsOpen(false);
                             }}
-                            className={`px-3 py-2 cursor-pointer hover:bg-blue-50 flex items-center justify-between ${time === value ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700'}`}
+                            className={`px-3 py-2 cursor-pointer hover:bg-blue-50 dark:hover:bg-gray-600 flex items-center justify-between ${time === value ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-bold' : 'text-gray-700 dark:text-gray-200'}`}
                         >
                             {time}
                         </li>
@@ -241,18 +241,18 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
-            <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[95vh] flex flex-col animate-fadeIn">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[95vh] flex flex-col animate-fadeIn border border-gray-100 dark:border-gray-700">
 
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-xl flex-shrink-0">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 rounded-t-xl flex-shrink-0">
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800">
+                        <h2 className="text-xl font-bold text-gray-800 dark:text-white">
                             {mode === 'create' ? 'Nuevo Horario' : 'Editar Horario'}
                         </h2>
-                        <p className="text-sm text-gray-500">Configura los turnos laborales semanales</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Configura los turnos laborales semanales</p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-500">
+                    <button onClick={onClose} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors text-gray-500 dark:text-gray-400">
                         <FiX className="w-6 h-6" />
                     </button>
                 </div>
@@ -267,13 +267,13 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
                     )}
 
                     {/* Fila 1: Datos Generales */}
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 bg-white dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
                         <div className="md:col-span-6">
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Empleado *</label>
+                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Empleado *</label>
                             <select
                                 value={formData.empleado_id}
                                 onChange={(e) => setFormData(prev => ({ ...prev, empleado_id: e.target.value }))}
-                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none"
+                                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-gray-600 text-gray-900 dark:text-white transition-all outline-none"
                             >
                                 <option value="">Seleccionar empleado...</option>
                                 {empleados.map(emp => (
@@ -282,12 +282,12 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
                             </select>
                         </div>
                         <div className="md:col-span-3">
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Desde *</label>
-                            <input type="date" value={formData.fecha_inicio} onChange={(e) => setFormData(prev => ({ ...prev, fecha_inicio: e.target.value }))} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Desde *</label>
+                            <input type="date" value={formData.fecha_inicio} onChange={(e) => setFormData(prev => ({ ...prev, fecha_inicio: e.target.value }))} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white" />
                         </div>
                         <div className="md:col-span-3">
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Hasta (Opcional)</label>
-                            <input type="date" value={formData.fecha_fin} onChange={(e) => setFormData(prev => ({ ...prev, fecha_fin: e.target.value }))} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Hasta (Opcional)</label>
+                            <input type="date" value={formData.fecha_fin} onChange={(e) => setFormData(prev => ({ ...prev, fecha_fin: e.target.value }))} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white" />
                         </div>
                     </div>
 
@@ -296,7 +296,7 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
 
                         {/* Izquierda: Selector de Días */}
                         <div className="w-full md:w-1/4 flex flex-col gap-2">
-                            <h3 className="font-bold text-gray-800 mb-2 px-1">Días</h3>
+                            <h3 className="font-bold text-gray-800 dark:text-white mb-2 px-1">Días</h3>
                             {DIAS_SEMANA.map(dia => {
                                 const count = formData.configuracion_semanal[dia.key].length;
                                 const isActive = selectedDay === dia.key;
@@ -308,31 +308,33 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
                                         className={`flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
                                             ? 'bg-blue-600 text-white shadow-md transform scale-[1.02]'
                                             : count > 0
-                                                ? 'bg-blue-50 text-blue-700 border border-blue-100'
-                                                : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
+                                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800'
+                                                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
                                             }`}
                                     >
                                         <span>{dia.label}</span>
-                                        {count > 0 && (
-                                            <span className={`text-xs px-2 py-0.5 rounded-full ${isActive ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-800'}`}>
-                                                {count}
-                                            </span>
-                                        )}
+                                        {
+                                            count > 0 && (
+                                                <span className={`text-xs px-2 py-0.5 rounded-full ${isActive ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-800'}`}>
+                                                    {count}
+                                                </span>
+                                            )
+                                        }
                                     </button>
                                 );
                             })}
                         </div>
 
                         {/* Derecha: Editor de Turnos */}
-                        <div className="flex-1 bg-gray-50 rounded-xl border border-gray-200 flex flex-col">
+                        <div className="flex-1 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col">
                             {/* Toolbar del Editor */}
-                            <div className="p-4 border-b border-gray-200 bg-white rounded-t-xl flex flex-wrap items-center justify-between gap-3">
-                                <h4 className="font-bold text-lg text-gray-800 capitalize flex items-center gap-2">
+                            <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/80 rounded-t-xl flex flex-wrap items-center justify-between gap-3">
+                                <h4 className="font-bold text-lg text-gray-800 dark:text-white capitalize flex items-center gap-2">
                                     <FiClock className="text-blue-500" />
                                     {selectedDay}
                                 </h4>
                                 <div className="flex gap-2">
-                                    <button type="button" onClick={copiarDia} className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors">
+                                    <button type="button" onClick={copiarDia} className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
                                         Copiar a todos
                                     </button>
                                     <button
@@ -346,14 +348,14 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
                             </div>
 
                             {/* Barra de Atajos Rápidos */}
-                            <div className="px-4 py-3 bg-blue-50/50 border-b border-blue-100 flex flex-wrap gap-2 items-center">
-                                <span className="text-xs font-semibold text-blue-800 flex items-center gap-1"><FiZap /> Rápido:</span>
+                            <div className="px-4 py-3 bg-blue-50/50 dark:bg-blue-900/10 border-b border-blue-100 dark:border-blue-900/30 flex flex-wrap gap-2 items-center">
+                                <span className="text-xs font-semibold text-blue-800 dark:text-blue-300 flex items-center gap-1"><FiZap /> Rápido:</span>
                                 {QUICK_PRESETS.map((preset, idx) => (
                                     <button
                                         key={idx}
                                         type="button"
                                         onClick={() => agregarTurno(preset.inicio, preset.fin)}
-                                        className="px-2.5 py-1 text-xs bg-white text-blue-700 border border-blue-200 rounded-md hover:border-blue-400 hover:shadow-sm transition-all"
+                                        className="px-2.5 py-1 text-xs bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-md hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-sm transition-all"
                                     >
                                         {preset.label}
                                     </button>
@@ -363,27 +365,27 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
                             {/* Lista de Inputs de Turnos */}
                             <div className="p-4 space-y-3 flex-1 overflow-y-auto">
                                 {formData.configuracion_semanal[selectedDay].length === 0 ? (
-                                    <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-60 min-h-[150px]">
+                                    <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 opacity-60 min-h-[150px]">
                                         <FiClock className="w-10 h-10 mb-2" />
                                         <p className="text-sm">No hay turnos asignados</p>
                                         <p className="text-xs mt-1">Selecciona una opción rápida arriba</p>
                                     </div>
                                 ) : (
                                     formData.configuracion_semanal[selectedDay].map((turno, index) => (
-                                        <div key={index} className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200 shadow-sm hover:border-blue-300 transition-colors group">
-                                            <span className="text-xs font-bold text-gray-300 w-6 mt-1">#{index + 1}</span>
+                                        <div key={index} className="flex items-center gap-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:border-blue-300 dark:hover:border-blue-500 transition-colors group">
+                                            <span className="text-xs font-bold text-gray-300 dark:text-gray-600 w-6 mt-1">#{index + 1}</span>
 
                                             <div className="flex-1 flex items-center gap-3">
                                                 <div className="flex-1">
-                                                    <label className="block text-[10px] text-gray-500 uppercase tracking-wide font-bold mb-0.5">Inicio</label>
+                                                    <label className="block text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide font-bold mb-0.5">Inicio</label>
                                                     <TimeInput
                                                         value={turno.inicio || ''} // Safety check
                                                         onChange={(val) => actualizarTurno(index, 'inicio', val)}
                                                     />
                                                 </div>
-                                                <div className="text-gray-300 mt-5">➜</div>
+                                                <div className="text-gray-300 dark:text-gray-600 mt-5">➜</div>
                                                 <div className="flex-1">
-                                                    <label className="block text-[10px] text-gray-500 uppercase tracking-wide font-bold mb-0.5">Fin</label>
+                                                    <label className="block text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide font-bold mb-0.5">Fin</label>
                                                     <TimeInput
                                                         value={turno.fin || ''} // Safety check
                                                         onChange={(val) => actualizarTurno(index, 'fin', val)}
@@ -392,12 +394,12 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
                                                 </div>
                                             </div>
 
-                                            <div className="h-8 w-px bg-gray-200 mx-2 mt-4"></div>
+                                            <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 mx-2 mt-4"></div>
 
                                             <button
                                                 type="button"
                                                 onClick={() => eliminarTurno(index)}
-                                                className="p-2 mt-4 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                className="p-2 mt-4 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                                 title="Eliminar turno"
                                             >
                                                 <FiTrash2 className="w-4 h-4" />
@@ -410,10 +412,10 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
                     </div>
 
                     {/* Fila 3: Vista Previa Compacta (CON CORRECCIÓN DE CRASH) */}
-                    <div className="border-t border-gray-100 pt-6">
+                    <div className="border-t border-gray-100 dark:border-gray-700 pt-6">
                         <div className="flex items-center gap-2 mb-3">
-                            <FiLayers className="w-4 h-4 text-blue-600" />
-                            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Resumen Visual</h3>
+                            <FiLayers className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Resumen Visual</h3>
                         </div>
                         <div className="flex flex-wrap gap-2">
                             {DIAS_SEMANA.map(dia => {
@@ -427,11 +429,11 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
 
                                 const bloques = fusionarBloquesContinuos(turnosValidos);
                                 return (
-                                    <div key={dia.key} className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-md border border-gray-200 text-xs hover:border-blue-300 transition-colors">
-                                        <span className="font-bold text-gray-600">{dia.label.substring(0, 3)}:</span>
+                                    <div key={dia.key} className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-700/50 rounded-md border border-gray-200 dark:border-gray-600 text-xs hover:border-blue-300 dark:hover:border-blue-500 transition-colors">
+                                        <span className="font-bold text-gray-600 dark:text-gray-300">{dia.label.substring(0, 3)}:</span>
                                         <div className="flex gap-1">
                                             {bloques.map((b, i) => (
-                                                <span key={i} className={`px-1.5 py-0.5 rounded border shadow-sm ${b.fusionado ? 'bg-blue-50 text-blue-800 border-blue-100' : 'bg-white text-gray-800 border-gray-200'}`}>
+                                                <span key={i} className={`px-1.5 py-0.5 rounded border shadow-sm ${b.fusionado ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-100 dark:border-blue-800' : 'bg-white dark:bg-gray-600 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-500'}`}>
                                                     {b.inicio}-{b.fin}
                                                 </span>
                                             ))}
@@ -450,12 +452,12 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
                 {confirmAction && <ConfirmBox message={confirmAction.message} onConfirm={confirmAction.onConfirm} onCancel={() => setConfirmAction(null)} />}
 
                 {/* Footer Fijo */}
-                <div className="flex justify-between items-center px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl flex-shrink-0">
-                    <div className="text-xs text-gray-500 hidden sm:block">
+                <div className="flex justify-between items-center px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700 rounded-b-xl flex-shrink-0">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
                         * Los cambios no afectarán el historial pasado
                     </div>
                     <div className="flex gap-3 ml-auto sm:ml-0">
-                        <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all">
+                        <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg transition-all">
                             Cancelar
                         </button>
                         <button

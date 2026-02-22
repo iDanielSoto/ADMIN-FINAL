@@ -1,8 +1,8 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NetworkProvider } from './context/NetworkContext';
-import { ConfigProvider } from './context/ConfigContext';
+import { ConfigProvider, useConfig } from './context/ConfigContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { CompanyProvider } from './context/CompanyContext';
@@ -13,6 +13,7 @@ import { protectedRoutes, specialRoutes } from './config/routes';
 // Páginas que no usan lazy loading (críticas para UX)
 import Login from './pages/InicioSesion';
 import Error404 from './pages/Error404';
+import Maintenance from './pages/Maintenance';
 import DynamicLoader from './components/common/DynamicLoader';
 
 
@@ -39,10 +40,17 @@ function App() {
 // Definición de rutas de la aplicación
 function AppRoutes() {
     const { isAuthenticated, loading } = useAuth();
+    const { config } = useConfig();
+    const location = useLocation();
 
     // Mostrar loading mientras se verifica la autenticación
     if (loading) {
         return <DynamicLoader text="Verificando sesión..." />;
+    }
+
+    // Modo Mantenimiento (Permitir acceso a login)
+    if (config.es_mantenimiento && !isAuthenticated && location.pathname !== '/login') {
+        return <Maintenance />;
     }
 
     return (

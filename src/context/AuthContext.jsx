@@ -115,9 +115,15 @@ export const AuthProvider = ({ children }) => {
     /**
      * Iniciar sesión
      */
-    const login = async (usuario, contraseña) => {
+    /**
+     * Iniciar sesión
+     * @param {string} usuario 
+     * @param {string} contraseña 
+     * @param {boolean} deferUpdate - Si es true, no actualiza el estado inmediatamente (para animaciones)
+     */
+    const login = async (usuario, contraseña, deferUpdate = false) => {
         try {
-            setLoading(true);
+            // No activamos loading global para evitar desmontar el componente Login y permitir animaciones
             setError(null);
 
             const response = await fetch(`${API_URL}/api/auth/login`, {
@@ -138,11 +144,18 @@ export const AuthProvider = ({ children }) => {
                 throw new Error(data.message || 'Credenciales inválidas');
             }
 
-            // Guardar token y datos del usuario
-            localStorage.setItem('auth_token', data.data.token);
-            localStorage.setItem('user_data', JSON.stringify(data.data));
+            // Función para finalizar el login (guardar datos y actualizar estado)
+            const finalizeLogin = () => {
+                localStorage.setItem('auth_token', data.data.token);
+                localStorage.setItem('user_data', JSON.stringify(data.data));
+                setUser(data.data);
+            };
 
-            setUser(data.data);
+            if (deferUpdate) {
+                return { success: true, confirmLogin: finalizeLogin };
+            }
+
+            finalizeLogin();
             return { success: true };
         } catch (error) {
             console.error('Error en login:', error);
@@ -151,9 +164,8 @@ export const AuthProvider = ({ children }) => {
                 success: false,
                 message: error.message,
             };
-        } finally {
-            setLoading(false);
         }
+        // No hay finally con setLoading(false)
     };
 
     /**
