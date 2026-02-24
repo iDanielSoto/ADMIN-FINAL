@@ -8,7 +8,7 @@ function ConfirmBox({ message, onConfirm, onCancel }) {
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+                className="fixed inset-0 bg-black/50"
                 onClick={onCancel || onConfirm}
             />
 
@@ -21,8 +21,8 @@ function ConfirmBox({ message, onConfirm, onCancel }) {
                     {/* Icono + Mensaje */}
                     <div className="flex items-start gap-4">
                         <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${isConfirm
-                                ? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
-                                : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                            ? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
+                            : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                             }`}>
                             {isConfirm
                                 ? <FiAlertCircle className="w-5 h-5" />

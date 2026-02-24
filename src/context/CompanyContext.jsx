@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRealTime } from '../hooks/useRealTime';
 import { API_CONFIG } from '../config/Apiconfig';
+import { useAuth } from './AuthContext';
 
 const CompanyContext = createContext();
 
@@ -16,25 +17,34 @@ export const CompanyProvider = ({ children }) => {
     const [empresa, setEmpresa] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const { user } = useAuth(); // Importamos el auth context
 
     const API_URL = API_CONFIG.BASE_URL;
 
     const fetchEmpresa = async () => {
         try {
             setLoading(true);
+
+            // Usar el token directamente desde localStorage (no depender del objeto user)
             const token = localStorage.getItem('auth_token');
-            // Si no hay token, no podemos cargar la empresa (asumiendo que requiere auth)
-            // Si es endpoint público, quitar el check del token.
-            // Asumiré que requiere Auth por consistencia con Sidebar.jsx
+            if (!token) {
+                setEmpresa(null);
+                return;
+            }
 
-            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+            // Si es el Dueño del Sistema, no cargamos ninguna empresa cliente.
+            if (user?.esPropietarioSaaS || token.startsWith('saas_')) {
+                setEmpresa({ nombre: 'Administración SaaS', logo: null });
+                return;
+            }
 
-            const response = await fetch(`${API_URL}/api/empresas?es_activo=true`, {
-                headers
+            const response = await fetch(`${API_URL}/api/empresas/mi-empresa`, {
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-            const result = await response.json();
-            if (result.success && result.data?.length > 0) {
-                setEmpresa(result.data[0]);
+
+            if (response.ok) {
+                const result = await response.json();
+                setEmpresa(result.success ? result.data : null);
             } else {
                 setEmpresa(null);
             }
@@ -46,9 +56,10 @@ export const CompanyProvider = ({ children }) => {
         }
     };
 
+    // Cargar empresa al montar y cuando cambie el usuario
     useEffect(() => {
         fetchEmpresa();
-    }, []);
+    }, [user]);  // Se re-ejecuta cuando el objeto user cambia (ej. al loguear)
 
     // Escuchar cambios en tiempo real
     useRealTime({

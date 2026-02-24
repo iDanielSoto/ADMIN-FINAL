@@ -37,6 +37,11 @@ function App() {
     );
 }
 
+// Redireccionador Inteligente según Rol
+function RootRedirect() {
+    return <Navigate to="/dashboard" replace />;
+}
+
 // Definición de rutas de la aplicación
 function AppRoutes() {
     const { isAuthenticated, loading } = useAuth();
@@ -61,6 +66,16 @@ function AppRoutes() {
                     path="/login"
                     element={
                         isAuthenticated ? <Navigate to="/" replace /> : <Login />
+                    }
+                />
+
+                {/* Redirección Base Inteligente */}
+                <Route
+                    path="/"
+                    element={
+                        <ProtectedRoute>
+                            <RootRedirect />
+                        </ProtectedRoute>
                     }
                 />
 

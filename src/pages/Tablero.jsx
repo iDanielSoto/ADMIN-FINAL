@@ -11,10 +11,13 @@ import { API_CONFIG } from '../config/Apiconfig';
 import Pagination from '../components/Pagination';
 import { useRealTime } from '../hooks/useRealTime';
 import DynamicLoader from '../components/common/DynamicLoader';
+import { useAuth } from '../context/AuthContext';
+import SaasDashboard from './SaasDashboard';
 
 const API_URL = API_CONFIG.BASE_URL;
 
 const Dashboard = () => {
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
@@ -28,15 +31,21 @@ const Dashboard = () => {
     const asistenciasPorPagina = 4;
 
     useEffect(() => {
-        fetchDashboardData();
-    }, []);
+        if (!user?.esPropietarioSaaS) {
+            fetchDashboardData();
+        }
+    }, [user]);
 
-    // Actualización en tiempo real
-    useRealTime({
+    // Actualización en tiempo real (Solo si no es SaaS)
+    useRealTime(user?.esPropietarioSaaS ? {} : {
         'nueva-asistencia': () => {
             fetchDashboardData();
         }
     });
+
+    if (user?.esPropietarioSaaS) {
+        return <SaasDashboard />;
+    }
 
     const fetchDashboardData = async () => {
         try {

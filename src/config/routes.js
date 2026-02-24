@@ -13,9 +13,12 @@ const Registros = lazy(() => import('../pages/Registros'));
 const Configuracion = lazy(() => import('../pages/Configuracion'));
 const PerfilUsuario = lazy(() => import('../pages/PerfilUsuario'));
 const Avisos = lazy(() => import('../pages/Avisos'));
+const AdminSaaS = lazy(() => import('../pages/AdminSaaS')); // Rutas SuperUser
+const EmpresasSaaS = lazy(() => import('../pages/EmpresasSaaS'));
+const ConfigurarEmpresaSaaS = lazy(() => import('../pages/ConfigurarEmpresaSaaS'));
+const SaasLogs = lazy(() => import('../pages/SaasLogs'));
 
 export const protectedRoutes = [
-    { path: '/', component: Dashboard },
     { path: '/dashboard', component: Dashboard },
     { path: '/avisos', component: Avisos },
     { path: '/empleados', component: Empleados },
@@ -27,6 +30,10 @@ export const protectedRoutes = [
     { path: '/reportes', component: Reportes },
     { path: '/registros', component: Registros, requireAdmin: true },
     { path: '/configuracion', component: Configuracion, requireAdmin: true },
+    { path: '/super-administradores', component: AdminSaaS, requireAdmin: true },
+    { path: '/empresas', component: EmpresasSaaS, requireAdmin: true },
+    { path: '/empresas/:id', component: ConfigurarEmpresaSaaS, requireAdmin: true },
+    { path: '/saas-logs', component: SaasLogs, requireAdmin: true },
 ];
 
 export const specialRoutes = [

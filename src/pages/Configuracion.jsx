@@ -74,8 +74,7 @@ const Configuracion = () => {
         orden_credenciales: {
             huella: { prioridad: 1, activo: true },
             rostro: { prioridad: 2, activo: true },
-            tarjeta: { prioridad: 3, activo: true },
-            codigo: { prioridad: 4, activo: true }
+            codigo: { prioridad: 3, activo: true }
         }
     });
 
@@ -186,13 +185,13 @@ const Configuracion = () => {
             setLoading(true);
             const token = localStorage.getItem('auth_token');
 
-            const resEmpresa = await fetch(`${API_URL}/api/empresas?es_activo=true`, {
+            const resEmpresa = await fetch(`${API_URL}/api/empresas/mi-empresa`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const dataEmpresa = await resEmpresa.json();
 
-            if (dataEmpresa.success && dataEmpresa.data?.length > 0) {
-                const emp = dataEmpresa.data[0];
+            if (dataEmpresa.success && dataEmpresa.data) {
+                const emp = dataEmpresa.data;
                 setEmpresa(emp);
 
                 setFormEmpresa({
@@ -202,54 +201,90 @@ const Configuracion = () => {
                     correo: emp.correo || ''
                 });
 
-                if (emp.configuracion_id) {
+                // La configuración ya viene incluida en la respuesta de /mi-empresa
+                const cfg = emp;
+                if (cfg.idioma || cfg.zona_horaria || cfg.formato_fecha) {
+                    // Cuidado: cfg (emp) tiene su propio campo 'id' de empresa, 
+                    // se debe poner al final para que no sea sobrescrito!
+                    setConfiguracion({ ...cfg, id: emp.configuracion_id });
+
+                    // Estructura por defecto para orden_credenciales
+                    let ordenCredenciales = {
+                        huella: { prioridad: 1, activo: true },
+                        rostro: { prioridad: 2, activo: true },
+                        codigo: { prioridad: 3, activo: true }
+                    };
+
+                    setFormConfig({
+                        idioma: cfg.idioma || 'es',
+                        es_mantenimiento: cfg.es_mantenimiento || false,
+                        formato_fecha: cfg.formato_fecha || 'DD/MM/YYYY',
+                        formato_hora: cfg.formato_hora || '24',
+                        zona_horaria: cfg.zona_horaria || 'America/Mexico_City',
+                        intentos_maximos: cfg.intentos_maximos || 3,
+                        orden_credenciales: ordenCredenciales
+                    });
+
+                    // Cargar segmentos de red
+                    if (cfg.segmentos_red) {
+                        try {
+                            const parsed = typeof cfg.segmentos_red === 'string' ? JSON.parse(cfg.segmentos_red) : cfg.segmentos_red;
+                            setListaRedes(Array.isArray(parsed) ? parsed : []);
+                        } catch (e) { console.error(e); }
+                    }
+                } else if (emp.configuracion_id) {
+                    // Fallback: cargar config por separado si no viene incluida
                     const resConfig = await fetch(`${API_URL}/api/configuracion/${emp.configuracion_id}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     const dataConfig = await resConfig.json();
 
                     if (dataConfig.success) {
-                        const cfg = dataConfig.data;
-                        setConfiguracion(cfg);
+                        const cfg2 = dataConfig.data;
+                        setConfiguracion(cfg2);
 
-                        // Estructura por defecto para orden_credenciales
                         let ordenCredenciales = {
                             huella: { prioridad: 1, activo: true },
                             rostro: { prioridad: 2, activo: true },
-                            tarjeta: { prioridad: 3, activo: true },
-                            codigo: { prioridad: 4, activo: true }
+                            codigo: { prioridad: 3, activo: true }
                         };
 
-                        if (cfg.orden_credenciales) {
+                        if (cfg2.orden_credenciales) {
                             try {
-                                const parsed = typeof cfg.orden_credenciales === 'string'
-                                    ? JSON.parse(cfg.orden_credenciales)
-                                    : cfg.orden_credenciales;
-
-                                // Si es array (formato antiguo), convertir a objeto
+                                const parsed = typeof cfg2.orden_credenciales === 'string'
+                                    ? JSON.parse(cfg2.orden_credenciales)
+                                    : cfg2.orden_credenciales;
                                 if (Array.isArray(parsed)) {
                                     ordenCredenciales = {};
                                     parsed.forEach((metodo, index) => {
                                         ordenCredenciales[metodo] = { prioridad: index + 1, activo: true };
                                     });
                                 } else {
-                                    // Ya es objeto con la nueva estructura
                                     ordenCredenciales = parsed;
                                 }
+                                delete ordenCredenciales.tarjeta;
                             } catch (e) {
                                 console.error("Error parseando orden_credenciales", e);
                             }
                         }
 
                         setFormConfig({
-                            idioma: cfg.idioma || 'es',
-                            es_mantenimiento: cfg.es_mantenimiento || false,
-                            formato_fecha: cfg.formato_fecha || 'DD/MM/YYYY',
-                            formato_hora: cfg.formato_hora || '24',
-                            zona_horaria: cfg.zona_horaria || 'America/Mexico_City',
-                            intentos_maximos: cfg.intentos_maximos || 3,
+                            idioma: cfg2.idioma || 'es',
+                            es_mantenimiento: cfg2.es_mantenimiento || false,
+                            formato_fecha: cfg2.formato_fecha || 'DD/MM/YYYY',
+                            formato_hora: cfg2.formato_hora || '24',
+                            zona_horaria: cfg2.zona_horaria || 'America/Mexico_City',
+                            intentos_maximos: cfg2.intentos_maximos || 3,
                             orden_credenciales: ordenCredenciales
                         });
+
+                        // Cargar segmentos de red
+                        if (cfg2.segmentos_red) {
+                            try {
+                                const parsed = typeof cfg2.segmentos_red === 'string' ? JSON.parse(cfg2.segmentos_red) : cfg2.segmentos_red;
+                                setListaRedes(Array.isArray(parsed) ? parsed : []);
+                            } catch (e) { console.error(e); }
+                        }
                     }
                 }
             }
@@ -413,8 +448,8 @@ const Configuracion = () => {
             setMensaje(null);
             const token = localStorage.getItem('auth_token');
 
-            // Guardar Empresa
-            const resEmpresa = await fetch(`${API_URL}/api/empresas/${empresa.id}`, {
+            // Guardar Empresa (usando endpoint de tenant, no SaaS Owner)
+            const resEmpresa = await fetch(`${API_URL}/api/empresas/mi-empresa`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -438,7 +473,7 @@ const Configuracion = () => {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify(formConfig)
+                    body: JSON.stringify({ ...formConfig, segmentos_red: listaRedes })
                 });
                 const dataConfig = await resConfig.json();
                 if (!dataConfig.success) throw new Error('Error al actualizar configuración');
@@ -492,8 +527,7 @@ const Configuracion = () => {
                 setTolerancia(dataTol.data);
             }
 
-            // NOTA: No se guarda 'listaRedes' porque solo es plantilla por ahora.
-
+            // Se eliminó la nota de 'no se guarda listaRedes' porque ya se añadió al payload formConfig arriba
             setMensaje({ tipo: 'success', texto: 'Configuración guardada correctamente' });
             setTimeout(() => setMensaje(null), 3000);
 

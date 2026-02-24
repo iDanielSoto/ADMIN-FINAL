@@ -406,9 +406,10 @@ const PerfilUsuario = () => {
 
     const chartData = useMemo(() => {
         if (!estadisticas?.asistencias) return [];
+        const retardos = (parseInt(estadisticas.asistencias.retardos) || 0);
         return [
             { name: 'Puntuales', value: parseInt(estadisticas.asistencias.puntuales) || 0, color: COLORS.puntual },
-            { name: 'Retardos', value: parseInt(estadisticas.asistencias.retardos) || 0, color: COLORS.retardo },
+            { name: 'Retardos', value: retardos, color: COLORS.retardo },
             { name: 'Faltas', value: parseInt(estadisticas.asistencias.faltas) || 0, color: COLORS.falta },
         ].filter(item => item.value > 0);
     }, [estadisticas]);
@@ -1057,13 +1058,13 @@ const PerfilUsuario = () => {
                                                     </ResponsiveContainer>
                                                 </div>
                                             ) : (
-                                                <div className="h-40 flex items-center justify-center text-gray-400 text-xs italic bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                                                    Sin datos
+                                                <div className="h-40 flex items-center justify-center text-gray-400 dark:text-gray-500 text-xs italic bg-gray-50 dark:bg-gray-800 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                                                    Sin datos de asistencia aún
                                                 </div>
                                             )}
                                         </div>
 
-                                        <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col h-full">
+                                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col h-full">
                                             <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                                                 <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Historial Reciente</h3>
                                             </div>
@@ -1083,14 +1084,17 @@ const PerfilUsuario = () => {
                                                                         {(() => {
                                                                             const e = registro.estado;
                                                                             const map = {
-                                                                                puntual: { cls: 'bg-green-100 text-green-800', label: 'Puntual' },
-                                                                                aprobado: { cls: 'bg-green-100 text-green-800', label: 'Aprobado' },
-                                                                                salida_puntual: { cls: 'bg-green-100 text-green-800', label: 'Salida puntual' },
-                                                                                salida_temprana: { cls: 'bg-blue-100 text-blue-800', label: 'Salida temprana' },
-                                                                                retardo: { cls: 'bg-yellow-100 text-yellow-800', label: 'Retardo' },
-                                                                                falta: { cls: 'bg-red-100 text-red-800', label: 'Falta' },
+                                                                                puntual: { cls: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', label: 'Puntual' },
+                                                                                aprobado: { cls: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', label: 'Aprobado' },
+                                                                                salida_puntual: { cls: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', label: 'Salida puntual' },
+                                                                                salida_temprana: { cls: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300', label: 'Salida temprana' },
+                                                                                retardo: { cls: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300', label: 'Retardo' },
+                                                                                retardo_a: { cls: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300', label: 'Retardo A' },
+                                                                                retardo_b: { cls: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300', label: 'Retardo B' },
+                                                                                falta: { cls: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300', label: 'Falta' },
+                                                                                falta_por_retardo: { cls: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300', label: 'Falta (retardos)' },
                                                                             };
-                                                                            const info = map[e] || { cls: 'bg-gray-100 text-gray-800', label: e };
+                                                                            const info = map[e] || { cls: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300', label: e };
                                                                             return (
                                                                                 <span className={`px-2 py-0.5 inline-flex text-[10px] leading-4 font-semibold rounded-full ${info.cls}`}>
                                                                                     {info.label}
@@ -1181,6 +1185,11 @@ const PerfilUsuario = () => {
                         </div>
                     )}
 
+                    {/* ── EQUIVALENCIAS DE RETARDOS (Reglamento Art. 80) ── */}
+                    {usuario?.es_empleado && empleadoId && (
+                        <EquivalenciasPanel empleadoId={empleadoId} />
+                    )}
+
                     {/* Dispositivo Asignado */}
                     {usuario?.es_empleado && (
                         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
@@ -1256,6 +1265,174 @@ const PerfilUsuario = () => {
                     onConfirm={() => setAlertMsg(null)}
                 />
             )}
+        </div>
+    );
+};
+
+/**
+ * Panel de Equivalencias de Retardos (Reglamento Art. 80)
+ * Muestra los retardos A/B del mes actual, cuántos faltan para generar una falta
+ * y las notas malas acumuladas.
+ */
+const EquivalenciasPanel = ({ empleadoId }) => {
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const token = localStorage.getItem('auth_token');
+        const hoy = new Date();
+        const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
+        const finMes = hoy.toISOString().split('T')[0];
+
+        fetch(`${API_URL}/api/asistencias/empleado/${empleadoId}/equivalencias?inicio=${inicioMes}&fin=${finMes}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+            .then(r => r.json())
+            .then(r => { if (r.success) setData(r.data); })
+            .catch(console.error)
+            .finally(() => setLoading(false));
+    }, [empleadoId]);
+
+    if (loading) return (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 animate-pulse">
+            <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded mb-4" />
+            <div className="grid grid-cols-4 gap-3">
+                {[...Array(4)].map((_, i) => <div key={i} className="h-16 bg-gray-100 dark:bg-gray-700 rounded-xl" />)}
+            </div>
+        </div>
+    );
+
+    if (!data) return null;
+
+    const eqA = data.configuracion_equivalencias.retardos_a_por_falta;  // 10
+    const eqB = data.configuracion_equivalencias.retardos_b_por_falta;   // 5
+    const notasMalas = data.notas_malas_acumuladas;
+    const notasParaSuspension = 5;
+
+    // Barra: cuántos RetA restan para la próxima falta
+    const restantesA = data.desglose_equivalencias.retardos_a_restantes;
+    const restantesB = data.desglose_equivalencias.retardos_b_restantes;
+
+    const mesActual = new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+
+    return (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-orange-100 dark:border-orange-900/30">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-orange-100 dark:border-orange-900/30 bg-orange-50/50 dark:bg-orange-900/10 flex items-center justify-between">
+                <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <FiAlertTriangle className="w-5 h-5 text-orange-500" />
+                    Equivalencias Art. 80 — {mesActual}
+                </h2>
+                <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded-md uppercase tracking-wide">Reglamento RRHH</span>
+            </div>
+
+            <div className="p-6 space-y-5">
+
+                {/* Contadores principales */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {/* Retardo A */}
+                    <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-xl border border-amber-100 dark:border-amber-800">
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase mb-1">Retardo A</p>
+                        <div className="flex items-end justify-between">
+                            <span className="text-2xl font-bold text-amber-700 dark:text-amber-300">{data.retardos_a}</span>
+                            <span className="text-xs text-amber-500">/{eqA} = falta</span>
+                        </div>
+                        <p className="text-[10px] text-amber-500 mt-1">11–20 min tarde</p>
+                    </div>
+
+                    {/* Retardo B */}
+                    <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-xl border border-orange-100 dark:border-orange-800">
+                        <p className="text-[10px] text-orange-600 dark:text-orange-400 font-bold uppercase mb-1">Retardo B</p>
+                        <div className="flex items-end justify-between">
+                            <span className="text-2xl font-bold text-orange-700 dark:text-orange-300">{data.retardos_b}</span>
+                            <span className="text-xs text-orange-500">/{eqB} = falta</span>
+                        </div>
+                        <p className="text-[10px] text-orange-500 mt-1">21–29 min tarde</p>
+                    </div>
+
+                    {/* Faltas equivalentes */}
+                    <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-xl border border-red-100 dark:border-red-800">
+                        <p className="text-[10px] text-red-600 dark:text-red-400 font-bold uppercase mb-1">Faltas equiv.</p>
+                        <div className="flex items-end justify-between">
+                            <span className="text-2xl font-bold text-red-700 dark:text-red-300">{data.faltas_equivalentes_por_retardos}</span>
+                            <FiXCircle className="w-4 h-4 text-red-400" />
+                        </div>
+                        <p className="text-[10px] text-red-500 mt-1">Por acumulación</p>
+                    </div>
+
+                    {/* Notas malas */}
+                    <div className={`p-3 rounded-xl border ${notasMalas >= notasParaSuspension ? 'bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-700' : 'bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800'}`}>
+                        <p className={`text-[10px] font-bold uppercase mb-1 ${notasMalas >= notasParaSuspension ? 'text-red-600' : 'text-purple-600 dark:text-purple-400'}`}>
+                            Notas Malas
+                        </p>
+                        <div className="flex items-end justify-between">
+                            <span className={`text-2xl font-bold ${notasMalas >= notasParaSuspension ? 'text-red-700 dark:text-red-300' : 'text-purple-700 dark:text-purple-300'}`}>
+                                {notasMalas}
+                            </span>
+                            <span className="text-xs text-purple-400">/{notasParaSuspension} susp.</span>
+                        </div>
+                        <p className={`text-[10px] mt-1 ${notasMalas >= notasParaSuspension ? 'text-red-600 font-semibold' : 'text-purple-500'}`}>
+                            {notasMalas >= notasParaSuspension ? '⚠️ Suspensión' : 'Art. 80a/80b'}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Barras de progreso */}
+                <div className="space-y-3">
+                    {/* Progreso Retardo A */}
+                    <div>
+                        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                            <span>Retardo A: {restantesA}/{eqA} para próxima falta</span>
+                            <span className="font-medium">{Math.round((restantesA / eqA) * 100)}%</span>
+                        </div>
+                        <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-amber-400 rounded-full transition-all duration-500"
+                                style={{ width: `${(restantesA / eqA) * 100}%` }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Progreso Retardo B */}
+                    <div>
+                        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                            <span>Retardo B: {restantesB}/{eqB} para próxima falta</span>
+                            <span className="font-medium">{Math.round((restantesB / eqB) * 100)}%</span>
+                        </div>
+                        <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-orange-400 rounded-full transition-all duration-500"
+                                style={{ width: `${(restantesB / eqB) * 100}%` }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Notas malas → Suspensión */}
+                    <div>
+                        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                            <span>Notas malas: {notasMalas}/{notasParaSuspension} para suspensión</span>
+                            <span className="font-medium">{Math.min(Math.round((notasMalas / notasParaSuspension) * 100), 100)}%</span>
+                        </div>
+                        <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full rounded-full transition-all duration-500 ${notasMalas >= notasParaSuspension ? 'bg-red-500' : 'bg-purple-400'}`}
+                                style={{ width: `${Math.min((notasMalas / notasParaSuspension) * 100, 100)}%` }}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Totales de faltas */}
+                <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{data.faltas_directas}</span> faltas directas ·{' '}
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{data.faltas_por_acumulacion_sistema}</span> generadas por sistema
+                    </div>
+                    <div className="text-xs font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-2.5 py-1 rounded-lg">
+                        Total faltas: {data.faltas_totales}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };

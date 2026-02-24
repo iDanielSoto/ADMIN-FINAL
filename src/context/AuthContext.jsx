@@ -81,22 +81,23 @@ export const AuthProvider = ({ children }) => {
                             setUser(data.data);
                             localStorage.setItem('user_data', JSON.stringify(data.data));
                         } else {
-                            throw new Error('Token inválido');
+                            logout();
                         }
                     } else {
-                        // Si falla la verificación (401, 403), cerrar sesión
+                        // Si falla la verificación (401, 403), cerrar sesión de inmediato
                         if (response.status === 401 || response.status === 403) {
-                            throw new Error('Sesión expirada');
+                            logout();
+                            return;
                         }
-                        // Si es otro error (500, red), usar datos locales si existen
+                        // Si es otro error (500), usar datos locales si existen
                         if (userData) {
-                            console.warn('Usando datos en caché debido a error de red');
+                            console.warn('Usando datos en caché debido a error del servidor');
                             setUser(JSON.parse(userData));
                         }
                     }
                 } catch (networkError) {
                     console.error('Error de red al verificar auth:', networkError);
-                    // Fallback a localStorage si hay error de red
+                    // Fallback a localStorage solo si hay error de red genuino
                     if (userData) {
                         setUser(JSON.parse(userData));
                     } else {
@@ -121,30 +122,39 @@ export const AuthProvider = ({ children }) => {
      * @param {string} contraseña 
      * @param {boolean} deferUpdate - Si es true, no actualiza el estado inmediatamente (para animaciones)
      */
-    const login = async (usuario, contraseña, deferUpdate = false) => {
+    const login = async (usuario, contraseña, deferUpdate = false, empresa_id = null) => {
         try {
-            // No activamos loading global para evitar desmontar el componente Login y permitir animaciones
             setError(null);
 
-            const response = await fetch(`${API_URL}/api/auth/login`, {
+            const endpoint = usuario === 'admin_saas' ? '/api/auth/login-saas' : '/api/auth/login';
+            const bodyPayload = { usuario, contraseña };
+            if (empresa_id) bodyPayload.empresa_id = empresa_id;
+
+            const response = await fetch(`${API_URL}${endpoint}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ usuario, contraseña }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bodyPayload),
             });
 
             const data = await response.json();
 
+            // Multi-tenant: usuario existe en varias empresas → devolver lista
+            if (response.status === 300 && data.empresas) {
+                return {
+                    success: false,
+                    multiTenant: true,
+                    empresas: data.empresas,
+                    message: data.message
+                };
+            }
+
             if (!response.ok) {
                 throw new Error(data.message || 'Error al iniciar sesión');
             }
-
             if (!data.success) {
                 throw new Error(data.message || 'Credenciales inválidas');
             }
 
-            // Función para finalizar el login (guardar datos y actualizar estado)
             const finalizeLogin = () => {
                 localStorage.setItem('auth_token', data.data.token);
                 localStorage.setItem('user_data', JSON.stringify(data.data));
@@ -160,12 +170,8 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             console.error('Error en login:', error);
             setError(error.message);
-            return {
-                success: false,
-                message: error.message,
-            };
+            return { success: false, message: error.message };
         }
-        // No hay finally con setLoading(false)
     };
 
     /**

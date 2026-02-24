@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Book, Users, Calendar, Settings, BarChart3, AlertCircle, Menu, X, ChevronLeft, Building2, Shield, Cpu, WifiOff, MessageSquare } from 'lucide-react'
+import { Home, Book, Users, Calendar, Settings, BarChart3, AlertCircle, Menu, X, ChevronLeft, Building2, Shield, Cpu, WifiOff, MessageSquare, Globe, Activity } from 'lucide-react'
 import { useRealTime } from '../hooks/useRealTime';
 import { useNetwork } from '../context/NetworkContext';
 import { useNotifications } from '../context/NotificationContext';
 import { useCompany } from '../context/CompanyContext';
+import { useAuth } from '../context/AuthContext';
 
 import { API_CONFIG } from '../config/Apiconfig';
 const API_URL = API_CONFIG.BASE_URL;
 
-// Menú principal (Sin configuración)
-const menuItems = [
+// Estructura base de menú
+const BASE_MENU_ITEMS = [
     { id: 'dashboard', nombre: 'Dashboard', icono: Home, ruta: '/dashboard' },
     { id: 'avisos', nombre: 'Avisos', icono: MessageSquare, ruta: '/avisos' },
     { id: 'empleados', nombre: 'Empleados', icono: Users, ruta: '/empleados' },
@@ -33,7 +34,33 @@ const Sidebar = () => {
     const [isCollapsed, setIsCollapsed] = useState(true);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const { unreadCount } = useNotifications();
-    const { empresa } = useCompany();
+    const { empresa, loading: loadingEmpresa } = useCompany();
+    const { user } = useAuth();
+
+    // Opciones Exclusivas del Panel SaaS
+    const SAAS_MENU_ITEMS = [
+        { id: 'dashboard', nombre: 'Dashboard SaaS', icono: Home, ruta: '/dashboard' },
+        { id: 'saas-empresas', nombre: 'Empresas Cliente', icono: Globe, ruta: '/empresas' },
+        { id: 'saas-master', nombre: 'Super Administradores', icono: Shield, ruta: '/super-administradores' },
+        { id: 'saas-logs', nombre: 'System Logs', icono: Activity, ruta: '/saas-logs' },
+    ];
+
+    // Determinar items del menú basado en rol y filtrar por permisos (opcional pero recomendado)
+    const unfilteredMenuItems = user?.esPropietarioSaaS
+        ? SAAS_MENU_ITEMS
+        : BASE_MENU_ITEMS;
+
+    // Filtrar items: un empleado normal no debería ver "Roles", "Departamentos", etc. si no es admin
+    const menuItems = unfilteredMenuItems.filter(item => {
+        if (user?.esPropietarioSaaS) return true;
+
+        // Si no es admin, solo puede ver Dashboard, Avisos, Incidencias (y Perfil si existiera)
+        // Esta es una solución simple para limpiar la consola de 403s
+        const adminOnlyItems = ['empleados', 'roles', 'horarios', 'departamentos', 'dispositivos', 'reportes', 'registros'];
+        if (!user?.esAdmin && adminOnlyItems.includes(item.id)) return false;
+
+        return true;
+    });
 
     const handleMenuClick = (ruta) => {
         setIsMobileOpen(false);
@@ -153,7 +180,11 @@ const Sidebar = () => {
                                 )}
                                 <div className="min-w-0 flex-1">
                                     <span className="font-bold text-sm text-gray-800 dark:text-white block leading-tight truncate">
-                                        {empresa?.nombre || 'Cargando...'}
+                                        {loadingEmpresa ? (
+                                            <span className="block h-3.5 w-28 bg-gray-200 dark:bg-gray-600 rounded animate-pulse" />
+                                        ) : (
+                                            empresa?.nombre || user?.usuario?.nombre || 'Mi Empresa'
+                                        )}
                                     </span>
                                 </div>
                             </div>
@@ -195,17 +226,19 @@ const Sidebar = () => {
                 </div>
 
                 {/* Footer del Sidebar (Configuración) */}
-                <div className={`flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 ${isCollapsed ? 'px-2 py-2' : 'px-3 py-3'}`}>
-                    <OfflineIndicator isCollapsed={isCollapsed} />
-                    <nav className="space-y-1">
-                        {renderMenuButton({
-                            id: 'configuracion',
-                            nombre: 'Configuración',
-                            icono: Settings,
-                            ruta: '/configuracion'
-                        })}
-                    </nav>
-                </div>
+                {!user?.esPropietarioSaaS && (
+                    <div className={`flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 ${isCollapsed ? 'px-2 py-2' : 'px-3 py-3'}`}>
+                        <OfflineIndicator isCollapsed={isCollapsed} />
+                        <nav className="space-y-1">
+                            {renderMenuButton({
+                                id: 'configuracion',
+                                nombre: 'Configuración',
+                                icono: Settings,
+                                ruta: '/configuracion'
+                            })}
+                        </nav>
+                    </div>
+                )}
             </aside>
         </>
     );

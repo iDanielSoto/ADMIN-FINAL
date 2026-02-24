@@ -7,7 +7,9 @@ import {
     FiEye,
     FiEyeOff,
     FiAlertCircle,
-    FiArrowRight
+    FiArrowRight,
+    FiChevronLeft,
+    FiBriefcase
 } from 'react-icons/fi';
 
 
@@ -23,6 +25,8 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [empresas, setEmpresas] = useState(null); // lista de empresas si multi-tenant
+    const [empresaSeleccionada, setEmpresaSeleccionada] = useState(null);
 
     // Manejar cambios en los inputs
     const handleChange = (e) => {
@@ -35,7 +39,38 @@ const Login = () => {
         if (error) setError('');
     };
 
-    const [animationState, setAnimationState] = useState('idle'); // idle, start, falling, squash, ripple, expanding, done
+    const [animationState, setAnimationState] = useState('idle');
+
+    // Re-enviar login con empresa_id seleccionado (multi-tenant)
+    const handleSubmitWithEmpresa = async (empresaId) => {
+        setIsSubmitting(true);
+        setError('');
+        try {
+            const result = await login(formData.usuario, formData.contraseña, true, empresaId);
+            if (!result.success) {
+                setError(result.message || 'Error al iniciar sesión');
+                setIsSubmitting(false);
+            } else {
+                setAnimationState('start');
+                setTimeout(() => {
+                    setAnimationState('falling');
+                    setTimeout(() => {
+                        setAnimationState('squash');
+                        setTimeout(() => {
+                            setAnimationState('ripple');
+                            setAnimationState('expanding');
+                            setTimeout(() => {
+                                if (result.confirmLogin) result.confirmLogin();
+                            }, 2500);
+                        }, 250);
+                    }, 1400);
+                }, 100);
+            }
+        } catch (err) {
+            setError('Error al conectar con el servidor');
+            setIsSubmitting(false);
+        }
+    };
 
     // Manejar submit del formulario
     const handleSubmit = async (e) => {
@@ -61,33 +96,40 @@ const Login = () => {
         setError('');
 
         try {
-            // Usar deferUpdate: true para controlar la animación antes de redirigir
-            const result = await login(formData.usuario, formData.contraseña, true);
+            const empresaId = empresaSeleccionada || null;
+            const result = await login(formData.usuario, formData.contraseña, true, empresaId);
+
+            // Multi-tenant: mostrar selector de empresas
+            if (result.multiTenant) {
+                setEmpresas(result.empresas);
+                setIsSubmitting(false);
+                return;
+            }
 
             if (!result.success) {
                 setError(result.message || 'Error al iniciar sesión');
                 setIsSubmitting(false);
             } else {
-                // Secuencia de animación "MÁS AGUA" - Lenta y Pesada
+                // Secuencia de animación
                 setAnimationState('start');
 
                 setTimeout(() => {
-                    setAnimationState('falling'); // Cae pesadamente (1500ms)
+                    setAnimationState('falling');
 
                     setTimeout(() => {
-                        setAnimationState('squash'); // Impacto violento (300ms)
+                        setAnimationState('squash');
 
                         setTimeout(() => {
-                            setAnimationState('ripple'); // Inicia ondas masivas
-                            setAnimationState('expanding'); // Inundación
+                            setAnimationState('ripple');
+                            setAnimationState('expanding');
 
                             setTimeout(() => {
                                 if (result.confirmLogin) {
                                     result.confirmLogin();
                                 }
-                            }, 2500); // Tiempo largo para disfrutar la inundación
-                        }, 250); // Tiempo de splash
-                    }, 1400); // Tiempo de caída (ligeramente menos que la transición para impacto)
+                            }, 2500);
+                        }, 250);
+                    }, 1400);
                 }, 100);
             }
         } catch (err) {
@@ -158,103 +200,155 @@ const Login = () => {
                 {/* Card del Formulario */}
                 <div className="w-full bg-white rounded-3xl shadow-2xl overflow-hidden relative z-10">
                     <div className="p-8">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-                            Iniciar Sesión
-                        </h2>
 
-                        {/* Mensaje de error */}
-                        {(error || authError) && (
-                            <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-start gap-3">
-                                <FiAlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                                <p className="text-sm text-red-600 font-medium">
-                                    {error || authError}
-                                </p>
-                            </div>
-                        )}
+                        {/* ─── SELECTOR DE EMPRESA (multi-tenant) ─── */}
+                        {empresas ? (
+                            <div className="space-y-6">
+                                <button
+                                    type="button"
+                                    onClick={() => { setEmpresas(null); setEmpresaSeleccionada(null); setError(''); }}
+                                    className="flex items-center gap-1 text-sm font-semibold text-[#1a73e8] hover:text-blue-700 transition-colors"
+                                >
+                                    <FiChevronLeft className="w-4 h-4" /> Volver
+                                </button>
 
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {/* Usuario */}
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-gray-600 ml-1">
-                                    Usuario o Correo
-                                </label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <FiUser className="w-5 h-5 text-[#1a73e8]" />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        name="usuario"
-                                        value={formData.usuario}
-                                        onChange={handleChange}
-                                        className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-all outline-none font-medium"
-                                        placeholder="edgaryahir@gmail.com"
-                                        autoComplete="username"
-                                    />
+                                <div className="text-center">
+                                    <h2 className="text-2xl font-bold text-gray-800">Selecciona tu empresa</h2>
+                                    <p className="text-sm text-gray-500 mt-2">Tu cuenta está registrada en varias empresas</p>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {empresas.map((emp) => (
+                                        <button
+                                            key={emp.empresa_id}
+                                            type="button"
+                                            onClick={() => {
+                                                setEmpresaSeleccionada(emp.empresa_id);
+                                                // Re-enviar login automáticamente con la empresa elegida
+                                                setEmpresas(null);
+                                                setTimeout(() => {
+                                                    // Disparar submit con empresa_id
+                                                    const fakeEvent = { preventDefault: () => { } };
+                                                    // Seteamos empresaSeleccionada y hacemos submit
+                                                    handleSubmitWithEmpresa(emp.empresa_id);
+                                                }, 50);
+                                            }}
+                                            className="w-full p-4 bg-gray-50 hover:bg-blue-50 border-2 border-gray-200 hover:border-[#1a73e8] rounded-xl transition-all duration-200 flex items-center gap-4 group"
+                                        >
+                                            <div className="w-12 h-12 bg-blue-100 group-hover:bg-blue-200 rounded-xl flex items-center justify-center transition-colors">
+                                                <FiBriefcase className="w-6 h-6 text-[#1a73e8]" />
+                                            </div>
+                                            <div className="text-left flex-1">
+                                                <p className="font-bold text-gray-800 group-hover:text-[#1a73e8] transition-colors">{emp.nombre}</p>
+                                                <p className="text-xs text-gray-400 mt-0.5">Clic para ingresar</p>
+                                            </div>
+                                            <FiArrowRight className="w-5 h-5 text-gray-300 group-hover:text-[#1a73e8] transition-colors" />
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
+                        ) : (
+                            /* ─── FORMULARIO DE LOGIN NORMAL ─── */
+                            <>
+                                <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+                                    Iniciar Sesión
+                                </h2>
 
-                            {/* Contraseña */}
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-gray-600 ml-1">
-                                    Contraseña
-                                </label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <FiLock className="w-5 h-5 text-[#1a73e8]" />
+                                {/* Mensaje de error */}
+                                {(error || authError) && (
+                                    <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-start gap-3">
+                                        <FiAlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <p className="text-sm text-red-600 font-medium">
+                                            {error || authError}
+                                        </p>
                                     </div>
-                                    <input
-                                        type={showPassword ? 'text' : 'password'}
-                                        name="contraseña"
-                                        value={formData.contraseña}
-                                        onChange={handleChange}
-                                        className="w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-all outline-none font-medium"
-                                        placeholder="••••••••"
-                                        autoComplete="current-password"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-                                    >
-                                        {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Olvidaste contraseña */}
-                            <div className="flex justify-end pt-1">
-                                <a href="#" className="text-sm font-semibold text-[#1a73e8] hover:text-blue-700 transition-colors">
-                                    ¿Olvidaste tu contraseña?
-                                </a>
-                            </div>
-
-                            {/* Botón Submit */}
-                            <button
-                                type="submit"
-                                disabled={isSubmitting || loading}
-                                className="w-full py-4 bg-[#1a73e8] hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
-                            >
-                                {isSubmitting || loading ? (
-                                    <DynamicLoader text="Iniciando..." size="tiny" color="white" />
-                                ) : (
-                                    <>
-                                        <span>Iniciar Sesión</span>
-                                        <FiArrowRight className="w-5 h-5" />
-                                    </>
                                 )}
-                            </button>
 
-                            {/* Footer en Card */}
-                            <div className="pt-4 text-center">
-                                <p className="text-sm text-gray-500">
-                                    ¿No tienes cuenta?{' '}
-                                    <a href="#" className="text-[#1a73e8] font-bold hover:underline">
-                                        Contacta al admin
-                                    </a>
-                                </p>
-                            </div>
-                        </form>
+                                <form onSubmit={handleSubmit} className="space-y-6">
+                                    {/* Usuario */}
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-gray-600 ml-1">
+                                            Usuario o Correo
+                                        </label>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <FiUser className="w-5 h-5 text-[#1a73e8]" />
+                                            </div>
+                                            <input
+                                                type="text"
+                                                name="usuario"
+                                                value={formData.usuario}
+                                                onChange={handleChange}
+                                                className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-all outline-none font-medium"
+                                                placeholder="edgaryahir@gmail.com"
+                                                autoComplete="username"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Contraseña */}
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-gray-600 ml-1">
+                                            Contraseña
+                                        </label>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <FiLock className="w-5 h-5 text-[#1a73e8]" />
+                                            </div>
+                                            <input
+                                                type={showPassword ? 'text' : 'password'}
+                                                name="contraseña"
+                                                value={formData.contraseña}
+                                                onChange={handleChange}
+                                                className="w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-all outline-none font-medium"
+                                                placeholder="••••••••"
+                                                autoComplete="current-password"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                                            >
+                                                {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Olvidaste contraseña */}
+                                    <div className="flex justify-end pt-1">
+                                        <a href="#" className="text-sm font-semibold text-[#1a73e8] hover:text-blue-700 transition-colors">
+                                            ¿Olvidaste tu contraseña?
+                                        </a>
+                                    </div>
+
+                                    {/* Botón Submit */}
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting || loading}
+                                        className="w-full py-4 bg-[#1a73e8] hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+                                    >
+                                        {isSubmitting || loading ? (
+                                            <DynamicLoader text="Iniciando..." size="tiny" color="white" />
+                                        ) : (
+                                            <>
+                                                <span>Iniciar Sesión</span>
+                                                <FiArrowRight className="w-5 h-5" />
+                                            </>
+                                        )}
+                                    </button>
+
+                                    {/* Footer en Card */}
+                                    <div className="pt-4 text-center">
+                                        <p className="text-sm text-gray-500">
+                                            ¿No tienes cuenta?{' '}
+                                            <a href="#" className="text-[#1a73e8] font-bold hover:underline">
+                                                Contacta al admin
+                                            </a>
+                                        </p>
+                                    </div>
+                                </form>
+                            </>
+                        )}
                     </div>
                 </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiPlus, FiSearch } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiClock } from 'react-icons/fi';
 import ConfirmBox from '../components/ConfirmBox';
 import Pagination from '../components/Pagination';
 import ScheduleCard from '../components/cards/ScheduleCard';

@@ -62,6 +62,9 @@ const MainLayout = ({ children }) => {
     const location = useLocation();
     const navigate = useNavigate();
 
+    // Verificar si estamos en modo impersonación
+    const isImpersonating = !!localStorage.getItem('saas_auth_token');
+
     // Obtener config de la página actual
     const currentPage = getPageConfig(location.pathname);
 
@@ -73,10 +76,21 @@ const MainLayout = ({ children }) => {
             message: '¿Estás seguro de que deseas cerrar sesión?',
             onConfirm: async () => {
                 setConfirmAction(null);
+                // Si estamos impersonando, también limpiamos el token de saas
+                localStorage.removeItem('saas_auth_token');
                 await logout();
                 navigate('/login');
             }
         });
+    };
+
+    const handleTerminarImpersonacion = () => {
+        const saasToken = localStorage.getItem('saas_auth_token');
+        if (saasToken) {
+            localStorage.setItem('auth_token', saasToken);
+            localStorage.removeItem('saas_auth_token');
+            window.location.href = '/dashboard';
+        }
     };
 
     return (
@@ -85,7 +99,26 @@ const MainLayout = ({ children }) => {
             <SidebarWithAuth />
 
             {/* Contenido principal */}
-            <main className="flex-1 overflow-auto">
+            <main className="flex-1 overflow-auto flex flex-col">
+                {/* Banner de Impersonación */}
+                {isImpersonating && (
+                    <div className="bg-red-600 text-white px-6 py-2 flex items-center justify-between z-30 shadow-md">
+                        <div className="flex items-center gap-2 text-sm font-bold">
+                            <span className="flex h-2 w-2 relative">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                            </span>
+                            MODO IMPERSONACIÓN: Estás operando como Administrador del Tenant
+                        </div>
+                        <button
+                            onClick={handleTerminarImpersonacion}
+                            className="bg-white text-red-600 hover:bg-red-50 px-3 py-1 rounded text-xs font-bold transition-colors shadow-sm"
+                        >
+                            Volver al Panel SaaS
+                        </button>
+                    </div>
+                )}
+
                 {/* Header */}
                 <header className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 sticky top-0 z-20 transition-colors duration-200">
                     <div>

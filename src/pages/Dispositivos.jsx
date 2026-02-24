@@ -366,8 +366,8 @@ const Dispositivos = () => {
                     <button
                         onClick={() => setTabActiva('escritorio')}
                         className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${tabActiva === 'escritorio'
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                            ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                            : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                             }`}
                     >
                         <Monitor className="w-4 h-4" />
@@ -429,8 +429,8 @@ const Dispositivos = () => {
                         </div>
 
                         {activosList.length === 0 ? (
-                            <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                                <p className="text-gray-500">No hay dispositivos activos</p>
+                            <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
+                                <p className="text-gray-500 dark:text-gray-400">No hay dispositivos {filtroEstado === 'activo' ? 'activos' : filtroEstado === 'inactivo' ? 'inactivos' : ''}</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -609,7 +609,7 @@ const Dispositivos = () => {
                                 <div className="flex items-center gap-2">
                                     <FileText className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                                     <h2 className="text-sm font-bold text-gray-700 dark:text-gray-200">Historial de Solicitudes</h2>
-                                    <span className="bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                                    <span className="bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full text-xs">
                                         {historialList.length}
                                     </span>
                                 </div>
