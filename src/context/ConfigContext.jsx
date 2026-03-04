@@ -18,7 +18,8 @@ export const ConfigProvider = ({ children }) => {
         formato_fecha: 'DD/MM/YYYY',
         formato_hora: '24',
         zona_horaria: 'America/Mexico_City',
-        es_mantenimiento: false
+        es_mantenimiento: false,
+        requiere_salida: true
     });
 
     // Cargar configuración inicial

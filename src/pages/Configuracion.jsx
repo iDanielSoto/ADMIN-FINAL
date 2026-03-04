@@ -450,13 +450,16 @@ const Configuracion = () => {
                 const dataConfig = await resConfig.json();
                 if (!dataConfig.success) throw new Error('Error al actualizar configuración');
 
-                // Actualizar contexto global
+                // Actualizar contexto global con TODOS los cambios para evitar resets visuales
                 updateConfig({
                     idioma: formConfig.idioma,
                     formato_fecha: formConfig.formato_fecha,
                     formato_hora: formConfig.formato_hora,
                     zona_horaria: formConfig.zona_horaria,
-                    es_mantenimiento: formConfig.es_mantenimiento
+                    es_mantenimiento: formConfig.es_mantenimiento,
+                    requiere_salida: formConfig.requiere_salida, // Crucial para que no se reinicie
+                    nombreEmpresa: formEmpresa.nombre,
+                    logoEmpresa: formEmpresa.logo
                 });
             }
 

@@ -32,10 +32,10 @@ export const CompanyProvider = ({ children }) => {
                 return;
             }
 
-            // Si es el Dueño del Sistema, no cargamos ninguna empresa cliente.
+            // Si es el Dueño del Sistema, usamos el ID 'MASTER' para cargar su perfil
             if (user?.esPropietarioSaaS || token.startsWith('saas_')) {
-                setEmpresa({ nombre: 'Administración SaaS', logo: null });
-                return;
+                // No retornamos aquí, dejamos que siga para que el fetch intente cargar 'MASTER'
+                // pero nos aseguramos que si falla, tenga un default
             }
 
             const response = await fetch(`${API_URL}/api/empresas/mi-empresa`, {
