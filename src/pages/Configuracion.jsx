@@ -6,7 +6,7 @@ import { compressImage } from '../utils/imageUtils';
 import {
     FiSave, FiUpload, FiTrash2, FiImage, FiGlobe, FiClock,
     FiAlertCircle, FiSettings, FiPhone, FiMail, FiShield,
-    FiArrowUp, FiArrowDown, FiLock, FiLayout, FiChevronRight,
+    FiArrowUp, FiArrowDown, FiArrowRight, FiLock, FiLayout, FiChevronRight,
     FiWifi
 } from 'react-icons/fi';
 
@@ -22,11 +22,11 @@ const METODOS_AUTH = [
 
 // Configuración del menú lateral (Incluye la nueva sección "Red")
 const SECCIONES = [
-    { id: 'general', label: 'General', icon: FiSettings, description: 'Región, idioma y preferencias' },
-    { id: 'empresa', label: 'Empresa', icon: FiLayout, description: 'Identidad y contacto de la organización' },
-    { id: 'seguridad', label: 'Seguridad', icon: FiShield, description: 'Accesos, bloqueos y autenticación' },
-    { id: 'tolerancia', label: 'Tolerancia', icon: FiClock, description: 'Reglas de asistencia y retardos' },
-    { id: 'red', label: 'Red', icon: FiWifi, description: 'Puntos de acceso y segmentación IP' },
+    { id: 'general', label: 'General', icon: FiSettings, description: 'Región, idioma y preferencias globales' },
+    { id: 'empresa', label: 'Empresa', icon: FiLayout, description: 'Identidad corporativa y contacto' },
+    { id: 'seguridad', label: 'Seguridad', icon: FiShield, description: 'Accesos y métodos de verificación' },
+    { id: 'tolerancia', label: 'Asistencia', icon: FiClock, description: 'Reglas, márgenes y tipos de salida' },
+    { id: 'red', label: 'Red', icon: FiWifi, description: 'Seguridad IP y perímetros digitales' },
 ];
 
 
@@ -40,9 +40,6 @@ const Configuracion = () => {
     const [empresa, setEmpresa] = useState(null);
     const [configuracion, setConfiguracion] = useState(null);
     const [tolerancia, setTolerancia] = useState(null);
-    const [tolerancias, setTolerancias] = useState([]);
-    const [roles, setRoles] = useState([]);
-    const [selectedRoleId, setSelectedRoleId] = useState(null); // null = General
 
     // Estados de UI
     const [loading, setLoading] = useState(true);
@@ -75,7 +72,8 @@ const Configuracion = () => {
             huella: { prioridad: 1, activo: true },
             rostro: { prioridad: 2, activo: true },
             codigo: { prioridad: 3, activo: true }
-        }
+        },
+        requiere_salida: true
     });
 
     // Sincronizar formulario cuando el contexto cambie (carga inicial)
@@ -86,16 +84,18 @@ const Configuracion = () => {
             formato_fecha: config.formato_fecha,
             formato_hora: config.formato_hora,
             zona_horaria: config.zona_horaria,
-            es_mantenimiento: config.es_mantenimiento
+            es_mantenimiento: config.es_mantenimiento,
+            requiere_salida: config.requiere_salida ?? true
         }));
     }, [config]);
 
     const [formTolerancia, setFormTolerancia] = useState({
         nombre: 'Tolerancia General',
-        minutos_retardo: 10,
-        minutos_falta: 30,
+        reglas: [],
         permite_registro_anticipado: true,
         minutos_anticipado_max: 60,
+        minutos_anticipo_salida: 0,
+        minutos_posterior_salida: 60,
         aplica_tolerancia_entrada: true,
         aplica_tolerancia_salida: false,
         dias_aplica: {
@@ -104,76 +104,62 @@ const Configuracion = () => {
         }
     });
 
+    const [formIntervaloBloques, setFormIntervaloBloques] = useState(60);
+
     const cargarFormTolerancia = (tol) => {
+        let parsedReglas = [];
+        if (tol.reglas) {
+            try {
+                parsedReglas = typeof tol.reglas === 'string' ? JSON.parse(tol.reglas) : tol.reglas;
+            } catch (e) {
+                console.error("Error parseando reglas", e);
+            }
+        }
+
         setFormTolerancia({
             nombre: tol.nombre || 'Tolerancia General',
-            minutos_retardo: tol.minutos_retardo || 10,
-            minutos_falta: tol.minutos_falta || 30,
+            reglas: parsedReglas || [],
             permite_registro_anticipado: tol.permite_registro_anticipado ?? true,
             minutos_anticipado_max: tol.minutos_anticipado_max || 60,
+            minutos_anticipo_salida: tol.minutos_anticipo_salida ?? 0,
+            minutos_posterior_salida: tol.minutos_posterior_salida ?? 60,
             aplica_tolerancia_entrada: tol.aplica_tolerancia_entrada ?? true,
             aplica_tolerancia_salida: tol.aplica_tolerancia_salida ?? false,
             dias_aplica: tol.dias_aplica || {
                 lunes: true, martes: true, miercoles: true,
                 jueves: true, viernes: true, sabado: false, domingo: false
-            },
-            rol_id: tol.rol_id || null
+            }
+        });
+        setFormIntervaloBloques(tol.intervalo_bloques_minutos || 60);
+    };
+
+    const handleAddRegla = () => {
+        setFormTolerancia(prev => ({
+            ...prev,
+            reglas: [...prev.reglas, {
+                id: `regla_${Date.now()}`,
+                limite_minutos: 15,
+                penalizacion_tipo: 'nada',
+                penalizacion_valor: 0,
+                aplica_acumulacion: false
+            }]
+        }));
+    };
+
+    const handleUpdateRegla = (index, field, value) => {
+        setFormTolerancia(prev => {
+            const nuevas = [...prev.reglas];
+            nuevas[index] = { ...nuevas[index], [field]: value };
+            return { ...prev, reglas: nuevas };
         });
     };
 
-    const handleSeleccionarRol = (rolId) => {
-        setSelectedRoleId(rolId);
-
-        // Buscar si ya existe tolerancia para este rol
-        // rolId null es "General" (buscamos tolerancia con rol_id === null)
-        const existingTol = tolerancias.find(t => t.rol_id === rolId);
-
-        if (existingTol) {
-            setTolerancia(existingTol);
-            cargarFormTolerancia(existingTol);
-        } else {
-            // Inicializar nueva configuración para este rol
-            const rolNombre = rolId ? roles.find(r => r.id === rolId)?.nombre : 'General';
-            setTolerancia(null); // No ID yet
-            setFormTolerancia({
-                nombre: rolNombre,
-                minutos_retardo: 10,
-                minutos_falta: 30,
-                permite_registro_anticipado: true,
-                minutos_anticipado_max: 60,
-                aplica_tolerancia_entrada: true,
-                aplica_tolerancia_salida: false,
-                dias_aplica: {
-                    lunes: true, martes: true, miercoles: true,
-                    jueves: true, viernes: true, sabado: false, domingo: false
-                },
-                rol_id: rolId
-            });
-        }
-    };
-
-
-
-    const handleEliminarTolerancia = async (tolId) => {
-        try {
-            const token = localStorage.getItem('auth_token');
-            const res = await fetch(`${API_URL}/api/tolerancias/${tolId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-            if (data.success) {
-                const nuevas = tolerancias.filter(t => t.id !== tolId);
-                setTolerancias(nuevas);
-                if (nuevas.length >= 0) {
-                    handleSeleccionarRol(null);
-                }
-            } else {
-                setMensaje({ tipo: 'error', texto: data.message || 'No se pudo eliminar' });
-            }
-        } catch (err) {
-            console.error('Error al eliminar tolerancia:', err);
-        }
+    const handleRemoveRegla = (index) => {
+        setFormTolerancia(prev => {
+            const nuevas = [...prev.reglas];
+            nuevas.splice(index, 1);
+            return { ...prev, reglas: nuevas };
+        });
     };
 
     useEffect(() => {
@@ -222,7 +208,8 @@ const Configuracion = () => {
                         formato_hora: cfg.formato_hora || '24',
                         zona_horaria: cfg.zona_horaria || 'America/Mexico_City',
                         intentos_maximos: cfg.intentos_maximos || 3,
-                        orden_credenciales: ordenCredenciales
+                        orden_credenciales: ordenCredenciales,
+                        requiere_salida: cfg.requiere_salida ?? true
                     });
 
                     // Cargar segmentos de red
@@ -275,7 +262,8 @@ const Configuracion = () => {
                             formato_hora: cfg2.formato_hora || '24',
                             zona_horaria: cfg2.zona_horaria || 'America/Mexico_City',
                             intentos_maximos: cfg2.intentos_maximos || 3,
-                            orden_credenciales: ordenCredenciales
+                            orden_credenciales: ordenCredenciales,
+                            requiere_salida: cfg2.requiere_salida ?? true
                         });
 
                         // Cargar segmentos de red
@@ -289,31 +277,15 @@ const Configuracion = () => {
                 }
             }
 
-            // Cargar roles y tolerancias en paralelo
-            const [resTolerancia, resRoles] = await Promise.all([
-                fetch(`${API_URL}/api/tolerancias`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`${API_URL}/api/roles`, { headers: { 'Authorization': `Bearer ${token}` } })
-            ]);
+            // Cargar la tolerancia global
+            const resTolerancia = await fetch(`${API_URL}/api/tolerancias`, { headers: { 'Authorization': `Bearer ${token}` } });
             const dataTol = await resTolerancia.json();
-            const dataRoles = await resRoles.json();
-
-            if (dataRoles.success) {
-                setRoles(dataRoles.data || []);
-            }
 
             if (dataTol.success && dataTol.data?.length > 0) {
-                setTolerancias(dataTol.data);
-                // Cargar General por defecto
-                const general = dataTol.data.find(t => !t.rol_id);
-                if (general) {
-                    setTolerancia(general);
-                    cargarFormTolerancia(general);
-                } else {
-                    // Si no existe general, inicializar defaults
-                    handleSeleccionarRol(null);
-                }
-            } else {
-                handleSeleccionarRol(null);
+                // Tomar la primera global configurada
+                const general = dataTol.data[0];
+                setTolerancia(general);
+                cargarFormTolerancia(general);
             }
 
         } catch (err) {
@@ -473,7 +445,7 @@ const Configuracion = () => {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ ...formConfig, segmentos_red: listaRedes })
+                    body: JSON.stringify({ ...formConfig, segmentos_red: listaRedes, intervalo_bloques_minutos: formIntervaloBloques, requiere_salida: formConfig.requiere_salida })
                 });
                 const dataConfig = await resConfig.json();
                 if (!dataConfig.success) throw new Error('Error al actualizar configuración');
@@ -500,18 +472,15 @@ const Configuracion = () => {
                     body: JSON.stringify(formTolerancia)
                 });
                 const dataTol = await resTol.json();
-                if (!dataTol.success) throw new Error('Error al actualizar tolerancia');
+                if (!dataTol.success) throw new Error('Error al actualizar opciones de tolerancia');
 
                 // Actualizar local
-                setTolerancias(prev => prev.map(t => t.id === tolerancia.id ? dataTol.data : t));
                 setTolerancia(dataTol.data);
             } else {
-                // CREATE (si no existe ID para este rol)
-                // Asegurarse que el rol_id y nombre sean correctos
+                // CREATE (si no existiera ninguna configurada)
                 const payload = {
                     ...formTolerancia,
-                    rol_id: selectedRoleId,
-                    nombre: selectedRoleId ? roles.find(r => r.id === selectedRoleId)?.nombre : 'Tolerancia General'
+                    nombre: 'Tolerancia Global'
                 };
 
                 const resTol = await fetch(`${API_URL}/api/tolerancias`, {
@@ -522,8 +491,7 @@ const Configuracion = () => {
                 const dataTol = await resTol.json();
                 if (!dataTol.success) throw new Error('Error al crear tolerancia');
 
-                // Agregar a local
-                setTolerancias(prev => [...prev, dataTol.data]);
+                // Asignar local
                 setTolerancia(dataTol.data);
             }
 
@@ -732,7 +700,7 @@ const Configuracion = () => {
                                             Activa o desactiva los métodos de validación y define su prioridad para el reloj checador.
                                         </p>
 
-                                        <div className="space-y-3 bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                                        <div className="space-y-4 bg-gray-50 dark:bg-gray-900/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
                                             {getMetodosOrdenados().map((metodo, index) => {
                                                 const metodoInfo = METODOS_AUTH.find(m => m.id === metodo.id) || { label: metodo.id, icon: '' };
                                                 const ordenados = getMetodosOrdenados();
@@ -740,59 +708,57 @@ const Configuracion = () => {
                                                 return (
                                                     <div
                                                         key={metodo.id}
-                                                        className={`flex items-center justify-between p-4 rounded-lg border shadow-sm transition-all ${metodo.activo
-                                                            ? 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500'
-                                                            : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 opacity-60'
+                                                        className={`flex items-center justify-between p-5 rounded-2xl border shadow-lg transition-all transform hover:scale-[1.01] ${metodo.activo
+                                                            ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500'
+                                                            : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 opacity-60'
                                                             }`}
                                                     >
-                                                        <div className="flex items-center gap-4">
-                                                            {/* Número de prioridad */}
-                                                            <span className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${metodo.activo
-                                                                ? 'bg-blue-100 text-blue-700'
+                                                        <div className="flex items-center gap-5">
+                                                            {/* Número de prioridad con gradiente */}
+                                                            <span className={`flex items-center justify-center w-10 h-10 rounded-xl text-sm font-black shadow-inner ${metodo.activo
+                                                                ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white'
                                                                 : 'bg-gray-200 text-gray-500'
                                                                 }`}>
                                                                 {index + 1}
                                                             </span>
 
                                                             {/* Icono y nombre */}
-                                                            <div className="flex items-center gap-3">
-                                                                <span className="text-2xl">{metodoInfo.icon}</span>
-                                                                <span className={`text-sm font-medium ${metodo.activo ? 'text-gray-700 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400 line-through'}`}>
+                                                            <div className="flex flex-col">
+                                                                <span className={`text-sm font-bold ${metodo.activo ? 'text-gray-800 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400 line-through'}`}>
                                                                     {metodoInfo.label}
                                                                 </span>
+                                                                <span className="text-[10px] text-gray-400 uppercase tracking-tighter">Prioridad de acceso</span>
                                                             </div>
                                                         </div>
 
-                                                        <div className="flex items-center gap-3">
-                                                            {/* Toggle activar/desactivar */}
+                                                        <div className="flex items-center gap-4">
+                                                            {/* Toggle con estilo moderno */}
                                                             <button
                                                                 onClick={() => toggleMetodo(metodo.id)}
-                                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${metodo.activo ? 'bg-blue-600' : 'bg-gray-300'
+                                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 ${metodo.activo ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
                                                                     }`}
                                                             >
                                                                 <span
-                                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${metodo.activo ? 'translate-x-6' : 'translate-x-1'
+                                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-xl transition-all duration-300 ${metodo.activo ? 'translate-x-6' : 'translate-x-1'
                                                                         }`}
                                                                 />
                                                             </button>
 
-                                                            {/* Botones de prioridad */}
-                                                            <div className="flex gap-1">
+                                                            {/* Botones de prioridad estilizados */}
+                                                            <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
                                                                 <button
                                                                     onClick={() => moveMetodo(metodo.id, 'up')}
                                                                     disabled={index === 0}
-                                                                    className="p-1.5 text-gray-500 hover:bg-gray-200 rounded disabled:opacity-30 disabled:cursor-not-allowed hover:text-blue-600"
-                                                                    title="Subir prioridad"
+                                                                    className="p-1.5 text-gray-500 hover:bg-white dark:hover:bg-gray-600 rounded-md disabled:opacity-20 transition-all"
                                                                 >
-                                                                    <FiArrowUp className="w-4 h-4" />
+                                                                    <FiArrowUp className="w-3.5 h-3.5" />
                                                                 </button>
                                                                 <button
                                                                     onClick={() => moveMetodo(metodo.id, 'down')}
                                                                     disabled={index === ordenados.length - 1}
-                                                                    className="p-1.5 text-gray-500 hover:bg-gray-200 rounded disabled:opacity-30 disabled:cursor-not-allowed hover:text-blue-600"
-                                                                    title="Bajar prioridad"
+                                                                    className="p-1.5 text-gray-500 hover:bg-white dark:hover:bg-gray-600 rounded-md disabled:opacity-20 transition-all"
                                                                 >
-                                                                    <FiArrowDown className="w-4 h-4" />
+                                                                    <FiArrowDown className="w-3.5 h-3.5" />
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -895,121 +861,206 @@ const Configuracion = () => {
                         {activeTab === 'tolerancia' && (
                             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
 
-                                {/* Selector de Roles */}
-                                <div>
-                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Roles Configurados:</h3>
-                                    <div className="flex flex-wrap items-center gap-2 mb-4">
-                                        {/* Opción General (Siempre visible) */}
-                                        <button
-                                            onClick={() => handleSeleccionarRol(null)}
-                                            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${selectedRoleId === null
-                                                ? 'bg-blue-600 text-white border-blue-600'
-                                                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
-                                                }`}
-                                        >
-                                            General (Todos)
-                                            {tolerancias.some(t => t.rol_id === null) && <span className="ml-2 text-xs opacity-70">●</span>}
-                                        </button>
-
-                                        {/* Lista de Roles con Configuración Activa */}
-                                        {roles.filter(r => tolerancias.some(t => t.rol_id === r.id)).map(rol => (
-                                            <button
-                                                key={rol.id}
-                                                onClick={() => handleSeleccionarRol(rol.id)}
-                                                className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${selectedRoleId === rol.id
-                                                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
-                                                    }`}
-                                            >
-                                                {rol.nombre}
-                                            </button>
-                                        ))}
-
-                                        {/* Botón temporal si estamos editando uno nuevo (no guardado aún) */}
-                                        {selectedRoleId && !tolerancias.some(t => t.rol_id === selectedRoleId) && (
-                                            <button
-                                                className="px-4 py-2 rounded-lg text-sm font-medium border bg-blue-600 text-white border-blue-600 shadow-sm animate-pulse"
-                                            >
-                                                {roles.find(r => r.id === selectedRoleId)?.nombre} (Nuevo)
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {/* Dropdown para agregar nuevo rol */}
-                                    <div className="mb-6">
-                                        <div className="flex items-center gap-2 max-w-md">
-                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Agregar regla para:</label>
-                                            <select
-                                                value=""
-                                                onChange={(e) => {
-                                                    if (e.target.value) handleSeleccionarRol(e.target.value);
-                                                }}
-                                                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                                            >
-                                                <option value="">-- Seleccionar Rol --</option>
-                                                {roles.filter(r => !tolerancias.some(t => t.rol_id === r.id)).map(rol => (
-                                                    <option key={rol.id} value={rol.id}>
-                                                        {rol.nombre}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                <div className="flex justify-between items-center mb-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-blue-100 dark:bg-blue-800 p-2 rounded-lg">
+                                            <FiClock className="text-blue-600 dark:text-blue-300 w-5 h-5" />
                                         </div>
-                                    </div>
-
-                                    <div className="flex justify-between items-center mb-6 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800">
-                                        <div className="flex items-center gap-2">
-                                            <FiAlertCircle className="text-blue-500" />
-                                            <span className="text-sm text-gray-700 dark:text-gray-300">
-                                                {selectedRoleId === null
-                                                    ? "Editando configuración general / por defecto."
-                                                    : `Configurando reglas específicas para: ${roles.find(r => r.id === selectedRoleId)?.nombre}`
-                                                }
+                                        <div>
+                                            <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Reglas de Tolerancia Global</h3>
+                                            <span className="text-xs text-gray-600 dark:text-gray-400">
+                                                Estas políticas se aplicarán uniformemente a toda la empresa.
                                             </span>
                                         </div>
-                                        {/* Botón de eliminar solo si existe configuración específica (y no es la vista de creación) */}
-                                        {tolerancia?.id && selectedRoleId !== null && (
-                                            <button
-                                                onClick={() => handleEliminarTolerancia(tolerancia.id)}
-                                                className="text-red-600 hover:text-red-800 text-sm font-medium underline flex items-center gap-1"
-                                            >
-                                                <FiTrash2 className="w-4 h-4" /> Eliminar Regla
-                                            </button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div>
+                                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Reglas de Asistencia y Retardos</h3>
+                                            <p className="text-xs text-gray-500 mt-1">Define los rangos de tiempo y sus consecuencias asociadas.</p>
+                                        </div>
+                                        <button
+                                            onClick={handleAddRegla}
+                                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-bold shadow-sm transition-all"
+                                        >
+                                            <FiChevronRight className="w-4 h-4 rotate-90" /> Nueva Regla
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        {(formTolerancia.reglas || []).map((regla, index) => (
+                                            <div key={index} className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xl relative overflow-hidden group">
+                                                {/* Indicador lateral de color */}
+                                                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${index === 0 ? 'bg-green-500' :
+                                                    index === 1 ? 'bg-yellow-500' :
+                                                        index === 2 ? 'bg-orange-500' : 'bg-red-500'
+                                                    }`} />
+
+                                                <div className="flex flex-col md:flex-row md:items-center gap-6">
+                                                    {/* Badge de Orden */}
+                                                    <div className="flex-shrink-0 flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700">
+                                                        <span className="text-xs font-bold text-gray-400 uppercase">R{index + 1}</span>
+                                                    </div>
+
+                                                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Clasificación</label>
+                                                            <div className="relative">
+                                                                <input type="text" value={regla.id}
+                                                                    onChange={(e) => handleUpdateRegla(index, 'id', e.target.value)}
+                                                                    className="w-full pl-3 pr-3 py-2 bg-gray-50 dark:bg-gray-900 border-none rounded-lg text-sm font-bold text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                                                                    placeholder="Ej: Puntual" />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Hasta (minutos)</label>
+                                                            <div className="relative">
+                                                                <input type="number" min="0" value={regla.limite_minutos}
+                                                                    onChange={(e) => handleUpdateRegla(index, 'limite_minutos', parseInt(e.target.value))}
+                                                                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border-none rounded-lg text-sm font-bold text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500" />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Acción</label>
+                                                            <select value={regla.penalizacion_tipo || 'nada'}
+                                                                onChange={(e) => {
+                                                                    handleUpdateRegla(index, 'penalizacion_tipo', e.target.value);
+                                                                    if (e.target.value === 'acumulacion') {
+                                                                        handleUpdateRegla(index, 'aplica_acumulacion', true);
+                                                                    } else {
+                                                                        handleUpdateRegla(index, 'aplica_acumulacion', false);
+                                                                    }
+                                                                }}
+                                                                className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border-none rounded-lg text-sm font-bold text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500">
+                                                                <option value="nada">Permitir registro</option>
+                                                                <option value="acumulacion">Acumular falta</option>
+                                                            </select>
+                                                        </div>
+
+                                                        {regla.penalizacion_tipo === 'acumulacion' && (
+                                                            <div className="space-y-1.5 animate-in fade-in zoom-in-95 duration-200">
+                                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Límite conteo</label>
+                                                                <div className="flex items-center bg-gray-50 dark:bg-gray-900 rounded-lg pr-3">
+                                                                    <input type="number" min="1" value={regla.penalizacion_valor || 0}
+                                                                        onChange={(e) => handleUpdateRegla(index, 'penalizacion_valor', parseInt(e.target.value))}
+                                                                        className="w-full px-3 py-2 bg-transparent border-none text-sm font-bold text-gray-700 dark:text-gray-200 focus:ring-0" />
+                                                                    <span className="text-[10px] font-bold text-blue-500 uppercase">veces</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex-shrink-0 flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => handleRemoveRegla(index)}
+                                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                                                            title="Eliminar regla"
+                                                        >
+                                                            <FiTrash2 className="w-5 h-5" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        {(!formTolerancia.reglas || formTolerancia.reglas.length === 0) && (
+                                            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-6 rounded-2xl border border-dashed border-yellow-200 dark:border-yellow-700/50 text-center">
+                                                <FiAlertCircle className="w-8 h-8 text-yellow-500 mx-auto mb-3" />
+                                                <h4 className="text-sm font-bold text-yellow-800 dark:text-yellow-200">Sin reglas configuradas</h4>
+                                                <p className="text-xs text-yellow-700 dark:text-yellow-300/70 mt-1 max-w-sm mx-auto">
+                                                    El sistema usará la lógica predeterminada: 0-10m Puntual, 11-20m Retardo A, etc.
+                                                </p>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
 
-
-
                                 <div>
-                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Reglas de Tiempo</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Retardo (min)</label>
-                                            <input type="number" min="0" max="60" value={formTolerancia.minutos_retardo}
-                                                onChange={(e) => setFormTolerancia(prev => ({ ...prev, minutos_retardo: parseInt(e.target.value) }))}
-                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500" />
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Margen permitido después de la hora de entrada.</p>
+                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6">Lógica de Asistencia</h3>
+                                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 p-6 rounded-2xl border border-blue-100 dark:border-blue-800/50 mb-8">
+                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                            <div className="space-y-1">
+                                                <h4 className="text-base font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                                                    <FiArrowRight className="text-blue-500" />
+                                                    ¿Requerir registro de salida?
+                                                </h4>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xl">
+                                                    Si se desactiva, el bloque se considerará completado al marcar la entrada. Ideal para empresas con horarios flexibles o salidas no controladas.
+                                                </p>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" checked={formConfig.requiere_salida}
+                                                    onChange={(e) => setFormConfig(prev => ({ ...prev, requiere_salida: e.target.checked }))}
+                                                    className="sr-only peer" />
+                                                <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                            </label>
                                         </div>
+                                    </div>
 
-                                        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Falta (min)</label>
-                                            <input type="number" min="0" max="120" value={formTolerancia.minutos_falta}
-                                                onChange={(e) => setFormTolerancia(prev => ({ ...prev, minutos_falta: parseInt(e.target.value) }))}
-                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500" />
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Tiempo límite para considerar ausencia.</p>
-                                        </div>
-
-                                        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Anticipación (min)</label>
+                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Límites de Registro (Ventanas de Tiempo)</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                                                    <FiArrowUp className="text-blue-600 dark:text-blue-400 w-5 h-5" />
+                                                </div>
+                                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-200">Anticipación entrada (min)</label>
+                                            </div>
                                             <input type="number" min="0" max="180" value={formTolerancia.minutos_anticipado_max}
                                                 onChange={(e) => setFormTolerancia(prev => ({ ...prev, minutos_anticipado_max: parseInt(e.target.value) }))}
-                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                                                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 disabled:opacity-50 transition-all font-bold"
                                                 disabled={!formTolerancia.permite_registro_anticipado} />
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Tiempo máximo para checar antes de hora.</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed italic">Margen permitido antes de la hora oficial.</p>
+                                        </div>
+
+                                        {formConfig.requiere_salida && (
+                                            <>
+                                                <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow animate-in slide-in-from-right-4 duration-300">
+                                                    <div className="flex items-center gap-3 mb-4">
+                                                        <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
+                                                            <FiArrowDown className="text-purple-600 dark:text-purple-400 w-5 h-5" />
+                                                        </div>
+                                                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-200">Anticipación salida (min)</label>
+                                                    </div>
+                                                    <input type="number" min="0" max="180" value={formTolerancia.minutos_anticipo_salida}
+                                                        onChange={(e) => setFormTolerancia(prev => ({ ...prev, minutos_anticipo_salida: parseInt(e.target.value) }))}
+                                                        className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 transition-all font-bold" />
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed italic">Margen permitido antes de la hora oficial de salida.</p>
+                                                </div>
+
+                                                <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow animate-in slide-in-from-right-4 duration-400">
+                                                    <div className="flex items-center gap-3 mb-4">
+                                                        <div className="p-2 bg-orange-50 dark:bg-orange-900/30 rounded-lg">
+                                                            <FiClock className="text-orange-600 dark:text-orange-400 w-5 h-5" />
+                                                        </div>
+                                                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-200">Posterior a salida (min)</label>
+                                                    </div>
+                                                    <input type="number" min="0" max="1440" value={formTolerancia.minutos_posterior_salida}
+                                                        onChange={(e) => setFormTolerancia(prev => ({ ...prev, minutos_posterior_salida: parseInt(e.target.value) }))}
+                                                        className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 transition-all font-bold" />
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed italic">Tiempo límite para marcar salida. Después genera 'Salida no cumplida'.</p>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
+                                                    <FiLayout className="text-indigo-600 dark:text-indigo-400 w-5 h-5" />
+                                                </div>
+                                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-200">Intervalo de Bloques (min)</label>
+                                            </div>
+                                            <input type="number" min="0" value={formIntervaloBloques}
+                                                onChange={(e) => setFormIntervaloBloques(parseInt(e.target.value) || 0)}
+                                                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 font-bold" />
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed italic">Margen para unir turnos seguidos en un solo bloque operativo.</p>
                                         </div>
                                     </div>
                                 </div>
-
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                     <div>
                                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Comportamiento</h3>
@@ -1019,20 +1070,6 @@ const Configuracion = () => {
                                                     onChange={(e) => setFormTolerancia(prev => ({ ...prev, permite_registro_anticipado: e.target.checked }))}
                                                     className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500" />
                                                 <label htmlFor="anticipado" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer w-full">Permitir registro anticipado</label>
-                                            </div>
-
-                                            <div className="flex items-center gap-3 p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                                                <input type="checkbox" id="entrada" checked={formTolerancia.aplica_tolerancia_entrada}
-                                                    onChange={(e) => setFormTolerancia(prev => ({ ...prev, aplica_tolerancia_entrada: e.target.checked }))}
-                                                    className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500" />
-                                                <label htmlFor="entrada" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer w-full">Aplicar tolerancia en entrada</label>
-                                            </div>
-
-                                            <div className="flex items-center gap-3 p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                                                <input type="checkbox" id="salida" checked={formTolerancia.aplica_tolerancia_salida}
-                                                    onChange={(e) => setFormTolerancia(prev => ({ ...prev, aplica_tolerancia_salida: e.target.checked }))}
-                                                    className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500" />
-                                                <label htmlFor="salida" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer w-full">Aplicar tolerancia en salida</label>
                                             </div>
                                         </div>
                                     </div>
