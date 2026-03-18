@@ -244,13 +244,13 @@ const UserModal = ({
     );
 
     return createPortal(
-        // FONDO OSCURECIDO SIN BLUR, MAS OPACO
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity">
-            {/* Modal Container: Quitamos shadow-2xl si prefieres flat, pero rounded ayuda */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden relative">
+        // FONDO OSCURECIDO CON BLUR, MAS LIMPIO
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity">
+            {/* Modal Container: Shadow suave, border sutil */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden relative shadow-2xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-gray-700">
 
                 {/* --- HEADER --- */}
-                <div className="flex items-center justify-between px-8 py-5 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100 dark:border-gray-700 bg-white dark:bg-gray-800">
                     <div>
                         <h2 className="text-xl font-bold text-gray-800 dark:text-white">
                             {mode === 'create' ? 'Registrar Nuevo Usuario' : 'Editar Usuario'}
@@ -277,7 +277,7 @@ const UserModal = ({
                             {/* --- COLUMNA IZQUIERDA: FOTO, ROLES, ESTADO --- */}
                             <div className="lg:col-span-4 space-y-6">
                                 {/* Tarjeta de Foto */}
-                                <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6 border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center">
+                                <div className="card flex flex-col items-center text-center p-6 bg-slate-50/50 dark:bg-gray-900/30">
                                     <div className="relative group">
                                         {formData.foto ? (
                                             <img src={formData.foto} alt="Perfil" className="w-32 h-32 rounded-full object-cover shadow-md border-4 border-white dark:border-gray-700" />
@@ -301,8 +301,8 @@ const UserModal = ({
                                 </div>
 
                                 {/* Selección de Roles */}
-                                <div className="border border-gray-100 dark:border-gray-700 rounded-xl p-5 shadow-sm">
-                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-3 uppercase tracking-wider">Roles de Sistema</h3>
+                                <div className="card p-5">
+                                    <h3 className="text-sm font-semibold text-slate-800 dark:text-white mb-3 uppercase tracking-wider">Roles de Sistema</h3>
                                     <div className="flex flex-wrap gap-2">
                                         {rolesList.filter(r => r.nombre.toLowerCase() !== 'empleado').map(rol => {
                                             const isSelected = formData.roles.includes(rol.id);
@@ -527,16 +527,14 @@ const UserModal = ({
                 </form>
 
                 {/* --- FOOTER --- */}
-                <div className="px-8 py-5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex justify-end gap-4">
-                    <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium">
+                <div className="px-8 py-5 border-t border-slate-100 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-800 flex justify-end gap-3">
+                    <button type="button" onClick={onClose} className="btn-secondary">
                         Cancelar
                     </button>
                     <button
                         onClick={handleSubmit}
                         disabled={saving}
-                        className={`px-6 py-2.5 rounded-lg text-white font-medium shadow-md transition-all flex items-center gap-2
-                            ${saving ? 'bg-primary-400 cursor-wait' : 'bg-primary-600 hover:bg-primary-700 hover:shadow-lg active:transform active:scale-95'}
-                        `}
+                        className={`btn-primary flex items-center gap-2 ${saving ? 'opacity-70 cursor-wait' : ''}`}
                     >
                         {saving ? 'Guardando...' : (mode === 'create' ? 'Crear Usuario' : 'Guardar Cambios')}
                     </button>

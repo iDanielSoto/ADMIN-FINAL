@@ -19,7 +19,8 @@ export const ConfigProvider = ({ children }) => {
         formato_hora: '24',
         zona_horaria: 'America/Mexico_City',
         es_mantenimiento: false,
-        requiere_salida: true
+        requiere_salida: true,
+        intervalo_bloques_minutos: 60
     });
 
     // Cargar configuración inicial
@@ -58,12 +59,13 @@ export const ConfigProvider = ({ children }) => {
         });
     };
 
-    // Helpers para formateo (ejemplos simples, podrían usar librerías como date-fns)
+    /**
+     * Formatea una fecha según formato_fecha del config.
+     */
     const formatDate = (dateString) => {
         if (!dateString) return '';
         const date = new Date(dateString);
 
-        // Soporte básico para DD/MM/YYYY y YYYY-MM-DD
         const day = date.getDate().toString().padStart(2, '0');
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
         const year = date.getFullYear();
@@ -71,20 +73,40 @@ export const ConfigProvider = ({ children }) => {
         if (config.formato_fecha === 'MM/DD/YYYY') {
             return `${month}/${day}/${year}`;
         }
-        return `${day}/${month}/${year}`; // Default DD/MM/YYYY
+        return `${day}/${month}/${year}`;
     };
 
-    const formatTime = (timeString) => {
-        if (!timeString) return '';
-        // Asumiendo timeString en formato HH:mm o HH:mm:ss
-        if (config.formato_hora === '12') {
-            const [hours, minutes] = timeString.split(':');
-            const h = parseInt(hours, 10);
-            const ampm = h >= 12 ? 'PM' : 'AM';
-            const h12 = h % 12 || 12;
-            return `${h12}:${minutes} ${ampm}`;
+    /**
+     * Formatea una hora según formato_hora del config.
+     * Soporta:
+     *   - Timestamps ISO completos: "2026-03-08T10:30:00Z"
+     *   - Strings de tiempo: "10:30", "10:30:00"
+     * Devuelve "10:30" (24h) o "10:30 am" (12h).
+     */
+    const formatTime = (timeInput) => {
+        if (!timeInput) return '--:--';
+
+        let hours, minutes;
+
+        // Detectar si es un string de tiempo puro "HH:MM" o "HH:MM:SS"
+        if (typeof timeInput === 'string' && /^\d{1,2}:\d{2}(:\d{2})?$/.test(timeInput)) {
+            [hours, minutes] = timeInput.split(':').map(Number);
+        } else {
+            // Intentar parsear como fecha
+            const date = new Date(timeInput);
+            if (isNaN(date.getTime())) return String(timeInput);
+            hours = date.getHours();
+            minutes = date.getMinutes();
         }
-        return timeString; // Default 24h
+
+        if (config.formato_hora === '12') {
+            const period = hours >= 12 ? 'pm' : 'am';
+            const h12 = hours % 12 || 12;
+            return `${h12}:${String(minutes).padStart(2, '0')} ${period}`;
+        }
+
+        // 24h
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     };
 
     return (

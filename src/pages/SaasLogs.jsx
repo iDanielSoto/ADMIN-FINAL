@@ -21,18 +21,30 @@ const LOG_BADGES = {
 const ContextModal = ({ log, onClose }) => {
     if (!log) return null;
     return createPortal(
-        <div className="fixed inset-0 z-[100] flex justify-center items-center bg-gray-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-gray-800 w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
-                <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-700">
-                    <h3 className="font-bold text-lg dark:text-white flex items-center gap-2">
-                        <FiMaximize2 /> Detalles de la Excepción
+        <div className="fixed inset-0 z-[100] flex justify-center items-center bg-gray-900/60 backdrop-blur-md p-4 animate-in fade-in duration-200">
+            <div className="bg-white dark:bg-gray-800 w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-100 dark:border-gray-700 overflow-hidden relative group">
+                {/* Decoración Glow */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/10 dark:bg-primary-500/5 blur-3xl rounded-full -mt-20 -mr-20 pointer-events-none"></div>
+
+                <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/80 relative z-10">
+                    <h3 className="font-black text-lg dark:text-white flex items-center gap-3">
+                        <div className="p-2 bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400 rounded-lg">
+                            <FiServer className="w-5 h-5" />
+                        </div>
+                        Detalles de la Excepción
                     </h3>
-                    <button onClick={onClose} className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    <button onClick={onClose} className="p-2 text-gray-500 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30 dark:hover:text-red-400 rounded-lg transition-colors">
                         <FiX className="w-5 h-5" />
                     </button>
                 </div>
-                <div className="p-6 overflow-y-auto font-mono text-sm bg-gray-900 text-green-400 rounded-b-2xl">
-                    <pre className="whitespace-pre-wrap word-break-all">
+                <div className="p-6 overflow-y-auto font-mono text-sm bg-gray-950 text-green-400 rounded-b-2xl shadow-inner relative z-10 selection:bg-green-800 selection:text-white">
+                    <div className="flex items-center gap-2 mb-4 text-gray-500 text-xs border-b border-gray-800 pb-2">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        <span className="ml-2">system-log-terminal</span>
+                    </div>
+                    <pre className="whitespace-pre-wrap word-break-all leading-relaxed">
                         {JSON.stringify(JSON.parse(log.contexto), null, 2)}
                     </pre>
                 </div>
@@ -102,17 +114,20 @@ const SaasLogs = () => {
                 </select>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="overflow-x-auto min-h-[500px]">
+            <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-sm border border-gray-100/50 dark:border-gray-700/50 overflow-hidden relative">
+                {/* Glow decorativo de tabla */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-32 bg-primary-500/5 blur-3xl pointer-events-none"></div>
+
+                <div className="overflow-x-auto min-h-[500px] relative z-10">
                     <table className="w-full text-sm text-left">
-                        <thead className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 uppercase font-bold text-xs sticky top-0">
+                        <thead className="bg-gray-50/80 dark:bg-gray-900/80 text-gray-500 dark:text-gray-400 font-bold text-xs sticky top-0 backdrop-blur-md z-20 shadow-sm">
                             <tr>
-                                <th className="px-6 py-4">Fecha/Hora</th>
-                                <th className="px-6 py-4">Nivel</th>
-                                <th className="px-6 py-4">Ruta (Endpoint)</th>
-                                <th className="px-6 py-4">Mensaje</th>
-                                <th className="px-6 py-4">Tenant</th>
-                                <th className="px-6 py-4 text-center">Contexto</th>
+                                <th className="px-6 py-5 rounded-tl-[2rem]">FECHA/HORA</th>
+                                <th className="px-6 py-5">NIVEL</th>
+                                <th className="px-6 py-5">RUTA (ENDPOINT)</th>
+                                <th className="px-6 py-5">MENSAJE</th>
+                                <th className="px-6 py-5">TENANT</th>
+                                <th className="px-6 py-5 text-center">CONTEXTO</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-800">

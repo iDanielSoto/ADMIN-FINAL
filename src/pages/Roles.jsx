@@ -452,8 +452,8 @@ const Roles = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 flex flex-col h-full transition-colors duration-200">
-                        <div className="mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
+                    <div className="card flex flex-col h-full transition-colors duration-200">
+                        <div className="mb-6 pb-6 border-b border-slate-100 dark:border-gray-700">
                             <div className="flex items-center gap-4 mb-3">
                                 <div className="w-14 h-14 rounded-xl flex items-center justify-center shadow-sm" style={{ backgroundColor: `${viewingRole.color}20` }}>
                                     <FiShield className="w-7 h-7" style={{ color: viewingRole.color }} />
@@ -486,7 +486,7 @@ const Roles = () => {
                         </div>
                     </div>
 
-                    <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 flex flex-col h-full transition-colors duration-200">
+                    <div className="lg:col-span-2 card flex flex-col h-full transition-colors duration-200">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2"><FiUsers className="w-5 h-5 text-gray-400" /> Usuarios Asignados ({roleUsuarios.length})</h2>
                             <button onClick={openAssignModal} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 shadow-sm transition-colors text-sm font-medium"><FiUserPlus className="w-4 h-4" /> Asignar Usuarios</button>
@@ -631,13 +631,13 @@ const Roles = () => {
                                     placeholder="Buscar rol..."
                                     value={busqueda}
                                     onChange={(e) => setBusqueda(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500"
+                                    className="input pl-10"
                                 />
                             </div>
                             <select
                                 value={filtroEstado}
                                 onChange={(e) => setFiltroEstado(e.target.value)}
-                                className="px-4 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500"
+                                className="input px-4 cursor-pointer"
                             >
                                 <option value="">Todos los estados</option>
                                 <option value="activo">Activos</option>
@@ -647,14 +647,14 @@ const Roles = () => {
                         <div className="flex gap-3">
                             <button
                                 onClick={handleStartReordering}
-                                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-sm"
+                                className="btn-primary bg-purple-600 hover:bg-purple-700 flex items-center gap-2"
                             >
                                 <FiMove className="w-5 h-5" />
                                 Reordenar
                             </button>
                             <button
                                 onClick={openCreateModal}
-                                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 shadow-sm"
+                                className="btn-primary flex items-center gap-2"
                             >
                                 <FiPlus className="w-5 h-5" />
                                 Nuevo Rol
@@ -695,15 +695,15 @@ const Roles = () => {
                                 onDragOver={(e) => handleDragOver(e, index)}
                                 onDragEnd={handleDragEnd}
                                 onClick={() => !isReordering && openViewModal(rol)}
-                                className={`rounded-xl border transition-all overflow-hidden group
-                                    ${rol.es_activo === false ? 'bg-gray-50 dark:bg-gray-900 opacity-70' : 'bg-white dark:bg-gray-800'}
+                                className={`card p-0 transition-all overflow-hidden group hover:-translate-y-1
+                                    ${rol.es_activo === false ? 'bg-slate-50 opacity-70 border-slate-200' : 'bg-white'}
                                     ${isReordering
                                         ? esFijo
-                                            ? 'border-gray-200 dark:border-gray-700 opacity-60 bg-gray-50 dark:bg-gray-900'
-                                            : 'cursor-move border-purple-300 hover:border-purple-400 dark:border-purple-700/50 dark:hover:border-purple-500 shadow-sm'
+                                            ? 'opacity-60 border-slate-200 bg-slate-50'
+                                            : 'cursor-move border-purple-300 shadow-sm'
                                         : rol.es_activo === false
-                                            ? 'border-red-200 dark:border-red-900/30 hover:border-red-300 cursor-pointer'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md cursor-pointer'
+                                            ? 'border-red-200 hover:border-red-300 cursor-pointer'
+                                            : 'cursor-pointer'
                                     }
                                     ${draggedIndex === index ? 'opacity-50' : ''}`}
                                 style={{

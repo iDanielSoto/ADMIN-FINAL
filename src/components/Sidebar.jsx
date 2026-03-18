@@ -80,28 +80,25 @@ const Sidebar = () => {
                 key={item.id}
                 onClick={() => handleMenuClick(item.ruta)}
                 className={`
-                    w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
-                    transition-all duration-200 group relative
+                    w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
+                    transition-all duration-200 group relative font-medium
                     ${isActive
-                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 shadow-sm'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        ? 'bg-blue-50/70 dark:bg-primary-900/20 text-blue-700 dark:text-primary-400 border border-blue-100/50 dark:border-primary-800/50 shadow-sm'
+                        : 'text-slate-600 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white'
                     }
                     ${isCollapsed ? 'justify-center' : ''}
                 `}
                 title={isCollapsed ? item.nombre : ''}
             >
-                {isActive && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-600 rounded-r-full" />
-                )}
 
                 <IconComponent
-                    className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200'
+                    className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 ${isActive ? 'text-blue-600 dark:text-primary-400' : 'text-slate-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-primary-400'
                         }`}
                 />
 
                 {!isCollapsed && (
                     <div className="flex-1 text-left min-w-0">
-                        <div className={`font-medium text-sm truncate ${isActive ? 'text-primary-700 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300'
+                        <div className={`font-semibold text-[13px] tracking-wide truncate ${isActive ? 'text-blue-800 dark:text-primary-300' : 'text-slate-600 dark:text-gray-400 group-hover:text-slate-900 dark:group-hover:text-white'
                             }`}>
                             {item.nombre}
                         </div>
@@ -132,7 +129,7 @@ const Sidebar = () => {
             {/* Botón hamburguesa móvil */}
             <button
                 onClick={toggleMobile}
-                className="select-none lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.35)] border border-gray-200 dark:border-gray-700">
+                className="select-none lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 p-2 bg-white dark:bg-gray-800 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.15)] border border-gray-200 dark:border-gray-700">
                 {isMobileOpen ? (
                     <X className="w-6 h-6 text-gray-700 dark:text-gray-200" />
                 ) : (
@@ -151,8 +148,8 @@ const Sidebar = () => {
             {/* Sidebar */}
             <aside
                 className={`
-          select-none fixed lg:sticky top-0 left-0 h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 
-          transition-all duration-300 z-40 flex flex-col
+          select-none fixed lg:sticky top-0 left-0 h-screen bg-white dark:bg-gray-800 border-r border-slate-100 dark:border-gray-800 
+          transition-all duration-300 z-40 flex flex-col shadow-[2px_0_8px_-3px_rgba(0,0,0,0.02)]
           ${isCollapsed ? 'w-20' : 'w-64'}
           ${isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}
         `}
@@ -161,25 +158,25 @@ const Sidebar = () => {
 
 
                 {/* Header con logo y nombre de empresa */}
-                <div className={`h-16 flex items-center border-b border-gray-200 dark:border-gray-700 flex-shrink-0 ${isCollapsed ? 'justify-center' : 'justify-between px-4'}`}>
+                <div className={`h-[72px] flex items-center border-b border-transparent flex-shrink-0 ${isCollapsed ? 'justify-center' : 'justify-between px-6'}`}>
                     {!isCollapsed ? (
                         <>
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
                                 {empresa?.logo ? (
                                     <img
                                         src={empresa.logo}
                                         alt={empresa.nombre}
-                                        className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
+                                        className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-slate-100 dark:border-gray-600 shadow-sm"
                                     />
                                 ) : (
-                                    <div className="w-8 h-8 bg-gradient-to-br from-primary-600 to-primary-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm border border-blue-500">
                                         <span className="text-white font-bold text-sm">
                                             {empresa?.nombre?.charAt(0) || '?'}
                                         </span>
                                     </div>
                                 )}
                                 <div className="min-w-0 flex-1">
-                                    <span className="font-bold text-sm text-gray-800 dark:text-white block leading-tight truncate">
+                                    <span className="font-bold text-sm text-slate-800 dark:text-white block leading-tight truncate tracking-tight">
                                         {loadingEmpresa ? (
                                             <span className="block h-3.5 w-28 bg-gray-200 dark:bg-gray-600 rounded animate-pulse" />
                                         ) : (
@@ -205,10 +202,10 @@ const Sidebar = () => {
                                 <img
                                     src={empresa.logo}
                                     alt={empresa.nombre}
-                                    className="w-10 h-10 rounded-lg object-cover"
+                                    className="w-10 h-10 rounded object-cover border border-gray-100 dark:border-gray-600"
                                 />
                             ) : (
-                                <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-primary-700 rounded-lg flex items-center justify-center">
+                                <div className="w-10 h-10 bg-primary-600 rounded flex items-center justify-center">
                                     <span className="text-white font-bold text-lg">
                                         {empresa?.nombre?.charAt(0) || '?'}
                                     </span>
@@ -227,7 +224,7 @@ const Sidebar = () => {
 
                 {/* Footer del Sidebar (Configuración) */}
                 {!user?.esPropietarioSaaS && (
-                    <div className={`flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 ${isCollapsed ? 'px-2 py-2' : 'px-3 py-3'}`}>
+                    <div className={`flex-shrink-0 bg-white dark:bg-gray-800 ${isCollapsed ? 'px-2 py-2' : 'px-4 py-4'}`}>
                         <OfflineIndicator isCollapsed={isCollapsed} />
                         <nav className="space-y-1">
                             {renderMenuButton({

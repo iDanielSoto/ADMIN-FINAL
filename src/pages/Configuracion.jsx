@@ -27,6 +27,7 @@ const SECCIONES = [
     { id: 'seguridad', label: 'Seguridad', icon: FiShield, description: 'Accesos y métodos de verificación' },
     { id: 'tolerancia', label: 'Asistencia', icon: FiClock, description: 'Reglas, márgenes y tipos de salida' },
     { id: 'red', label: 'Red', icon: FiWifi, description: 'Seguridad IP y perímetros digitales' },
+    { id: 'reportes', label: 'Reportes', icon: FiImage, description: 'Diseño de PDF, membretes y marca' }
 ];
 
 
@@ -46,6 +47,8 @@ const Configuracion = () => {
     const [saving, setSaving] = useState(false);
     const [mensaje, setMensaje] = useState(null);
     const fileInputRef = useRef(null);
+    const encabInputRef = useRef(null);
+    const pieInputRef = useRef(null);
 
     // --- ESTADOS PARA SECCIÓN RED (NUEVO) ---
     const [listaRedes, setListaRedes] = useState([]);
@@ -58,6 +61,17 @@ const Configuracion = () => {
         logo: '',
         telefono: '',
         correo: ''
+    });
+
+    const [formReportes, setFormReportes] = useState({
+        encabezado: { mostrar_logo: true, texto_izquierdo: '', texto_derecho: '', color_fondo: '#ffffff', color_texto: '#000000', usar_imagen: false, imagen: '' },
+        pie_pagina: { texto_central: '', mostrar_numeracion: true, color_texto: '#666666', usar_imagen: false, imagen: '' },
+        fuente: 'Helvetica',
+        etiquetas_turnos: [
+            { nombre: 'Turno 1', inicio: '07:00', fin: '15:00' },
+            { nombre: 'Turno 2', inicio: '15:00', fin: '23:00' },
+            { nombre: 'Turno 3', inicio: '23:00', fin: '07:00' }
+        ]
     });
 
     // Inicializar formConfig con valores del contexto
@@ -73,20 +87,27 @@ const Configuracion = () => {
             rostro: { prioridad: 2, activo: true },
             codigo: { prioridad: 3, activo: true }
         },
-        requiere_salida: true
+        requiere_salida: true,
+        paleta_colores: { primary: '#4f46e5', secondary: '#10b981' }
     });
 
-    // Sincronizar formulario cuando el contexto cambie (carga inicial)
     useEffect(() => {
-        setFormConfig(prev => ({
-            ...prev,
-            idioma: config.idioma,
-            formato_fecha: config.formato_fecha,
-            formato_hora: config.formato_hora,
-            zona_horaria: config.zona_horaria,
-            es_mantenimiento: config.es_mantenimiento,
-            requiere_salida: config.requiere_salida ?? true
-        }));
+        if (config) {
+            setFormConfig(prev => ({
+                ...prev,
+                idioma: config.idioma,
+                formato_fecha: config.formato_fecha,
+                formato_hora: config.formato_hora,
+                zona_horaria: config.zona_horaria,
+                es_mantenimiento: config.es_mantenimiento,
+                requiere_salida: config.requiere_salida ?? true,
+                paleta_colores: config.paleta_colores || { primary: '#4f46e5', secondary: '#10b981' }
+            }));
+
+            if (config.intervalo_bloques_minutos !== undefined) {
+                setFormIntervaloBloques(config.intervalo_bloques_minutos);
+            }
+        }
     }, [config]);
 
     const [formTolerancia, setFormTolerancia] = useState({
@@ -130,7 +151,7 @@ const Configuracion = () => {
                 jueves: true, viernes: true, sabado: false, domingo: false
             }
         });
-        setFormIntervaloBloques(tol.intervalo_bloques_minutos || 60);
+        // El intervalo de bloques se maneja desde la sección de configuración, no aquí.
     };
 
     const handleAddRegla = () => {
@@ -194,6 +215,28 @@ const Configuracion = () => {
                     // se debe poner al final para que no sea sobrescrito!
                     setConfiguracion({ ...cfg, id: emp.configuracion_id });
 
+                    if (emp.configuracion_reportes) {
+                        // Migración hacia atrás: Si existian strings, mapear a objetos
+                        let etiquetasParsed = emp.configuracion_reportes.etiquetas_turnos || [
+                            { nombre: 'Turno 1', inicio: '07:00', fin: '15:00' },
+                            { nombre: 'Turno 2', inicio: '15:00', fin: '23:00' },
+                            { nombre: 'Turno 3', inicio: '23:00', fin: '07:00' }
+                        ];
+
+                        if (typeof etiquetasParsed[0] === 'string') {
+                            etiquetasParsed = etiquetasParsed.map((nom, i) => ({
+                                nombre: nom,
+                                inicio: ['07:00', '15:00', '23:00'][i],
+                                fin: ['15:00', '23:00', '07:00'][i]
+                            }));
+                        }
+
+                        setFormReportes({
+                            ...emp.configuracion_reportes,
+                            etiquetas_turnos: etiquetasParsed
+                        });
+                    }
+
                     // Estructura por defecto para orden_credenciales
                     let ordenCredenciales = {
                         huella: { prioridad: 1, activo: true },
@@ -212,6 +255,10 @@ const Configuracion = () => {
                         requiere_salida: cfg.requiere_salida ?? true
                     });
 
+                    if (cfg.intervalo_bloques_minutos !== undefined) {
+                        setFormIntervaloBloques(cfg.intervalo_bloques_minutos);
+                    }
+
                     // Cargar segmentos de red
                     if (cfg.segmentos_red) {
                         try {
@@ -229,6 +276,9 @@ const Configuracion = () => {
                     if (dataConfig.success) {
                         const cfg2 = dataConfig.data;
                         setConfiguracion(cfg2);
+                        if (cfg2.intervalo_bloques_minutos !== undefined) {
+                            setFormIntervaloBloques(cfg2.intervalo_bloques_minutos);
+                        }
 
                         let ordenCredenciales = {
                             huella: { prioridad: 1, activo: true },
@@ -325,6 +375,38 @@ const Configuracion = () => {
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
+    const handleImageUploadBanner = async (e, tipo) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            setMensaje({ tipo: 'error', texto: 'Por favor selecciona una imagen válida' });
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            setMensaje({ tipo: 'error', texto: 'La imagen no debe superar los 5MB' });
+            return;
+        }
+
+        try {
+            // Un banner suele ser muy ancho y bajo.
+            const compressed = await compressImage(file, { maxWidth: 1200, maxHeight: 400, quality: 0.8 });
+            setFormReportes(prev => ({
+                ...prev,
+                [tipo]: { ...prev[tipo], imagen: compressed }
+            }));
+        } catch {
+            setMensaje({ tipo: 'error', texto: 'Error al procesar la imagen' });
+        }
+    };
+
+    const handleRemoveBanner = (tipo) => {
+        setFormReportes(prev => ({ ...prev, [tipo]: { ...prev[tipo], imagen: '' } }));
+        if (tipo === 'encabezado' && encabInputRef.current) encabInputRef.current.value = '';
+        if (tipo === 'pie_pagina' && pieInputRef.current) pieInputRef.current.value = '';
+    };
+
     // --- FUNCIONES PARA MÉTODOS DE AUTENTICACIÓN ---
 
     // Obtener métodos ordenados por prioridad
@@ -415,6 +497,53 @@ const Configuracion = () => {
             return;
         }
 
+        // Validación de Horarios de Turnos (Sin solapamientos)
+        const checkOverlap = (t1_s, t1_f, t2_s, t2_f) => {
+            const getMins = (timeObj) => {
+                if (!timeObj) return 0;
+                const [h, m] = timeObj.split(':').map(Number);
+                return h * 60 + m;
+            };
+
+            let s1 = getMins(t1_s), f1 = getMins(t1_f);
+            let s2 = getMins(t2_s), f2 = getMins(t2_f);
+
+            // Si cruza la medianoche (ej 23:00 a 07:00), f1 es al día siguiente
+            if (f1 < s1) f1 += 24 * 60;
+            if (f2 < s2) f2 += 24 * 60;
+
+            // Revisamos solapes normales
+            if (s1 < f2 && s2 < f1) return true;
+
+            // Revisamos si el cruce de medianoche provoca solape de ciclo (Día 2 envuelve)
+            if (f1 > 24 * 60) {
+                let wrap_f1 = f1 - (24 * 60);
+                if (s2 < wrap_f1) return true; // El día 2 toca al día 1 cruzado
+            }
+            if (f2 > 24 * 60) {
+                let wrap_f2 = f2 - (24 * 60);
+                if (s1 < wrap_f2) return true;
+            }
+
+            return false;
+        };
+
+        const turnos = formReportes.etiquetas_turnos || [];
+        for (let i = 0; i < turnos.length; i++) {
+            for (let j = i + 1; j < turnos.length; j++) {
+                if (checkOverlap(turnos[i].inicio, turnos[i].fin, turnos[j].inicio, turnos[j].fin)) {
+                    setMensaje({ tipo: 'error', texto: `El horario del ${turnos[i].nombre} se solapa con el ${turnos[j].nombre}. Verifica la disponibilidad.` });
+                    setActiveTab('reportes');
+                    return;
+                }
+            }
+            if (!turnos[i].inicio || !turnos[i].fin) {
+                setMensaje({ tipo: 'error', texto: `El turno ${turnos[i].nombre} está incompleto (Falta hora inicio/fin).` });
+                setActiveTab('reportes');
+                return;
+            }
+        }
+
         try {
             setSaving(true);
             setMensaje(null);
@@ -431,7 +560,8 @@ const Configuracion = () => {
                     nombre: formEmpresa.nombre,
                     logo: formEmpresa.logo || null,
                     telefono: formEmpresa.telefono,
-                    correo: formEmpresa.correo
+                    correo: formEmpresa.correo,
+                    configuracion_reportes: formReportes
                 })
             });
             const dataEmpresa = await resEmpresa.json();
@@ -458,8 +588,10 @@ const Configuracion = () => {
                     zona_horaria: formConfig.zona_horaria,
                     es_mantenimiento: formConfig.es_mantenimiento,
                     requiere_salida: formConfig.requiere_salida, // Crucial para que no se reinicie
+                    intervalo_bloques_minutos: formIntervaloBloques,
                     nombreEmpresa: formEmpresa.nombre,
-                    logoEmpresa: formEmpresa.logo
+                    logoEmpresa: formEmpresa.logo,
+                    paleta_colores: formConfig.paleta_colores
                 });
             }
 
@@ -475,7 +607,7 @@ const Configuracion = () => {
                     body: JSON.stringify(formTolerancia)
                 });
                 const dataTol = await resTol.json();
-                if (!dataTol.success) throw new Error('Error al actualizar opciones de tolerancia');
+                if (!dataTol.success) throw new Error(dataTol.message || 'Error al actualizar opciones de tolerancia');
 
                 // Actualizar local
                 setTolerancia(dataTol.data);
@@ -492,7 +624,7 @@ const Configuracion = () => {
                     body: JSON.stringify(payload)
                 });
                 const dataTol = await resTol.json();
-                if (!dataTol.success) throw new Error('Error al crear tolerancia');
+                if (!dataTol.success) throw new Error(dataTol.message || 'Error al crear tolerancia');
 
                 // Asignar local
                 setTolerancia(dataTol.data);
@@ -517,15 +649,15 @@ const Configuracion = () => {
     const currentSection = SECCIONES.find(s => s.id === activeTab);
 
     return (
-        <div className="max-w-7xl mx-auto p-6 space-y-6">
+        <div className="w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
 
             {/* Contenedor Principal Flex */}
-            <div className="flex flex-col lg:flex-row gap-8">
+            <div className="w-full flex flex-col lg:flex-row gap-8">
 
                 {/* --- SIDEBAR DE CONFIGURACIÓN --- */}
                 <aside className="lg:w-72 flex-shrink-0">
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden sticky top-6 transition-colors duration-200">
-                        <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                    <div className="card p-0 overflow-hidden sticky top-6 transition-colors duration-200">
+                        <div className="p-4 border-b border-slate-100 dark:border-gray-700 bg-slate-50 dark:bg-gray-900">
                             <h2 className="font-bold text-gray-700 dark:text-gray-200">Ajustes</h2>
                             <p className="text-xs text-gray-500 dark:text-gray-400">Configuración del sistema</p>
                         </div>
@@ -557,7 +689,7 @@ const Configuracion = () => {
                 {/* --- ÁREA DE CONTENIDO PRINCIPAL --- */}
                 <main className="flex-1 min-w-0">
                     {/* Header de la sección */}
-                    <div className="bg-white dark:bg-gray-800 rounded-t-xl shadow-sm border border-gray-200 dark:border-gray-700 border-b-0 p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-colors duration-200">
+                    <div className="card rounded-b-none border-b-0 p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-colors duration-200 shadow-none">
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                 {currentSection.icon && <currentSection.icon className="w-6 h-6 text-gray-400" />}
@@ -569,7 +701,7 @@ const Configuracion = () => {
                         <button
                             onClick={handleSaveAll}
                             disabled={saving}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="btn-primary flex items-center gap-2 px-6 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {saving ? (
                                 <DynamicLoader size="tiny" layout="row" />
@@ -591,7 +723,7 @@ const Configuracion = () => {
                     )}
 
                     {/* Contenido del Formulario */}
-                    <div className="bg-white dark:bg-gray-800 rounded-b-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-200">
+                    <div className="card rounded-t-none p-6 transition-colors duration-200 shadow-none border-t border-slate-100 dark:border-gray-700">
 
                         {/* SECCIÓN: EMPRESA */}
                         {activeTab === 'empresa' && (
@@ -634,7 +766,7 @@ const Configuracion = () => {
                                         <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nombre de la organización</label>
                                         <input type="text" id="nombre" value={formEmpresa.nombre}
                                             onChange={(e) => setFormEmpresa(prev => ({ ...prev, nombre: e.target.value }))}
-                                            className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                                            className="input"
                                             placeholder="Ingresa el nombre oficial" />
                                     </div>
 
@@ -644,7 +776,7 @@ const Configuracion = () => {
                                         </label>
                                         <input type="tel" id="telefono" value={formEmpresa.telefono}
                                             onChange={(e) => setFormEmpresa(prev => ({ ...prev, telefono: e.target.value }))}
-                                            className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                                            className="input"
                                             placeholder="+52 55 1234 5678" />
                                     </div>
 
@@ -654,7 +786,7 @@ const Configuracion = () => {
                                         </label>
                                         <input type="email" id="correo" value={formEmpresa.correo}
                                             onChange={(e) => setFormEmpresa(prev => ({ ...prev, correo: e.target.value }))}
-                                            className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                                            className="input"
                                             placeholder="contacto@empresa.com" />
                                     </div>
                                 </div>
@@ -785,7 +917,7 @@ const Configuracion = () => {
                                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Apariencia</h3>
 
                                     <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
                                             <div>
                                                 <h4 className="font-medium text-gray-900 dark:text-gray-100">Modo Oscuro</h4>
                                                 <p className="text-xs text-gray-500 mt-1">Cambia la apariencia de la interfaz a colores oscuros.</p>
@@ -800,6 +932,35 @@ const Configuracion = () => {
                                                         }`}
                                                 />
                                             </button>
+                                        </div>
+                                        <div className="pt-4">
+                                            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Colores Corporativos</h4>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Primario (Botones, Acentos)</label>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="color"
+                                                            value={formConfig.paleta_colores?.primary || '#4f46e5'}
+                                                            onChange={(e) => setFormConfig(prev => ({ ...prev, paleta_colores: { ...prev.paleta_colores, primary: e.target.value } }))}
+                                                            className="w-10 h-10 rounded cursor-pointer border-0 p-0"
+                                                        />
+                                                        <span className="text-sm font-mono text-gray-600 dark:text-gray-400 uppercase">{formConfig.paleta_colores?.primary || '#4f46e5'}</span>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Secundario (Highlights)</label>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="color"
+                                                            value={formConfig.paleta_colores?.secondary || '#10b981'}
+                                                            onChange={(e) => setFormConfig(prev => ({ ...prev, paleta_colores: { ...prev.paleta_colores, secondary: e.target.value } }))}
+                                                            className="w-10 h-10 rounded cursor-pointer border-0 p-0"
+                                                        />
+                                                        <span className="text-sm font-mono text-gray-600 dark:text-gray-400 uppercase">{formConfig.paleta_colores?.secondary || '#10b981'}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -921,8 +1082,8 @@ const Configuracion = () => {
                                                         <div className="space-y-1.5">
                                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Hasta (minutos)</label>
                                                             <div className="relative">
-                                                                <input type="number" min="0" value={regla.limite_minutos}
-                                                                    onChange={(e) => handleUpdateRegla(index, 'limite_minutos', parseInt(e.target.value))}
+                                                                <input type="number" min="0" value={regla.limite_minutos ?? 0}
+                                                                    onChange={(e) => handleUpdateRegla(index, 'limite_minutos', parseInt(e.target.value) || 0)}
                                                                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border-none rounded-lg text-sm font-bold text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500" />
                                                             </div>
                                                         </div>
@@ -949,7 +1110,7 @@ const Configuracion = () => {
                                                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Límite conteo</label>
                                                                 <div className="flex items-center bg-gray-50 dark:bg-gray-900 rounded-lg pr-3">
                                                                     <input type="number" min="1" value={regla.penalizacion_valor || 0}
-                                                                        onChange={(e) => handleUpdateRegla(index, 'penalizacion_valor', parseInt(e.target.value))}
+                                                                        onChange={(e) => handleUpdateRegla(index, 'penalizacion_valor', parseInt(e.target.value) || 0)}
                                                                         className="w-full px-3 py-2 bg-transparent border-none text-sm font-bold text-gray-700 dark:text-gray-200 focus:ring-0" />
                                                                     <span className="text-[10px] font-bold text-blue-500 uppercase">veces</span>
                                                                 </div>
@@ -1013,8 +1174,8 @@ const Configuracion = () => {
                                                 </div>
                                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-200">Anticipación entrada (min)</label>
                                             </div>
-                                            <input type="number" min="0" max="180" value={formTolerancia.minutos_anticipado_max}
-                                                onChange={(e) => setFormTolerancia(prev => ({ ...prev, minutos_anticipado_max: parseInt(e.target.value) }))}
+                                            <input type="number" min="0" max="180" value={formTolerancia.minutos_anticipado_max ?? 0}
+                                                onChange={(e) => setFormTolerancia(prev => ({ ...prev, minutos_anticipado_max: parseInt(e.target.value) || 0 }))}
                                                 className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 disabled:opacity-50 transition-all font-bold"
                                                 disabled={!formTolerancia.permite_registro_anticipado} />
                                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed italic">Margen permitido antes de la hora oficial.</p>
@@ -1029,8 +1190,8 @@ const Configuracion = () => {
                                                         </div>
                                                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-200">Anticipación salida (min)</label>
                                                     </div>
-                                                    <input type="number" min="0" max="180" value={formTolerancia.minutos_anticipo_salida}
-                                                        onChange={(e) => setFormTolerancia(prev => ({ ...prev, minutos_anticipo_salida: parseInt(e.target.value) }))}
+                                                    <input type="number" min="0" max="180" value={formTolerancia.minutos_anticipo_salida ?? 0}
+                                                        onChange={(e) => setFormTolerancia(prev => ({ ...prev, minutos_anticipo_salida: parseInt(e.target.value) || 0 }))}
                                                         className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 transition-all font-bold" />
                                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed italic">Margen permitido antes de la hora oficial de salida.</p>
                                                 </div>
@@ -1042,8 +1203,8 @@ const Configuracion = () => {
                                                         </div>
                                                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-200">Posterior a salida (min)</label>
                                                     </div>
-                                                    <input type="number" min="0" max="1440" value={formTolerancia.minutos_posterior_salida}
-                                                        onChange={(e) => setFormTolerancia(prev => ({ ...prev, minutos_posterior_salida: parseInt(e.target.value) }))}
+                                                    <input type="number" min="0" max="1440" value={formTolerancia.minutos_posterior_salida ?? 0}
+                                                        onChange={(e) => setFormTolerancia(prev => ({ ...prev, minutos_posterior_salida: parseInt(e.target.value) || 0 }))}
                                                         className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 transition-all font-bold" />
                                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed italic">Tiempo límite para marcar salida. Después genera 'Salida no cumplida'.</p>
                                                 </div>
@@ -1173,6 +1334,377 @@ const Configuracion = () => {
                                             </div>
                                         )}
                                     </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* SECCIÓN: REPORTES (NUEVO) */}
+                        {activeTab === 'reportes' && (
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                {/* Zona de Formulario (Izquierda) */}
+                                <div className="space-y-8">
+                                    <div>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Diseño de Encabezado</h3>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs text-gray-500">Usar Banner de Imagen:</span>
+                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                    <input type="checkbox" checked={formReportes.encabezado.usar_imagen}
+                                                        onChange={(e) => setFormReportes(prev => ({ ...prev, encabezado: { ...prev.encabezado, usar_imagen: e.target.checked } }))}
+                                                        className="sr-only peer" />
+                                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm animate-in fade-in zoom-in-95">
+                                            {formReportes.encabezado.usar_imagen ? (
+                                                <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        ref={encabInputRef}
+                                                        onChange={(e) => handleImageUploadBanner(e, 'encabezado')}
+                                                    />
+
+                                                    {formReportes.encabezado.imagen ? (
+                                                        <div className="relative w-full aspect-[4/1] bg-gray-100 rounded-lg overflow-hidden group">
+                                                            <img src={formReportes.encabezado.imagen} alt="Banner Encabezado" className="w-full h-full object-contain" />
+                                                            <button
+                                                                onClick={() => handleRemoveBanner('encabezado')}
+                                                                className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                title="Quitar imagen"
+                                                            >
+                                                                <FiTrash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-center cursor-pointer" onClick={() => encabInputRef.current?.click()}>
+                                                            <FiUpload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                                                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Subir imagen de banner (Header)</p>
+                                                            <p className="text-xs text-gray-500 mt-1">Recomendado: 1200x200px. Max 5MB.</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    <div className="col-span-full">
+                                                        <label className="flex items-center gap-3 cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={formReportes.encabezado.mostrar_logo}
+                                                                onChange={(e) => setFormReportes(prev => ({ ...prev, encabezado: { ...prev.encabezado, mostrar_logo: e.target.checked } }))}
+                                                                className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                                                            />
+                                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Mostrar Logo de la Empresa en el encabezado</span>
+                                                        </label>
+                                                    </div>
+
+                                                    <div className="col-span-1">
+                                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Texto Superior Izquierdo</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formReportes.encabezado.texto_izquierdo}
+                                                            onChange={(e) => setFormReportes(prev => ({ ...prev, encabezado: { ...prev.encabezado, texto_izquierdo: e.target.value } }))}
+                                                            placeholder="Ej: Instituto Tecnológico..."
+                                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm dark:text-white"
+                                                        />
+                                                    </div>
+
+                                                    <div className="col-span-1">
+                                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Texto Superior Derecho</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formReportes.encabezado.texto_derecho}
+                                                            onChange={(e) => setFormReportes(prev => ({ ...prev, encabezado: { ...prev.encabezado, texto_derecho: e.target.value } }))}
+                                                            placeholder="Ej: Depto. Recursos Humanos"
+                                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm dark:text-white"
+                                                        />
+                                                    </div>
+
+                                                    <div className="col-span-1">
+                                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Color de Fondo Header</label>
+                                                        <div className="flex gap-2">
+                                                            <input
+                                                                type="color"
+                                                                value={formReportes.encabezado.color_fondo}
+                                                                onChange={(e) => setFormReportes(prev => ({ ...prev, encabezado: { ...prev.encabezado, color_fondo: e.target.value } }))}
+                                                                className="h-10 w-14 rounded cursor-pointer border-0 p-0"
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                value={formReportes.encabezado.color_fondo}
+                                                                onChange={(e) => setFormReportes(prev => ({ ...prev, encabezado: { ...prev.encabezado, color_fondo: e.target.value } }))}
+                                                                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 outline-none font-mono text-sm dark:text-white"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="col-span-1">
+                                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Color de Texto Header</label>
+                                                        <div className="flex gap-2">
+                                                            <input
+                                                                type="color"
+                                                                value={formReportes.encabezado.color_texto}
+                                                                onChange={(e) => setFormReportes(prev => ({ ...prev, encabezado: { ...prev.encabezado, color_texto: e.target.value } }))}
+                                                                className="h-10 w-14 rounded cursor-pointer border-0 p-0"
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                value={formReportes.encabezado.color_texto}
+                                                                onChange={(e) => setFormReportes(prev => ({ ...prev, encabezado: { ...prev.encabezado, color_texto: e.target.value } }))}
+                                                                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 outline-none font-mono text-sm dark:text-white"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex items-center justify-between mb-4 mt-8">
+                                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Pie de Página (Footer)</h3>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs text-gray-500">Usar Banner de Imagen:</span>
+                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                    <input type="checkbox" checked={formReportes.pie_pagina.usar_imagen}
+                                                        onChange={(e) => setFormReportes(prev => ({ ...prev, pie_pagina: { ...prev.pie_pagina, usar_imagen: e.target.checked } }))}
+                                                        className="sr-only peer" />
+                                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm animate-in fade-in zoom-in-95">
+                                            {formReportes.pie_pagina.usar_imagen ? (
+                                                <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        ref={pieInputRef}
+                                                        onChange={(e) => handleImageUploadBanner(e, 'pie_pagina')}
+                                                    />
+
+                                                    {formReportes.pie_pagina.imagen ? (
+                                                        <div className="relative w-full aspect-[6/1] bg-gray-100 rounded-lg overflow-hidden group">
+                                                            <img src={formReportes.pie_pagina.imagen} alt="Banner Footer" className="w-full h-full object-contain" />
+                                                            <button
+                                                                onClick={() => handleRemoveBanner('pie_pagina')}
+                                                                className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                title="Quitar imagen"
+                                                            >
+                                                                <FiTrash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-center cursor-pointer" onClick={() => pieInputRef.current?.click()}>
+                                                            <FiUpload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                                                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Subir imagen de banner (Footer)</p>
+                                                            <p className="text-xs text-gray-500 mt-1">Recomendado: 1200x150px. Max 5MB.</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-6">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Texto Central (Dirección, Teléfono, etc.)</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formReportes.pie_pagina.texto_central}
+                                                            onChange={(e) => setFormReportes(prev => ({ ...prev, pie_pagina: { ...prev.pie_pagina, texto_central: e.target.value } }))}
+                                                            placeholder="Ej: Calle Falsa 123... / fasitlac@empresa.com"
+                                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm dark:text-white"
+                                                        />
+                                                    </div>
+
+                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                        <label className="flex items-center gap-3 cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={formReportes.pie_pagina.mostrar_numeracion}
+                                                                onChange={(e) => setFormReportes(prev => ({ ...prev, pie_pagina: { ...prev.pie_pagina, mostrar_numeracion: e.target.checked } }))}
+                                                                className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                                                            />
+                                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Mostrar numeración de páginas</span>
+                                                        </label>
+
+                                                        <div className="flex items-center gap-3">
+                                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Color Texto Footer</label>
+                                                            <input
+                                                                type="color"
+                                                                value={formReportes.pie_pagina.color_texto}
+                                                                onChange={(e) => setFormReportes(prev => ({ ...prev, pie_pagina: { ...prev.pie_pagina, color_texto: e.target.value } }))}
+                                                                className="h-8 w-12 rounded cursor-pointer border-0 p-0"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Etiquetas de Turnos */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-3 pb-3 border-b border-gray-200 dark:border-gray-700">
+                                            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg">
+                                                <FiClock className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-bold text-gray-800 dark:text-white">Nombres de Turnos</h3>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">Personaliza cómo se llaman los turnos en los reportes</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm animate-in fade-in zoom-in-95 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                            {[0, 1, 2].map((i) => {
+                                                const turnoActual = formReportes.etiquetas_turnos?.[i] || { nombre: '', inicio: '', fin: '' };
+
+                                                return (
+                                                    <div key={i} className="flex flex-col gap-3">
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre</label>
+                                                            <input
+                                                                type="text"
+                                                                value={turnoActual.nombre}
+                                                                onChange={(e) => {
+                                                                    const newEtiquetas = [...(formReportes.etiquetas_turnos || [])];
+                                                                    newEtiquetas[i] = { ...newEtiquetas[i], nombre: e.target.value };
+                                                                    setFormReportes(prev => ({ ...prev, etiquetas_turnos: newEtiquetas }));
+                                                                }}
+                                                                placeholder={`Ej: ${['Matutino', 'Vespertino', 'Nocturno'][i]}`}
+                                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm dark:text-white"
+                                                            />
+                                                        </div>
+                                                        <div className="grid grid-cols-1 2xl:grid-cols-2 gap-3">
+                                                            <div className="w-full">
+                                                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Inicio</label>
+                                                                <input
+                                                                    type="time"
+                                                                    value={turnoActual.inicio}
+                                                                    onChange={(e) => {
+                                                                        const newEtiquetas = [...(formReportes.etiquetas_turnos || [])];
+                                                                        newEtiquetas[i] = { ...newEtiquetas[i], inicio: e.target.value };
+                                                                        setFormReportes(prev => ({ ...prev, etiquetas_turnos: newEtiquetas }));
+                                                                    }}
+                                                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm dark:text-white"
+                                                                />
+                                                            </div>
+                                                            <div className="w-full">
+                                                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Fin</label>
+                                                                <input
+                                                                    type="time"
+                                                                    value={turnoActual.fin}
+                                                                    onChange={(e) => {
+                                                                        const newEtiquetas = [...(formReportes.etiquetas_turnos || [])];
+                                                                        newEtiquetas[i] = { ...newEtiquetas[i], fin: e.target.value };
+                                                                        setFormReportes(prev => ({ ...prev, etiquetas_turnos: newEtiquetas }));
+                                                                    }}
+                                                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm dark:text-white"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Zona de Live Preview (Derecha) */}
+                                <div className="flex flex-col items-center xl:sticky xl:top-6 lg:ml-4">
+                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 w-full text-left">Previsualización (Aprox.)</h3>
+
+                                    {/* Hoja A4 Simulada */}
+                                    <div className="w-full max-w-sm sm:max-w-md aspect-[1/1.414] bg-white border border-gray-300 shadow-2xl rounded-sm flex flex-col relative overflow-hidden ring-1 ring-gray-900/5">
+
+                                        {/* Header Preview */}
+                                        {formReportes.encabezado.usar_imagen && formReportes.encabezado.imagen ? (
+                                            <div className="w-full aspect-[6/1] border-b">
+                                                <img src={formReportes.encabezado.imagen} alt="Banner Preview" className="w-full h-full object-cover" />
+                                            </div>
+                                        ) : (
+                                            <div
+                                                className="flex justify-between items-center p-4 sm:p-6 border-b transition-colors"
+                                                style={{ backgroundColor: formReportes.encabezado.color_fondo || '#ffffff' }}
+                                            >
+                                                <div className="flex-1 flex gap-3 sm:gap-4 items-center overflow-hidden">
+                                                    {formReportes.encabezado.mostrar_logo && (
+                                                        <div className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 bg-white/10 rounded overflow-hidden flex items-center justify-center">
+                                                            {formEmpresa.logo ? (
+                                                                <img src={formEmpresa.logo} alt="Logo" className="w-full h-full object-contain" />
+                                                            ) : (
+                                                                <FiImage className="w-6 h-6" style={{ color: formReportes.encabezado.color_texto || '#000' }} />
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    <div
+                                                        className="text-[10px] sm:text-xs font-semibold whitespace-pre-wrap truncate"
+                                                        style={{ color: formReportes.encabezado.color_texto || '#000000' }}
+                                                    >
+                                                        {formReportes.encabezado.texto_izquierdo || 'Texto Izquierdo...'}
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    className="flex-1 text-right text-[10px] sm:text-xs font-semibold whitespace-pre-wrap ml-2 truncate"
+                                                    style={{ color: formReportes.encabezado.color_texto || '#000000' }}
+                                                >
+                                                    {formReportes.encabezado.texto_derecho || 'Texto Derecho...'}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Body Dummy */}
+                                        <div className="flex-1 p-6 flex flex-col pt-8 space-y-4">
+                                            <div className="text-center">
+                                                <div className="font-bold text-sm sm:text-base text-gray-800">Departamento de Recursos Humanos</div>
+                                                <div className="text-xs text-gray-500 mt-1">Reporte de Checadas - Quincena 1</div>
+                                            </div>
+                                            <div className="w-3/4 h-2 bg-gray-200 rounded mx-auto mt-4"></div>
+                                            <div className="w-1/2 h-2 bg-gray-200 rounded mx-auto mb-4"></div>
+
+                                            {/* Dummy Table */}
+                                            <div className="w-full h-40 bg-gray-50 rounded border border-gray-200 flex flex-col">
+                                                <div className="w-full h-6 bg-gray-300 border-b border-gray-200 flex items-center px-2">
+                                                    <div className="w-1/3 h-2 bg-gray-400 rounded"></div>
+                                                </div>
+                                                <div className="w-full flex-1 flex flex-col justify-around px-2">
+                                                    <div className="w-full h-2 bg-gray-200 rounded"></div>
+                                                    <div className="w-full h-2 bg-gray-200 rounded"></div>
+                                                    <div className="w-5/6 h-2 bg-gray-200 rounded"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Footer Preview */}
+                                        {formReportes.pie_pagina.usar_imagen && formReportes.pie_pagina.imagen ? (
+                                            <div className="absolute bottom-0 w-full aspect-[8/1] border-t bg-white">
+                                                <img src={formReportes.pie_pagina.imagen} alt="Footer Preview" className="w-full h-full object-cover" />
+                                            </div>
+                                        ) : (
+                                            <div className="absolute bottom-0 w-full p-4 border-t flex justify-between items-end transition-colors bg-white">
+                                                <div
+                                                    className="flex-1 text-center text-[8px] sm:text-[10px] px-8"
+                                                    style={{ color: formReportes.pie_pagina.color_texto || '#666666' }}
+                                                >
+                                                    {formReportes.pie_pagina.texto_central || 'Texto Central Footer'}
+                                                </div>
+                                                {formReportes.pie_pagina.mostrar_numeracion && (
+                                                    <div
+                                                        className="absolute right-4 bottom-4 text-[8px] sm:text-[10px]"
+                                                        style={{ color: formReportes.pie_pagina.color_texto || '#666666' }}
+                                                    >
+                                                        Página 1
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-4 text-center">
+                                        Esta es una representación aproximada. El documento final en PDF acomodará automáticamente las dimensiones.
+                                    </p>
                                 </div>
                             </div>
                         )}

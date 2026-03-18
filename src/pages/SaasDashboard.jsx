@@ -76,21 +76,21 @@ const SaasDashboard = () => {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Panel de Control SaaS</h2>
-                    <p className="text-gray-500 dark:text-gray-400">Visión global de todo el ecosistema multi-tenant.</p>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Panel de Control SaaS</h2>
+                    <p className="text-slate-500 dark:text-gray-400 mt-1">Visión global de todo el ecosistema multi-tenant.</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                     <button
                         onClick={() => navigate('/saas-logs')}
-                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-bold transition-colors shadow-sm flex items-center gap-2"
+                        className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg font-medium transition-colors flex items-center gap-2"
                     >
-                        <FiActivity className="w-5 h-5 text-gray-500" /> System Logs
+                        <FiActivity className="w-4 h-4 text-slate-400" /> System Logs
                     </button>
                     <button
                         onClick={() => navigate('/empresas')}
-                        className="px-4 py-2 bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 text-white rounded-lg font-bold shadow-sm flex items-center gap-2 transition-colors"
+                        className="btn-primary flex items-center gap-2"
                     >
-                        <FiGlobe className="w-5 h-5" /> Gestionar Entidades (Tenants)
+                        <FiGlobe className="w-4 h-4" /> Gestionar Entidades (Tenants)
                     </button>
                 </div>
             </div>
@@ -99,24 +99,32 @@ const SaasDashboard = () => {
                 {stats.map((stat, i) => {
                     const Icon = stat.icon;
                     return (
-                        <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center hover:shadow-md transition-shadow">
-                            <div className={`p-4 rounded-full mb-4 ${stat.color}`}>
-                                <Icon className="w-8 h-8" />
+                        <div key={i} className="card flex flex-col items-start relative overflow-hidden">
+                            <div className={`p-2.5 rounded-lg mb-4 ${stat.color} bg-opacity-10 border border-current border-opacity-10`}>
+                                <Icon className="w-5 h-5" />
                             </div>
-                            <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">{stat.title}</h3>
-                            <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{stat.value}</p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 px-3 py-1 rounded-full w-full">{stat.details}</p>
+
+                            <h3 className="text-slate-500 dark:text-gray-400 text-sm font-semibold tracking-wide uppercase mb-1">{stat.title}</h3>
+                            <div className="flex items-end gap-3 mb-4">
+                                <p className="text-3xl font-black text-slate-800 dark:text-white leading-none">{stat.value}</p>
+                            </div>
+
+                            <div className="mt-auto w-full pt-4 border-t border-slate-100 dark:border-gray-700">
+                                <p className="text-xs text-slate-500 dark:text-gray-400 font-medium truncate">
+                                    {stat.details}
+                                </p>
+                            </div>
                         </div>
                     );
                 })}
             </div>
 
-            {/* Espacio para futuras graficas SaaS (por ejemplo crecimiento mensual de empresas) */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm min-h-[300px] flex items-center justify-center">
-                <p className="text-gray-400 flex flex-col items-center gap-2">
-                    <FiActivity className="w-8 h-8 opacity-50" />
-                    Gráficos de crecimiento en desarrollo...
-                </p>
+            {/* Espacio para futuras graficas SaaS */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-8 border border-slate-200 dark:border-gray-700 min-h-[300px] flex items-center justify-center relative">
+                <div className="text-slate-400 flex flex-col items-center gap-3">
+                    <FiActivity className="w-10 h-10 opacity-30 animate-pulse text-primary-600" />
+                    <p className="font-medium text-sm text-slate-500">Visualización avanzada de métricas (Próximamente)</p>
+                </div>
             </div>
         </div>
     );

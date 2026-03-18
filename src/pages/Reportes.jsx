@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useConfig } from '../context/ConfigContext';
 import DynamicLoader from '../components/common/DynamicLoader';
 import ConfirmBox from '../components/ConfirmBox';
+import Pagination from '../components/Pagination';
 import {
     BarChart3, Settings, Filter, PieChart as PieIcon, X,
     CheckCircle, AlertTriangle, AlertCircle, Users, TrendingUp,
@@ -30,19 +31,103 @@ const COLORS = {
     gris: '#94a3b8'
 };
 
+const SearchableSelect = ({ options, value, onChange, placeholder = "Buscar empleado..." }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const wrapperRef = useRef(null);
+
+    // Cerrar al dar click fuera
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [wrapperRef]);
+
+    const filteredOptions = options.filter(opt =>
+        React.isValidElement(opt)
+            ? false
+            : opt.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const selectedOption = options.find(opt => opt.id === value);
+
+    return (
+        <div className="relative w-full" ref={wrapperRef}>
+            <div
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-transparent focus-within:bg-white dark:focus-within:bg-gray-600 focus-within:border-blue-500 rounded-xl flex items-center cursor-pointer transition-all h-[42px]"
+                onClick={() => setIsOpen(!isOpen)}
+            >
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 pointer-events-none" />
+                <span className={`text-sm font-medium truncate ${selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>
+                    {selectedOption ? selectedOption.nombre : placeholder}
+                </span>
+            </div>
+
+            {isOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    <div className="p-2 border-b border-gray-100 dark:border-gray-700">
+                        <input
+                            type="text"
+                            autoFocus
+                            placeholder="Escribe para buscar..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                    <ul className="max-h-60 overflow-y-auto outline-none">
+                        <li
+                            className="px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-gray-700 dark:text-gray-300 transition-colors"
+                            onClick={() => { onChange(''); setIsOpen(false); setSearchTerm(''); }}
+                        >
+                            <span className="italic text-gray-500">-- Ninguno --</span>
+                        </li>
+                        {filteredOptions.length > 0 ? (
+                            filteredOptions.map(opt => (
+                                <li
+                                    key={opt.id}
+                                    className={`px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors ${value === opt.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}
+                                    onClick={() => { onChange(opt.id); setIsOpen(false); setSearchTerm(''); }}
+                                >
+                                    {opt.nombre}
+                                </li>
+                            ))
+                        ) : (
+                            <li className="px-4 py-3 text-sm text-gray-500 text-center italic">No se encontraron empleados</li>
+                        )}
+                    </ul>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const Reportes = () => {
+    const { formatTime } = useConfig();
     // --- ESTADOS DE FILTROS ---
     const [alcance, setAlcance] = useState('global');
     const [idSeleccionado, setIdSeleccionado] = useState('');
-    const [modoFecha, setModoFecha] = useState('siempre');
-    const [fechaInicio, setFechaInicio] = useState('');
-    const [fechaFin, setFechaFin] = useState('');
+    const [modoFecha, setModoFecha] = useState('intervalo');
+
+    // Por defecto iniciamos con el último mes o quincena real
+    const _hoy = new Date();
+    const _hace15 = new Date();
+    _hace15.setDate(_hace15.getDate() - 15);
+    const [fechaInicio, setFechaInicio] = useState(_hace15.toISOString().split('T')[0]);
+    const [fechaFin, setFechaFin] = useState(_hoy.toISOString().split('T')[0]);
 
     // --- ESTADOS DE DATOS ---
     const [dashboardStats, setDashboardStats] = useState(null);
     const [topDesempeno, setTopDesempeno] = useState([]);
     // NUEVO: Estado para la comparativa de departamentos
     const [statsDepartamentos, setStatsDepartamentos] = useState([]);
+    const [listadoAsistencias, setListadoAsistencias] = useState([]);
+    const [etiquetasTurnos, setEtiquetasTurnos] = useState(['Turno 1', 'Turno 2', 'Turno 3']);
+    const [currentPage, setCurrentPage] = useState(1); // Controla la tabla de listado
     const [dashboardLoading, setDashboardLoading] = useState(false);
 
     // --- CATALOGOS ---
@@ -85,6 +170,8 @@ const Reportes = () => {
         setDashboardLoading(true);
         setTopDesempeno([]);
         setStatsDepartamentos([]); // Resetear comparativa
+        setListadoAsistencias([]); // Resetear listado
+        setCurrentPage(1); // Resetear a la página 1
 
         try {
             const token = getToken();
@@ -98,10 +185,16 @@ const Reportes = () => {
 
             // 2. Determinar Endpoint Principal (KPIs)
             let endpointStats = '/reportes/estadisticas-globales';
+            let localAlcance = alcance;
 
-            if (alcance === 'empleado' && idSeleccionado) {
+            // Si el alcance es empleado pero NO se ha seleccionado ninguno, caemos a Global visualmente
+            if ((alcance === 'empleado' || alcance === 'departamento') && !idSeleccionado) {
+                localAlcance = 'global';
+            }
+
+            if (localAlcance === 'empleado' && idSeleccionado) {
                 endpointStats = `/reportes/estadisticas-empleado/${idSeleccionado}`;
-            } else if (alcance === 'departamento' && idSeleccionado) {
+            } else if (localAlcance === 'departamento' && idSeleccionado) {
                 endpointStats = `/reportes/estadisticas-departamento/${idSeleccionado}`;
             }
 
@@ -112,15 +205,34 @@ const Reportes = () => {
             ];
 
             // Si es vista por departamento (o global), traemos el Top 10 Empleados
-            if (alcance === 'departamento' && idSeleccionado) {
+            if (localAlcance === 'departamento' && idSeleccionado) {
                 params.append('departamento_id', idSeleccionado);
                 requests.push(fetch(`${API_BASE_URL}/reportes/desempeno?${params.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } }));
-            } else if (alcance === 'global') {
+            } else if (localAlcance === 'global') {
                 // Petición 1: Top 10 Desempeño Empleados
                 requests.push(fetch(`${API_BASE_URL}/reportes/desempeno?${params.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } }));
 
-                // Petición 2: Comparativa de Departamentos (NUEVA)
+                // Petición 2: Comparativa de Departamentos
                 requests.push(fetch(`${API_BASE_URL}/reportes/comparativa-departamentos?${params.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } }));
+            }
+
+            // Si es vista por empleado, traemos su listado de tabla Quincenal para previsualización
+            if (localAlcance === 'empleado' && idSeleccionado) {
+                let fInit = fechaInicio;
+                let fEnd = fechaFin;
+                if (!fInit || !fEnd) {
+                    const hoy = new Date();
+                    fEnd = hoy.toISOString().split('T')[0];
+                    const hace15 = new Date();
+                    hace15.setDate(hoy.getDate() - 15);
+                    fInit = hace15.toISOString().split('T')[0];
+                }
+                if (modoFecha === 'siempre') {
+                    fInit = '2024-01-01';
+                    fEnd = new Date().toISOString().split('T')[0];
+                }
+                const url = `${API_BASE_URL}/reportes/checadas/quincena?empleado_id=${idSeleccionado}&fecha_inicio=${fInit}&fecha_fin=${fEnd}`;
+                requests.push(fetch(url, { headers: { 'Authorization': `Bearer ${token}` } }));
             }
 
             const responses = await Promise.all(requests);
@@ -129,8 +241,8 @@ const Reportes = () => {
             if (dataStats.success) {
                 setDashboardStats(dataStats.data);
 
-                // Procesar Top 10 Empleados (si existe la respuesta 1)
-                if (responses[1]) {
+                // Procesar Top 10 Empleados (Solo Global o Departamento)
+                if (alcance !== 'empleado' && responses[1]) {
                     const dataDesempeno = await responses[1].json();
                     if (dataDesempeno.success && Array.isArray(dataDesempeno.data)) {
                         const top = dataDesempeno.data
@@ -140,11 +252,21 @@ const Reportes = () => {
                     }
                 }
 
-                // Procesar Comparativa Departamentos (Solo si estamos en Global y existe la respuesta 2)
-                if (alcance === 'global' && responses[2]) {
+                // Procesar Comparativa Departamentos
+                if (localAlcance === 'global' && responses[2]) {
                     const dataDeptos = await responses[2].json();
                     if (dataDeptos.success && Array.isArray(dataDeptos.data)) {
                         setStatsDepartamentos(dataDeptos.data);
+                    }
+                }
+
+                // Procesar Listado de asistencias (Solo empleado)
+                if (localAlcance === 'empleado' && responses[1]) {
+                    const dataListado = await responses[1].json();
+                    if (dataListado.success && dataListado.data?.dias) {
+                        setListadoAsistencias(dataListado.data.dias);
+                        const et = dataListado.data.empresa?.configuracion_reportes?.etiquetas_turnos;
+                        setEtiquetasTurnos(et || ['Turno 1', 'Turno 2', 'Turno 3']);
                     }
                 }
 
@@ -161,7 +283,7 @@ const Reportes = () => {
 
     // Datos visuales calculados
     const chartData = useMemo(() => {
-        if (!dashboardStats) return null;
+        if (!dashboardStats) return { pieData: [], incidenciasData: [] };
 
         const asistencias = dashboardStats.asistencias || {};
 
@@ -182,79 +304,301 @@ const Reportes = () => {
     // --- FUNCIONES DE EXPORTACIÓN (Sin cambios) ---
     const handleExport = async (formato) => {
         setExporting(true);
-        setTimeout(() => {
-            setAlertMsg(`Reporte ${formato.toUpperCase()} generado correctamente.`);
-            setExporting(false);
+        if (formato === 'pdf' && exportCategoria === 'asistencias') {
+            if (alcance === 'empleado' && idSeleccionado) {
+                await generarPdfEmpleadoQuincenal();
+            } else {
+                setAlertMsg('Este formato de exportación avanzado aplica cuando filtras "Detalle de Asistencias" para un Empleado específico.');
+                setExporting(false);
+                setIsModalOpen(false);
+                return;
+            }
+        } else {
+            // Lógica anterior simulada para otros formatos
+            setTimeout(() => {
+                setAlertMsg(`Reporte ${formato.toUpperCase()} generado correctamente. (Simulado)`);
+                setExporting(false);
+                setIsModalOpen(false);
+            }, 1500);
+        }
+    };
+
+    const generarPdfEmpleadoQuincenal = async () => {
+        try {
+            const token = getToken();
+
+            // Fechas a utilizar
+            let fInit = fechaInicio;
+            let fEnd = fechaFin;
+
+            if (!fInit || !fEnd) {
+                // Si no hay rango, por defecto usamos la quincena/mes actual o últimos 15 días
+                const hoy = new Date();
+                fEnd = hoy.toISOString().split('T')[0];
+                const hace15 = new Date();
+                hace15.setDate(hoy.getDate() - 15);
+                fInit = hace15.toISOString().split('T')[0];
+            }
+            if (modoFecha === 'siempre') {
+                fInit = '2024-01-01';
+                fEnd = new Date().toISOString().split('T')[0];
+            }
+
+            // 1. Obtener la configuración actual de la empresa (para logos y encabezados)
+            const resEmpresa = await fetch(`${API_BASE_URL}/empresas/mi-empresa`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const dataEmpresa = await resEmpresa.json();
+            const configReportes = dataEmpresa.data?.configuracion_reportes || {};
+            const logoEmpresa = dataEmpresa.data?.logo;
+
+            // 2. Obtener los datos del reporte quincenal
+            const url = `${API_BASE_URL}/reportes/checadas/quincena?empleado_id=${idSeleccionado}&fecha_inicio=${fInit}&fecha_fin=${fEnd}`;
+            const resReporte = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            const dataReporte = await resReporte.json();
+
+            if (!dataReporte.success) {
+                throw new Error('No se pudo obtener la información de las checadas.');
+            }
+
+            const { empleado, dias } = dataReporte.data;
+
+            // 3. Crear instancia PDF
+            const doc = new jsPDF('p', 'pt', 'a4');
+            const pageWidth = doc.internal.pageSize.getWidth();
+
+            let y = 30;
+
+            // 1. Calcular Márgenes Dinámicos de Header y Footer para el Aspect Ratio
+            const encab = configReportes.encabezado || {};
+            const pie = configReportes.pie_pagina || {};
+
+            let headerHeight = 100; // para texto por defecto
+            if (encab.usar_imagen && encab.imagen) {
+                try {
+                    const props = doc.getImageProperties(encab.imagen);
+                    const ratio = props.height / props.width;
+                    headerHeight = pageWidth * ratio;
+                } catch { headerHeight = 80; }
+            }
+
+            let footerHeight = 40;
+            if (pie.usar_imagen && pie.imagen) {
+                try {
+                    const props = doc.getImageProperties(pie.imagen);
+                    const ratio = props.height / props.width;
+                    footerHeight = (pageWidth * ratio);
+                } catch { footerHeight = 60; }
+            }
+
+            // Iniciar contenido de texto (Títulos) por debajo del Header
+            y = headerHeight + 20;
+
+            // Título principal
+            doc.setFontSize(13);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Departamento de Recursos Humanos`, pageWidth / 2, y, { align: 'center' });
+            y += 20;
+            doc.setFontSize(11);
+            doc.text(`Reporte de Asistencias del Empleado`, pageWidth / 2, y, { align: 'center' });
+            y += 20;
+
+            doc.setFontSize(10);
+            doc.text(`FECHA INICIO: ${fInit}   -   FECHA FIN: ${fEnd}`, pageWidth / 2, y, { align: 'center' });
+            y += 25;
+
+            // Datos del empleado
+            doc.setFontSize(12);
+            doc.text(`EMPLEADO: ${empleado.nombre?.toUpperCase() || ''}`, pageWidth / 2, y, { align: 'center' });
+            if (empleado.rfc) {
+                y += 15;
+                doc.text(`RFC: ${empleado.rfc?.toUpperCase()}`, pageWidth / 2, y, { align: 'center' });
+            }
+            y += 20;
+
+            // 4. Construir las filas de Autotable
+            const tableRows = [];
+
+            for (const dia of dias) {
+                const rowObj = {
+                    dia_mes: `${dia.dia_semana.charAt(0).toUpperCase() + dia.dia_semana.slice(1)} ${dia.fecha}`,
+                    t1_e: '', t1_s: '',
+                    t2_e: '', t2_s: '',
+                    t3_e: '', t3_s: ''
+                };
+
+                if (!dia.aplica) {
+                    rowObj.t1_e = { content: 'No Aplica', colSpan: 6, styles: { halign: 'center', fontStyle: 'italic', textColor: '#666' } };
+                } else if (dia.turnos.length === 0) {
+                    rowObj.t1_e = { content: 'Festivo o Sin Registros', colSpan: 6, styles: { halign: 'center', fontStyle: 'italic', textColor: '#666' } };
+                } else {
+                    for (let n = 0; n < 3; n++) {
+                        const t = dia.turnos[n];
+                        if (t) {
+                            const horE = t.entrada?.horario ? `H:${t.entrada.horario.substring(0, 5)}` : 'H:--';
+                            const cheE = t.entrada?.checada ? `C:${t.entrada.checada}` : 'C:--';
+                            const horS = t.salida?.horario ? `H:${t.salida.horario.substring(0, 5)}` : 'H:--';
+                            const cheS = t.salida?.checada ? `C:${t.salida.checada}` : 'C:--';
+
+                            rowObj[`t${n + 1}_e`] = `${horE}\n${cheE}`;
+                            rowObj[`t${n + 1}_s`] = `${horS}\n${cheS}`;
+                        } else {
+                            rowObj[`t${n + 1}_e`] = 'No Aplica';
+                            rowObj[`t${n + 1}_s`] = 'No Aplica';
+                        }
+                    }
+                }
+
+                tableRows.push([
+                    rowObj.dia_mes,
+                    rowObj.t1_e, rowObj.t1_s,
+                    rowObj.t2_e, rowObj.t2_s,
+                    rowObj.t3_e, rowObj.t3_s
+                ]);
+            }
+
+            let etTurnosRaw = configReportes.etiquetas_turnos || ['TURNO 1', 'TURNO 2', 'TURNO 3'];
+            const etTurnos = etTurnosRaw.map(t => typeof t === 'string' ? t : (t.nombre || 'TURNO'));
+
+            // 5. Autotable Options
+            autoTable(doc, {
+                startY: y,
+                margin: { top: headerHeight + 50, bottom: footerHeight + 20 },
+                head: [
+                    [
+                        { content: 'DIA DEL MES', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+                        { content: etTurnos[0].toUpperCase(), colSpan: 2, styles: { halign: 'center' } },
+                        { content: etTurnos[1].toUpperCase(), colSpan: 2, styles: { halign: 'center' } },
+                        { content: etTurnos[2].toUpperCase(), colSpan: 2, styles: { halign: 'center' } }
+                    ],
+                    ['Entrada', 'Salida', 'Entrada', 'Salida', 'Entrada', 'Salida']
+                ],
+                body: tableRows,
+                theme: 'grid',
+                headStyles: { fillColor: '#e2e8f0', textColor: '#1e293b', fontStyle: 'bold', fontSize: 9 },
+                bodyStyles: { fontSize: 8, textColor: '#334155' },
+                columnStyles: {
+                    0: { cellWidth: 90 },
+                },
+                styles: { cellPadding: 4, halign: 'center', valign: 'middle' },
+                didDrawPage: () => {
+                    const pageSize = doc.internal.pageSize;
+                    const pageHeight = pageSize.getHeight();
+
+                    // --- DRAW HEADER (REPETITIVO) ---
+                    if (encab.usar_imagen && encab.imagen) {
+                        try {
+                            // El banner cubre todo el ancho y se ajusta la altura por ratio
+                            doc.addImage(encab.imagen, 'JPEG', 0, 0, pageWidth, headerHeight);
+                        } catch (e) { }
+                    } else {
+                        if (encab.mostrar_logo !== false && logoEmpresa) {
+                            try {
+                                doc.addImage(logoEmpresa, 'JPEG', 40, 20, 60, 60);
+                            } catch (e) { }
+                        }
+                        doc.setFontSize(10);
+                        doc.setTextColor(encab.color_texto || '#000000');
+                        if (encab.texto_izquierdo) {
+                            doc.text(doc.splitTextToSize(encab.texto_izquierdo, 150), 110, 30);
+                        }
+                        if (encab.texto_derecho) {
+                            doc.text(doc.splitTextToSize(encab.texto_derecho, 200), pageWidth - 40, 30, { align: 'right' });
+                        }
+                    }
+
+                    // --- DRAW FOOTER (REPETITIVO) ---
+                    const pbY = pageHeight - Math.max(25, footerHeight / 2); // Ajuste vertical manual
+                    if (pie.usar_imagen && pie.imagen) {
+                        try {
+                            // El banner footer usando ratio se posiciona al fondo absolucto
+                            doc.addImage(pie.imagen, 'JPEG', 0, pageHeight - footerHeight, pageWidth, footerHeight);
+                        } catch (e) { }
+                    } else {
+                        doc.setFontSize(8);
+                        doc.setTextColor(pie.color_texto || '#666666');
+                        if (pie.texto_central) {
+                            doc.text(pie.texto_central, pageWidth / 2, pbY, { align: 'center' });
+                        }
+                    }
+
+                    // --- NUMERACIÓN ---
+                    if (pie.mostrar_numeracion !== false) {
+                        doc.setFontSize(8);
+                        let colText = pie.color_texto || '#666666';
+                        // si es imagen, podemos intentar asegurar legibilidad asumiendo texto negro
+                        if (pie.usar_imagen) colText = pie.color_texto || '#000000';
+                        doc.setTextColor(colText);
+
+                        // Si es banner completo, se superpone la pagina a la derecha ligeramente
+                        const pageNumY = pie.usar_imagen && pie.imagen ? pageHeight - 15 : pbY;
+                        doc.text(`Página ${doc.internal.getNumberOfPages()}`, pageWidth - 40, pageNumY, { align: 'right' });
+                    }
+                }
+            });
+
+            const finalY = doc.lastAutoTable.finalY || y;
+
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'italic');
+            doc.text(`Nota: (H) -> Es el Horario del trabajador (C) -> Es la hora en que hace la checada`, pageWidth / 2, finalY + 15, { align: 'center' });
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.text('_________________________________', pageWidth / 2, finalY + 60, { align: 'center' });
+            doc.setFont('helvetica', 'bold');
+            doc.text('FIRMA DEL TRABAJADOR', pageWidth / 2, finalY + 75, { align: 'center' });
+
+            // 6. Descargar archivo
+            doc.save(`Reporte_Checadas_${empleado.nombre.replace(/\s+/g, '_')}_${fInit}.pdf`);
+
+            setAlertMsg(`Reporte PDF generado correctamente.`);
             setIsModalOpen(false);
-        }, 1500);
+
+        } catch (error) {
+            console.error('Error generando PDF', error);
+            setAlertMsg(`Error al generar el PDF: ${error.message}`);
+        } finally {
+            setExporting(false);
+        }
     };
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
             <div className="max-w-7xl mx-auto space-y-6">
+                {/* --- BARRA DE FILTROS --- */}
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col gap-4">
 
-                {/* --- HEADER PRINCIPAL --- */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                            <Activity className="w-8 h-8 text-blue-600" />
-                            Panel de Estadísticas
-                        </h1>
-                        <p className="text-gray-500 dark:text-gray-400 mt-1">Visión general del comportamiento de asistencia</p>
+                    {/* Selectores de Modalidad General vs Empleado */}
+                    <div className="flex bg-gray-100 dark:bg-gray-900/50 p-1 rounded-xl w-fit">
+                        <button
+                            onClick={() => { setAlcance('global'); setIdSeleccionado(''); }}
+                            className={`px-5 py-2 text-sm font-bold rounded-lg transition-all ${alcance === 'global' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                        >
+                            Vista General
+                        </button>
+                        <button
+                            onClick={() => setAlcance('empleado')}
+                            className={`px-5 py-2 text-sm font-bold rounded-lg transition-all ${alcance === 'empleado' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                        >
+                            Por Empleado
+                        </button>
                     </div>
 
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="mt-4 md:mt-0 px-6 py-3 bg-white dark:bg-gray-700 border-2 border-blue-100 dark:border-blue-900/50 text-blue-700 dark:text-blue-400 font-semibold rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all flex items-center gap-2"
-                    >
-                        <FileText className="w-5 h-5" />
-                        Exportar Reporte
-                    </button>
-                </div>
-
-                {/* --- BARRA DE FILTROS --- */}
-                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
                     <div className="flex flex-col xl:flex-row gap-4 items-end xl:items-center">
-                        <div className="w-full xl:w-auto flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">Ver Datos De:</label>
-                                <div className="relative">
-                                    <select
-                                        value={alcance}
-                                        onChange={(e) => {
-                                            setAlcance(e.target.value);
-                                            setIdSeleccionado('');
-                                        }}
-                                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border-transparent focus:bg-white dark:focus:bg-gray-600 border focus:border-blue-500 rounded-xl text-sm font-medium dark:text-white transition-all outline-none appearance-none"
-                                    >
-                                        <option value="global">Toda la Empresa</option>
-                                        <option value="departamento">Departamento Específico</option>
-                                        <option value="empleado">Empleado Específico</option>
-                                    </select>
-                                    <Filter className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                </div>
-                            </div>
+                        <div className={`w-full xl:w-auto grid gap-4 flex-1 ${alcance === 'empleado' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
 
-                            {/* Selector Específico */}
-                            {alcance !== 'global' && (
-                                <div className="animate-in fade-in zoom-in-95 duration-200">
+                            {/* Selector Específico de Empleado (Oculto en Vista General) */}
+                            {alcance === 'empleado' && (
+                                <div className="animate-in fade-in zoom-in-95 duration-200 w-full">
                                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-                                        {alcance === 'departamento' ? 'Seleccionar Depto:' : 'Seleccionar Empleado:'}
+                                        Seleccionar Empleado:
                                     </label>
-                                    <div className="relative">
-                                        <select
-                                            value={idSeleccionado}
-                                            onChange={(e) => setIdSeleccionado(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border-transparent focus:bg-white dark:focus:bg-gray-600 border focus:border-blue-500 rounded-xl text-sm font-medium dark:text-white transition-all outline-none appearance-none"
-                                        >
-                                            <option value="">-- Seleccionar --</option>
-                                            {alcance === 'departamento'
-                                                ? departamentos.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)
-                                                : empleados.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)
-                                            }
-                                        </select>
-                                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                    </div>
+                                    <SearchableSelect
+                                        options={empleados}
+                                        value={idSeleccionado}
+                                        onChange={setIdSeleccionado}
+                                    />
                                 </div>
                             )}
 
@@ -267,8 +611,8 @@ const Reportes = () => {
                                         onChange={(e) => setModoFecha(e.target.value)}
                                         className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border-transparent focus:bg-white dark:focus:bg-gray-600 border focus:border-blue-500 rounded-xl text-sm font-medium dark:text-white transition-all outline-none appearance-none"
                                     >
-                                        <option value="siempre">Histórico Completo</option>
                                         <option value="intervalo">Rango de Fechas</option>
+                                        <option value="siempre">Histórico Completo</option>
                                     </select>
                                     <Calendar className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                                 </div>
@@ -299,21 +643,36 @@ const Reportes = () => {
                             </div>
                         )}
 
-                        {/* Botón Actualizar */}
-                        <div className="w-full xl:w-auto">
-                            <label className="block text-xs font-bold text-transparent uppercase mb-1.5 ml-1 select-none">.</label>
-                            <button
-                                onClick={actualizarEstadisticas}
-                                disabled={dashboardLoading || (alcance !== 'global' && !idSeleccionado)}
-                                className="w-full xl:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                            >
-                                {dashboardLoading ? (
-                                    <DynamicLoader size="tiny" layout="row" />
-                                ) : (
-                                    <RefreshCw className="w-5 h-5" />
-                                )}
-                                Actualizar
-                            </button>
+                        {/* Botones de Acción */}
+                        <div className="w-full xl:w-auto flex gap-3">
+                            <div className="flex-1">
+                                <label className="block text-xs font-bold text-transparent uppercase mb-1.5 ml-1 select-none hidden xl:block">.</label>
+                                <button
+                                    onClick={actualizarEstadisticas}
+                                    disabled={dashboardLoading}
+                                    className="w-full px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                                >
+                                    {dashboardLoading ? (
+                                        <DynamicLoader size="tiny" layout="row" />
+                                    ) : (
+                                        <RefreshCw className="w-5 h-5" />
+                                    )}
+                                    <span className="hidden sm:inline">Actualizar</span>
+                                </button>
+                            </div>
+
+                            {alcance === 'empleado' && dashboardStats && (
+                                <div className="flex-1 animate-in fade-in zoom-in">
+                                    <label className="block text-xs font-bold text-transparent uppercase mb-1.5 ml-1 select-none hidden xl:block">.</label>
+                                    <button
+                                        onClick={() => setIsModalOpen(true)}
+                                        className="w-full px-6 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-bold rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <FileText className="w-5 h-5" />
+                                        <span className="hidden sm:inline">Exportar</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -329,21 +688,21 @@ const Reportes = () => {
                         <DynamicLoader size="medium" />
                         <p>Analizando datos...</p>
                     </div>
-                ) : dashboardStats ? (
+                ) : (dashboardStats || (!idSeleccionado && alcance === 'empleado')) ? (
                     <div ref={chartContainerRef} className="space-y-6 animate-in fade-in duration-500">
 
                         {/* KPIs Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <KpiCard title="Puntualidad" value={dashboardStats.asistencias?.puntuales} total={dashboardStats.asistencias?.total} icon={CheckCircle} color="text-green-600" bg="bg-green-50" />
-                            <KpiCard title="Retardos" value={dashboardStats.asistencias?.retardos} total={dashboardStats.asistencias?.total} icon={AlertCircle} color="text-yellow-600" bg="bg-yellow-50" />
-                            <KpiCard title="Faltas" value={dashboardStats.asistencias?.faltas} total={dashboardStats.asistencias?.total} icon={X} color="text-red-600" bg="bg-red-50" />
-                            <KpiCard title="Total Registros" value={dashboardStats.asistencias?.total} sub="En periodo seleccionado" icon={Users} color="text-blue-600" bg="bg-blue-50" />
+                            <KpiCard title="Puntualidad" value={dashboardStats?.asistencias?.puntuales || 0} total={dashboardStats?.asistencias?.total || 0} icon={CheckCircle} color="text-green-600" bg="bg-green-50" />
+                            <KpiCard title="Retardos" value={dashboardStats?.asistencias?.retardos || 0} total={dashboardStats?.asistencias?.total || 0} icon={AlertCircle} color="text-yellow-600" bg="bg-yellow-50" />
+                            <KpiCard title="Faltas" value={dashboardStats?.asistencias?.faltas || 0} total={dashboardStats?.asistencias?.total || 0} icon={X} color="text-red-600" bg="bg-red-50" />
+                            <KpiCard title="Total Registros" value={dashboardStats?.asistencias?.total || 0} sub="En periodo seleccionado" icon={Users} color="text-blue-600" bg="bg-blue-50" />
                         </div>
 
                         {/* ==========================================================
                             SECCIÓN NUEVA: COMPARATIVA DE DEPARTAMENTOS
                            ========================================================== */}
-                        {alcance === 'global' && (
+                        {(!idSeleccionado || alcance === 'global') && (
                             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 w-full animate-in slide-in-from-bottom-2">
                                 <div className="flex justify-between items-center mb-6">
                                     <h3 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
@@ -486,22 +845,85 @@ const Reportes = () => {
                                 </div>
                             )}
 
-                            {/* Gráfica de Barras (Incidencias Empleado Único) */}
+                            {/* Listado de Asistencias (Empleado Único) Columna derecha ancha */}
                             {alcance === 'empleado' && (
                                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 col-span-1 lg:col-span-2 flex flex-col">
                                     <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
-                                        <AlertTriangle className="w-5 h-5 text-gray-400" /> Historial de Incidencias
+                                        <FileSpreadsheet className="w-5 h-5 text-gray-400" /> Listado de Asistencias
                                     </h3>
-                                    <div className="flex-1 h-[300px] min-h-[300px]">
-                                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                                            <BarChart data={chartData.incidenciasData}>
-                                                <CartesianGrid strokeDasharray="3 3" opacity={0.3} vertical={false} />
-                                                <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={12} />
-                                                <YAxis axisLine={false} tickLine={false} />
-                                                <Tooltip cursor={{ fill: '#f3f4f6' }} />
-                                                <Bar dataKey="cantidad" fill={COLORS.azul} radius={[4, 4, 0, 0]} barSize={50} />
-                                            </BarChart>
-                                        </ResponsiveContainer>
+                                    <div className="flex-1 overflow-x-auto">
+                                        {listadoAsistencias.length > 0 ? (
+                                            <>
+                                                <table className="min-w-full mb-4">
+                                                    <thead>
+                                                        <tr className="border-b border-gray-100 dark:border-gray-700">
+                                                            <th className="text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase py-2 hidden md:table-cell">Día del Mes</th>
+                                                            <th className="text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase py-2">{typeof etiquetasTurnos[0] === 'string' ? etiquetasTurnos[0] : etiquetasTurnos[0].nombre}</th>
+                                                            <th className="text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase py-2">{typeof etiquetasTurnos[1] === 'string' ? etiquetasTurnos[1] : etiquetasTurnos[1].nombre}</th>
+                                                            <th className="text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase py-2">{typeof etiquetasTurnos[2] === 'string' ? etiquetasTurnos[2] : etiquetasTurnos[2].nombre}</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
+                                                        {listadoAsistencias.slice((currentPage - 1) * 7, currentPage * 7).map((dia, idx) => {
+                                                            const noAplica = !dia.aplica;
+                                                            const festivo = dia.aplica && dia.turnos.length === 0;
+
+                                                            return (
+                                                                <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                                                    <td className="py-2 text-xs font-medium text-gray-800 dark:text-gray-200 border-r border-gray-100 dark:border-gray-700/50 pr-2 block md:table-cell">
+                                                                        {dia.dia_semana.charAt(0).toUpperCase() + dia.dia_semana.slice(1)} <br /> {dia.fecha}
+                                                                    </td>
+                                                                    {noAplica ? (
+                                                                        <td colSpan={3} className="text-center text-xs text-gray-400 italic py-2">No Aplica</td>
+                                                                    ) : festivo ? (
+                                                                        <td colSpan={3} className="text-center text-xs text-gray-400 italic py-2">Festivo o Sin Registros</td>
+                                                                    ) : (
+                                                                        <>
+                                                                            {[0, 1, 2].map(n => {
+                                                                                const t = dia.turnos[n];
+                                                                                if (!t) return <td key={n} className="text-center text-xs text-gray-400 italic py-2">--</td>;
+
+                                                                                const hE = t.entrada?.horario ? `H: ${formatTime(t.entrada.horario)}` : 'H: --';
+                                                                                const cE = t.entrada?.checada ? `C: ${formatTime(t.entrada.checada)}` : 'C: --';
+                                                                                const hS = t.salida?.horario ? `H: ${formatTime(t.salida.horario)}` : 'H: --';
+                                                                                const cS = t.salida?.checada ? `C: ${formatTime(t.salida.checada)}` : 'C: --';
+
+                                                                                return (
+                                                                                    <td key={n} className="text-center text-[10px] md:text-xs text-gray-600 dark:text-gray-400 py-2 border-r border-gray-100 dark:border-gray-700/50 last:border-0">
+                                                                                        <div className="grid grid-cols-2 gap-1 mb-1">
+                                                                                            <span className="font-semibold text-blue-600 dark:text-blue-400">{hE}</span>
+                                                                                            <span className="font-semibold text-purple-600 dark:text-purple-400">{hS}</span>
+                                                                                        </div>
+                                                                                        <div className="grid grid-cols-2 gap-1">
+                                                                                            <span>{cE}</span>
+                                                                                            <span>{cS}</span>
+                                                                                        </div>
+                                                                                    </td>
+                                                                                );
+                                                                            })}
+                                                                        </>
+                                                                    )}
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                </table>
+
+                                                {/* Paginación Reutilizable */}
+                                                <Pagination
+                                                    pagina={currentPage}
+                                                    totalPaginas={Math.ceil(listadoAsistencias.length / 7)}
+                                                    total={listadoAsistencias.length}
+                                                    porPagina={7}
+                                                    onChange={setCurrentPage}
+                                                />
+                                            </>
+                                        ) : (
+                                            <div className="h-full flex flex-col items-center justify-center text-gray-400 italic text-sm py-10">
+                                                <Calendar className="w-8 h-8 mb-2 opacity-50" />
+                                                Sin asistencias recientes
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}

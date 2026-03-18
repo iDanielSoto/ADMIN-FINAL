@@ -21,80 +21,52 @@ const UserCard = ({ usuario, onEdit, onViewProfile, onDelete, onReactivar }) => 
     return (
         <div
             onClick={() => onViewProfile(usuario.usuario)}
-            className={`group relative border rounded-lg p-4 hover:shadow-sm transition-all cursor-pointer ${usuario.estado_cuenta === 'baja'
-                    ? 'bg-gray-50 dark:bg-gray-900/50 border-red-200 dark:border-red-900/30 opacity-75'
-                    : usuario.estado_cuenta === 'suspendido'
-                        ? 'bg-yellow-50/50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-900/30'
-                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+            className={`group relative card p-4 hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-3 ${usuario.estado_cuenta === 'baja'
+                ? 'bg-slate-50 dark:bg-gray-900/50 grayscale-[50%] opacity-75'
+                : usuario.estado_cuenta === 'suspendido'
+                    ? 'bg-orange-50/50 dark:bg-yellow-900/10'
+                    : 'bg-white dark:bg-gray-800'
                 }`}
         >
-            <div className="flex items-center gap-4">
-                {/* 1. Avatar */}
-                <div className="flex-shrink-0">
-                    {usuario.foto ? (
-                        <img
-                            src={usuario.foto}
-                            alt={usuario.nombre}
-                            className="w-12 h-12 rounded-full object-cover"
-                        />
-                    ) : (
-                        <div className="w-12 h-12 bg-blue-600 dark:bg-blue-700 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                            {getInitials(usuario.nombre)}
-                        </div>
-                    )}
-                </div>
-
-                {/* 2. Información Principal (Nombre y Usuario) */}
-                <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                    <div>
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                            {usuario.nombre}
-                        </h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">@{usuario.usuario}</p>
-                    </div>
-
-                    {/* 3. Contacto (Oculto en móviles muy pequeños si deseas, o visible) */}
-                    <div className="hidden md:block">
-                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
-                            <FiMail className="w-3 h-3" />
-                            <span className="truncate">{usuario.correo}</span>
-                        </div>
-                        {usuario.telefono && (
-                            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                <FiPhone className="w-3 h-3" />
-                                <span>{usuario.telefono}</span>
+            {/* Header: Avatar, Info, Actions */}
+            <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 overflow-hidden">
+                    {/* 1. Avatar */}
+                    <div className="flex-shrink-0">
+                        {usuario.foto ? (
+                            <img
+                                src={usuario.foto}
+                                alt={usuario.nombre}
+                                className="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-gray-600 shadow-sm"
+                            />
+                        ) : (
+                            <div className="w-10 h-10 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 rounded-xl flex items-center justify-center text-primary-700 font-bold text-sm shadow-sm opacity-90">
+                                {getInitials(usuario.nombre)}
                             </div>
                         )}
                     </div>
 
-                    {/* 4. Badges de Rol y Estado */}
-                    <div className="flex items-center gap-2">
-                        {usuario.es_empleado && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900/50">
-                                Empleado
-                            </span>
-                        )}
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${usuario.estado_cuenta === 'activo' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
-                                usuario.estado_cuenta === 'suspendido' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
-                                    'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                            }`}>
-                            {usuario.estado_cuenta}
-                        </span>
+                    {/* 2. Información Principal */}
+                    <div className="min-w-0">
+                        <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate" title={usuario.nombre}>
+                            {usuario.nombre}
+                        </h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">@{usuario.usuario}</p>
                     </div>
                 </div>
 
                 {/* 5. Acciones */}
-                <div className="flex items-center gap-1 pl-4 border-l border-gray-100 dark:border-gray-700">
+                <div className="flex items-center gap-1 flex-shrink-0 -mr-2">
                     {usuario.estado_cuenta === 'baja' ? (
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onReactivar && onReactivar(usuario);
                             }}
-                            className="flex items-center gap-1 px-2 py-1.5 text-xs text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 border border-green-200 dark:border-green-800 rounded-lg transition-colors"
+                            className="p-1.5 text-green-600 hover:bg-green-100 rounded-md transition-colors"
                             title="Reactivar usuario"
                         >
-                            <FiRefreshCw className="w-3.5 h-3.5" /> Reactivar
+                            <FiRefreshCw className="w-4 h-4" />
                         </button>
                     ) : (
                         <>
@@ -103,7 +75,7 @@ const UserCard = ({ usuario, onEdit, onViewProfile, onDelete, onReactivar }) => 
                                     e.stopPropagation();
                                     onEdit(usuario);
                                 }}
-                                className="p-2 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
+                                className="p-1.5 text-slate-400 hover:text-primary-600 hover:bg-slate-50 border border-transparent hover:border-slate-200 dark:hover:bg-gray-700 rounded-md transition-colors opacity-0 group-hover:opacity-100"
                                 title="Editar"
                             >
                                 <FiEdit2 className="w-4 h-4" />
@@ -113,15 +85,51 @@ const UserCard = ({ usuario, onEdit, onViewProfile, onDelete, onReactivar }) => 
                                     e.stopPropagation();
                                     onDelete && onDelete(usuario);
                                 }}
-                                className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-slate-50 border border-transparent hover:border-slate-200 dark:hover:bg-gray-700 rounded-md transition-colors opacity-0 group-hover:opacity-100"
                                 title="Dar de baja"
                             >
                                 <FiTrash2 className="w-4 h-4" />
                             </button>
                         </>
                     )}
-                    <FiChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500 transition-colors" />
                 </div>
+            </div>
+
+            {/* Body: Contacto y Badges */}
+            <div className="flex flex-col gap-2 mt-1">
+                {/* Contacto */}
+                <div className="flex flex-col gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-2 truncate" title={usuario.correo}>
+                        <FiMail className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                        <span className="truncate">{usuario.correo}</span>
+                    </div>
+                    {usuario.telefono && (
+                        <div className="flex items-center gap-2 truncate text-[11px]">
+                            <FiPhone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                            <span>{usuario.telefono}</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* 4. Badges de Rol y Estado */}
+                <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${usuario.estado_cuenta === 'activo' ? 'bg-green-50 border border-green-200 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                        usuario.estado_cuenta === 'suspendido' ? 'bg-orange-50 border border-orange-200 dark:bg-yellow-900/30 text-orange-700 dark:text-yellow-300' :
+                            'bg-red-50 border border-red-200 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                        }`}>
+                        {usuario.estado_cuenta}
+                    </span>
+                    {usuario.es_empleado && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white dark:bg-blue-900/30 text-slate-700 dark:text-blue-300 border border-slate-200 dark:border-blue-900/50">
+                            Empleado
+                        </span>
+                    )}
+                </div>
+            </div>
+
+            {/* Indicador de clic (hover) */}
+            <div className="absolute top-1/2 right-3 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <FiChevronRight className="w-5 h-5 text-gray-300" />
             </div>
         </div>
     );

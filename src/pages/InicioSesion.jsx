@@ -139,7 +139,7 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#1a73e8] overflow-hidden relative font-sans flex items-center justify-center">
+        <div className="min-h-screen bg-slate-50 dark:bg-gray-900 overflow-hidden relative font-sans flex items-center justify-center">
 
             {/* Animación de Gota con Deformación */}
             {animationState !== 'idle' && (
@@ -193,12 +193,12 @@ const Login = () => {
             >
                 {/* Sección de Logo y Marca */}
                 <div className="flex flex-col items-center mb-8">
-                    <h1 className="text-4xl font-bold text-white tracking-wide drop-shadow-md">FASITLAC™</h1>
-                    <p className="text-blue-100 text-sm mt-2 font-medium drop-shadow-sm">Fábrica de Software del ITLAC</p>
+                    <h1 className="text-4xl font-bold text-slate-800 dark:text-white tracking-wide">FASITLAC™</h1>
+                    <p className="text-slate-500 dark:text-gray-400 text-sm mt-2 font-medium">Fábrica de Software del ITLAC</p>
                 </div>
 
                 {/* Card del Formulario */}
-                <div className="w-full bg-white rounded-3xl shadow-2xl overflow-hidden relative z-10">
+                <div className="w-full card overflow-hidden relative z-10 p-0">
                     <div className="p-8">
 
                         {/* ─── SELECTOR DE EMPRESA (multi-tenant) ─── */}
@@ -207,7 +207,7 @@ const Login = () => {
                                 <button
                                     type="button"
                                     onClick={() => { setEmpresas(null); setEmpresaSeleccionada(null); setError(''); }}
-                                    className="flex items-center gap-1 text-sm font-semibold text-[#1a73e8] hover:text-blue-700 transition-colors"
+                                    className="flex items-center gap-1 text-sm font-semibold text-primary-600 hover:text-primary-700 transition-colors"
                                 >
                                     <FiChevronLeft className="w-4 h-4" /> Volver
                                 </button>
@@ -235,8 +235,8 @@ const Login = () => {
                                             }}
                                             className="w-full p-4 bg-gray-50 hover:bg-blue-50 border-2 border-gray-200 hover:border-[#1a73e8] rounded-xl transition-all duration-200 flex items-center gap-4 group"
                                         >
-                                            <div className="w-12 h-12 bg-blue-100 group-hover:bg-blue-200 rounded-xl flex items-center justify-center transition-colors">
-                                                <FiBriefcase className="w-6 h-6 text-[#1a73e8]" />
+                                            <div className="w-12 h-12 bg-primary-50 group-hover:bg-primary-100 rounded-xl flex items-center justify-center transition-colors">
+                                                <FiBriefcase className="w-6 h-6 text-primary-600" />
                                             </div>
                                             <div className="text-left flex-1">
                                                 <p className="font-bold text-gray-800 group-hover:text-[#1a73e8] transition-colors">{emp.nombre}</p>
@@ -272,15 +272,15 @@ const Login = () => {
                                         </label>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                                <FiUser className="w-5 h-5 text-[#1a73e8]" />
+                                                <FiUser className="w-5 h-5 text-slate-400 group-focus-within:text-primary-600" />
                                             </div>
                                             <input
                                                 type="text"
                                                 name="usuario"
                                                 value={formData.usuario}
                                                 onChange={handleChange}
-                                                className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-all outline-none font-medium"
-                                                placeholder="edgaryahir@gmail.com"
+                                                className="input pl-12"
+                                                placeholder="usuario o correo"
                                                 autoComplete="username"
                                             />
                                         </div>
@@ -293,14 +293,14 @@ const Login = () => {
                                         </label>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                                <FiLock className="w-5 h-5 text-[#1a73e8]" />
+                                                <FiLock className="w-5 h-5 text-slate-400 group-focus-within:text-primary-600" />
                                             </div>
                                             <input
                                                 type={showPassword ? 'text' : 'password'}
                                                 name="contraseña"
                                                 value={formData.contraseña}
                                                 onChange={handleChange}
-                                                className="w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-all outline-none font-medium"
+                                                className="input pl-12 pr-12"
                                                 placeholder="••••••••"
                                                 autoComplete="current-password"
                                             />
@@ -316,7 +316,7 @@ const Login = () => {
 
                                     {/* Olvidaste contraseña */}
                                     <div className="flex justify-end pt-1">
-                                        <a href="#" className="text-sm font-semibold text-[#1a73e8] hover:text-blue-700 transition-colors">
+                                        <a href="#" className="text-sm font-semibold text-primary-600 hover:text-primary-700 transition-colors">
                                             ¿Olvidaste tu contraseña?
                                         </a>
                                     </div>
@@ -325,10 +325,10 @@ const Login = () => {
                                     <button
                                         type="submit"
                                         disabled={isSubmitting || loading}
-                                        className="w-full py-4 bg-[#1a73e8] hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+                                        className="btn-primary w-full py-4 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                                     >
                                         {isSubmitting || loading ? (
-                                            <DynamicLoader text="Iniciando..." size="tiny" color="white" />
+                                            <DynamicLoader text="Iniciando..." size="tiny" />
                                         ) : (
                                             <>
                                                 <span>Iniciar Sesión</span>
@@ -341,7 +341,7 @@ const Login = () => {
                                     <div className="pt-4 text-center">
                                         <p className="text-sm text-gray-500">
                                             ¿No tienes cuenta?{' '}
-                                            <a href="#" className="text-[#1a73e8] font-bold hover:underline">
+                                            <a href="#" className="text-primary-600 font-bold hover:underline">
                                                 Contacta al admin
                                             </a>
                                         </p>
@@ -353,7 +353,7 @@ const Login = () => {
                 </div>
 
                 {/* Copyright Footer */}
-                <div className="mt-8 text-center text-blue-200 text-xs font-medium">
+                <div className="mt-8 text-center text-slate-400 text-xs font-semibold">
                     © 2026 FASITLAC™
                 </div>
             </div>

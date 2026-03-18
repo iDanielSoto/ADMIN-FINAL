@@ -86,11 +86,11 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-gray-700 w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
 
                 {/* Header Modal */}
-                <div className="bg-gray-50 dark:bg-gray-900 px-6 py-4 flex justify-between items-center border-b border-gray-100 dark:border-gray-700">
+                <div className="bg-white dark:bg-gray-800 px-6 py-4 flex justify-between items-center border-b border-slate-100 dark:border-gray-700">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <FiGlobe className="text-primary-500" /> Aprovisionar Nuevo Tenant
@@ -114,7 +114,7 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                 <div className="p-6 overflow-y-auto flex-1">
 
                     {error && (
-                        <div className="mb-6 p-4 bg-red-50 text-red-600 font-bold rounded-lg border border-red-100 flex items-start gap-2 text-sm">
+                        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold rounded-lg border border-red-100 dark:border-red-800/50 flex items-start gap-2 text-sm">
                             <FiActivity className="w-5 h-5 flex-shrink-0 mt-0.5" />
                             <p>{error}</p>
                         </div>
@@ -123,7 +123,7 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                     {successData ? (
                         // PANTALLA DE ÉXITO Y CREDENCIALES
                         <div className="flex flex-col items-center justify-center py-8 text-center space-y-6">
-                            <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+                            <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center">
                                 <FiShield className="w-10 h-10" />
                             </div>
                             <div>
@@ -142,13 +142,13 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                                 </div>
                                 <div>
                                     <span className="text-xs uppercase font-bold text-gray-500 block mb-1">Contraseña Temporal</span>
-                                    <div className="font-mono text-lg font-bold text-red-600 bg-red-50 px-3 py-2 rounded border border-red-100">
+                                    <div className="font-mono text-lg font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded border border-red-100 dark:border-red-800/50">
                                         {successData.password_temporal}
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="p-3 bg-blue-50 text-blue-700 rounded-lg text-sm flex items-start gap-2 text-left max-w-sm">
+                            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm flex items-start gap-2 text-left max-w-sm">
                                 <FiInfo className="w-5 h-5 flex-shrink-0 mt-0.5" />
                                 <p>Recomienda al cliente acceder a la plataforma y cambiar su contraseña inmediatamente tras el primer inicio de sesión.</p>
                             </div>
@@ -177,7 +177,7 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                                             required
                                             value={formParams.nombre}
                                             onChange={handleChange}
-                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                                            className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                                             placeholder="Ej. Corporativo FASITLAC"
                                         />
                                     </div>
@@ -188,7 +188,7 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                                             name="telefono"
                                             value={formParams.telefono}
                                             onChange={handleChange}
-                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                                            className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                                             placeholder="Opcional"
                                         />
                                     </div>
@@ -199,7 +199,7 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                                             name="correo"
                                             value={formParams.correo}
                                             onChange={handleChange}
-                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                                            className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                                             placeholder="Opcional (Facturación, etc)"
                                         />
                                     </div>
@@ -210,7 +210,7 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                                             name="logo"
                                             value={formParams.logo}
                                             onChange={handleChange}
-                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none font-mono text-sm"
+                                            className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none font-mono text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                                             placeholder="https://ejemplo.com/logo.png"
                                         />
                                     </div>
@@ -223,8 +223,8 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                                     <FiUser /> 2. Credenciales del Administrador
                                 </h3>
 
-                                <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-lg mb-4">
-                                    <p className="text-sm text-yellow-800">
+                                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800/50 rounded-lg mb-4">
+                                    <p className="text-sm text-yellow-800 dark:text-yellow-300">
                                         Se creará automáticamente la cuenta de Administrador Base para que el cliente pueda acceder a configurar sus horarios y empleados. <strong>La contraseña predeterminada será "12345678"</strong>.
                                     </p>
                                 </div>
@@ -238,7 +238,7 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                                             required
                                             value={formParams.admin_correo}
                                             onChange={handleChange}
-                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                                            className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                                             placeholder="admin@empresa.com"
                                         />
                                     </div>
@@ -251,13 +251,13 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                                                 required
                                                 value={formParams.admin_usuario}
                                                 onChange={handleChange}
-                                                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                                                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                                                 placeholder="Ej. admin_fasit"
                                             />
                                             <button
                                                 type="button"
                                                 onClick={handleGenerateUsername}
-                                                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-bold rounded-lg transition-colors whitespace-nowrap"
+                                                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-100 text-sm font-bold rounded-lg transition-colors whitespace-nowrap"
                                             >
                                                 Sugerir
                                             </button>
@@ -281,7 +281,7 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                                             min="1"
                                             value={formParams.limite_empleados}
                                             onChange={handleChange}
-                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                                            className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                                             placeholder="Ej. 50 (Vacio = Ilimitado)"
                                         />
                                     </div>
@@ -293,7 +293,7 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                                             min="1"
                                             value={formParams.limite_dispositivos}
                                             onChange={handleChange}
-                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                                            className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                                             placeholder="Ej. 10 (Vacio = Ilimitado)"
                                         />
                                     </div>
@@ -304,7 +304,7 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                                             name="fecha_vencimiento"
                                             value={formParams.fecha_vencimiento}
                                             onChange={handleChange}
-                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                                            className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                                             placeholder="Vacio = Nunca expira"
                                         />
                                     </div>
@@ -317,12 +317,12 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
 
                 {/* Footer Modal Actions */}
                 {!successData && (
-                    <div className="bg-gray-50 dark:bg-gray-900 px-6 py-4 flex justify-end gap-3 border-t border-gray-100 dark:border-gray-700">
+                    <div className="bg-slate-50/50 dark:bg-gray-800 px-6 py-4 flex justify-end gap-3 border-t border-slate-100 dark:border-gray-700">
                         <button
                             type="button"
                             onClick={onClose}
                             disabled={saving}
-                            className="px-5 py-2.5 text-gray-700 hover:bg-gray-200 font-bold rounded-lg transition-colors"
+                            className="btn-secondary"
                         >
                             Cancelar
                         </button>
@@ -330,7 +330,7 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                             type="submit"
                             form="formNuevaEmpresa"
                             disabled={saving}
-                            className="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                            className={`btn-primary flex items-center justify-center gap-2 ${saving ? 'opacity-70 cursor-wait' : ''}`}
                         >
                             {saving ? <FiActivity className="animate-spin w-5 h-5" /> : <FiSave className="w-5 h-5" />}
                             {saving ? 'Aprovisionando...' : 'Crear y Aprovisionar Tenant'}

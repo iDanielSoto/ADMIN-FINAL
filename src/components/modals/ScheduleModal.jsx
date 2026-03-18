@@ -241,11 +241,11 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[95vh] flex flex-col animate-fadeIn border border-gray-100 dark:border-gray-700">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[95vh] flex flex-col animate-fadeIn border border-slate-100 dark:border-gray-700 shadow-2xl shadow-slate-200/40 dark:shadow-none">
 
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 rounded-t-xl flex-shrink-0">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-t-2xl flex-shrink-0">
                     <div>
                         <h2 className="text-xl font-bold text-gray-800 dark:text-white">
                             {mode === 'create' ? 'Nuevo Horario' : 'Editar Horario'}
@@ -452,18 +452,18 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
                 {confirmAction && <ConfirmBox message={confirmAction.message} onConfirm={confirmAction.onConfirm} onCancel={() => setConfirmAction(null)} />}
 
                 {/* Footer Fijo */}
-                <div className="flex justify-between items-center px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700 rounded-b-xl flex-shrink-0">
+                <div className="flex justify-between items-center px-6 py-4 bg-slate-50/50 dark:bg-gray-800 border-t border-slate-100 dark:border-gray-700 rounded-b-2xl flex-shrink-0">
                     <div className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
                         * Los cambios no afectarán el historial pasado
                     </div>
                     <div className="flex gap-3 ml-auto sm:ml-0">
-                        <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg transition-all">
+                        <button type="button" onClick={onClose} className="btn-secondary">
                             Cancelar
                         </button>
                         <button
                             onClick={handleSubmit}
                             disabled={saving}
-                            className="px-6 py-2.5 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all flex items-center gap-2"
+                            className={`btn-primary flex items-center gap-2 ${saving ? 'opacity-70 cursor-wait' : ''}`}
                         >
                             {saving ? (
                                 <DynamicLoader text="Guardando..." size="tiny" layout="row" />

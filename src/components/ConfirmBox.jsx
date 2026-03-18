@@ -8,21 +8,21 @@ function ConfirmBox({ message, onConfirm, onCancel }) {
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/50"
+                className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
                 onClick={onCancel || onConfirm}
             />
 
             {/* Modal */}
-            <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-sm w-full animate-[fadeIn_0.15s_ease-out] overflow-hidden">
+            <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-gray-700 max-w-sm w-full animate-[fadeIn_0.15s_ease-out] overflow-hidden">
                 {/* Barra superior de color */}
-                <div className={`h-1 ${isConfirm ? 'bg-yellow-500' : 'bg-blue-500'}`} />
+                <div className={`h-1.5 ${isConfirm ? 'bg-orange-500' : 'bg-primary-500'}`} />
 
                 <div className="p-6">
                     {/* Icono + Mensaje */}
                     <div className="flex items-start gap-4">
-                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${isConfirm
-                            ? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
-                            : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                        <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${isConfirm
+                            ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
+                            : 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
                             }`}>
                             {isConfirm
                                 ? <FiAlertCircle className="w-5 h-5" />
@@ -43,21 +43,21 @@ function ConfirmBox({ message, onConfirm, onCancel }) {
                             <>
                                 <button
                                     onClick={onCancel}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                                    className="btn-secondary"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     onClick={onConfirm}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors shadow-sm"
+                                    className="btn-primary shadow-none"
                                 >
-                                    Sí, continuar
+                                    Continuar
                                 </button>
                             </>
                         ) : (
                             <button
                                 onClick={onConfirm}
-                                className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                                className="btn-primary py-2 px-6 shadow-none"
                             >
                                 OK
                             </button>

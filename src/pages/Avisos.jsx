@@ -152,7 +152,7 @@ const Avisos = () => {
             titulo: aviso.titulo,
             contenido: aviso.contenido,
             es_global: aviso.es_global,
-            empleados: aviso.empleados ? aviso.empleados.map(e => e.id) : []
+            empleados: aviso.empleados ? aviso.empleados.map(e => e.usuario_id) : []
         });
         setModalOpen(true);
         setError(null);
@@ -366,37 +366,40 @@ const Avisos = () => {
 
                                         <div className="flex-1 min-h-[300px] max-h-[400px] overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 divide-y divide-gray-100 dark:divide-gray-600 shadow-inner">
                                             {empleadosFiltrados.length > 0 ? (
-                                                empleadosFiltrados.map(emp => (
-                                                    <div
-                                                        key={emp.id}
-                                                        onClick={() => toggleEmpleado(emp.id)}
-                                                        className={`px-3 py-2.5 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors ${formData.empleados.includes(emp.id) ? 'bg-primary-50 dark:bg-primary-900/20' : ''
-                                                            }`}
-                                                    >
-                                                        <div className="flex items-center gap-3 overflow-hidden">
-                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${formData.empleados.includes(emp.id)
-                                                                ? 'bg-primary-100 text-primary-700'
-                                                                : 'bg-gray-100 text-gray-500 dark:bg-gray-600 dark:text-gray-300'
+                                                empleadosFiltrados.map(emp => {
+                                                    const seleccionado = formData.empleados.includes(emp.id);
+                                                    return (
+                                                        <div
+                                                            key={emp.id}
+                                                            onClick={() => toggleEmpleado(emp.id)}
+                                                            className={`px-4 py-3 flex items-center justify-between cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-600/50 ${seleccionado ? 'bg-gray-50 dark:bg-gray-600/40' : ''}`}
+                                                        >
+                                                            <div className="flex items-center gap-3 overflow-hidden">
+                                                                {/* Avatar con foto o iniciales */}
+                                                                <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-sm font-semibold text-gray-600 dark:text-gray-300">
+                                                                    {emp.foto
+                                                                        ? <img src={emp.foto} alt={emp.nombre} className="w-full h-full object-cover" />
+                                                                        : <>{emp.nombre?.charAt(0) || '?'}{emp.apellidos?.charAt(0) || ''}</>
+                                                                    }
+                                                                </div>
+                                                                <div className="flex flex-col truncate leading-tight">
+                                                                    <span className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
+                                                                        {emp.nombre} {emp.apellidos}
+                                                                    </span>
+                                                                    <span className="text-xs text-gray-400 truncate">
+                                                                        @{emp.usuario}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-all ${seleccionado
+                                                                ? 'bg-gray-700 border-gray-700 dark:bg-gray-300 dark:border-gray-300'
+                                                                : 'border-gray-300 dark:border-gray-500'
                                                                 }`}>
-                                                                {emp.nombre?.charAt(0) || '?'}{emp.apellidos?.charAt(0) || '?'}
-                                                            </div>
-                                                            <div className="flex flex-col truncate">
-                                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">
-                                                                    {emp.nombre} {emp.apellidos}
-                                                                </span>
-                                                                <span className="text-xs text-gray-400">
-                                                                    {emp.id}
-                                                                </span>
+                                                                {seleccionado && <Check className="w-3 h-3 text-white dark:text-gray-800" />}
                                                             </div>
                                                         </div>
-                                                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${formData.empleados.includes(emp.id)
-                                                            ? 'bg-primary-500 border-primary-500 text-white scale-110'
-                                                            : 'border-gray-300 dark:border-gray-500'
-                                                            }`}>
-                                                            {formData.empleados.includes(emp.id) && <Check className="w-3.5 h-3.5" />}
-                                                        </div>
-                                                    </div>
-                                                ))
+                                                    );
+                                                })
                                             ) : (
                                                 <div className="p-8 text-center text-gray-400 text-sm">
                                                     No se encontraron empleados

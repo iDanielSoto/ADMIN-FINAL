@@ -127,6 +127,12 @@ const Dispositivos = () => {
         fetchData();
     }, [fetchData]);
 
+    // Polling cada 30s para actualizar contadores de biométricos en tiempo real
+    useEffect(() => {
+        const interval = setInterval(() => fetchData(true), 30000);
+        return () => clearInterval(interval);
+    }, [fetchData]);
+
     // Notificaciones en tiempo real via SSE (reemplaza polling)
     useSolicitudesSSE({
         onNuevaSolicitud: () => fetchData(true),

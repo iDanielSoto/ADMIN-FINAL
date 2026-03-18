@@ -32,7 +32,7 @@ const Empleados = () => {
 
     // --- PAGINACIÓN ---
     const [pagina, setPagina] = useState(1);
-    const porPagina = 8;
+    const porPagina = 16;
 
     // --- ESTADOS DEL MODAL ---
     const [modalConfig, setModalConfig] = useState({
@@ -155,7 +155,7 @@ const Empleados = () => {
     };
 
     return (
-        <div className="flex flex-col min-h-[calc(100vh-7rem)]">
+        <div className="flex flex-col h-[calc(100vh-6rem)]">
             {/* Toolbar */}
             <div className="flex flex-col sm:flex-row gap-4 justify-between mb-6">
                 <div className="flex flex-1 gap-3">
@@ -166,13 +166,13 @@ const Empleados = () => {
                             placeholder="Buscar por nombre, usuario o correo..."
                             value={busqueda}
                             onChange={(e) => setBusqueda(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition-colors"
+                            className="input pl-10"
                         />
                     </div>
                     <select
                         value={filtroEstado}
                         onChange={(e) => setFiltroEstado(e.target.value)}
-                        className="px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition-colors"
+                        className="input w-auto cursor-pointer"
                     >
                         <option value="">Todos los estados</option>
                         <option value="activo">Activo</option>
@@ -186,7 +186,7 @@ const Empleados = () => {
             </div>
 
             {/* LISTA DE USUARIOS */}
-            <div className="flex-1">
+            <div className="flex-1 min-h-0 overflow-y-auto pr-2 pb-4 custom-scrollbar">
                 {loading ? (
                     <DynamicLoader text="Cargando empleados..." />
                 ) : usuarios.length === 0 ? (
@@ -195,7 +195,7 @@ const Empleados = () => {
                         <p>No se encontraron usuarios</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {usuarios.slice((pagina - 1) * porPagina, pagina * porPagina).map(usuario => (
                             <UserCard
                                 key={usuario.id}

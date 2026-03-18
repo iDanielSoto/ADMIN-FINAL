@@ -58,6 +58,7 @@ const COLORS = {
 const PerfilUsuario = () => {
     const { username } = useParams();
     const navigate = useNavigate();
+    const { formatTime } = useConfig();
 
     // Estados de datos
     const [usuario, setUsuario] = useState(null);
@@ -659,7 +660,7 @@ const PerfilUsuario = () => {
                     {!isEditing ? (
                         <button
                             onClick={() => setIsEditing(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+                            className="btn-secondary flex items-center gap-2"
                         >
                             <FiEdit2 className="w-4 h-4" /> Editar Perfil
                         </button>
@@ -686,7 +687,7 @@ const PerfilUsuario = () => {
                             <button
                                 onClick={handleSave}
                                 disabled={saving}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="btn-primary flex items-center gap-2 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {saving ? (
                                     <>
@@ -706,8 +707,8 @@ const PerfilUsuario = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
                 {/* COLUMNA IZQUIERDA */}
-                <div className="lg:col-span-4 space-y-6">
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                <div className="lg:col-span-4 space-y-6 w-full lg:sticky lg:top-6 lg:h-[calc(100vh-100px)] overflow-y-auto pr-2 pb-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                    <div className="card p-0 overflow-hidden">
                         <div className="p-6">
                             <div className="flex items-start gap-5">
                                 <div className="flex-shrink-0">
@@ -789,7 +790,7 @@ const PerfilUsuario = () => {
                     </div>
 
                     {usuario?.es_empleado && (
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
+                        <div className="card p-5">
                             <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wide mb-4 flex items-center gap-2">
                                 <FiFileText className="w-4 h-4 text-blue-500" /> Datos Laborales
                             </h3>
@@ -827,7 +828,7 @@ const PerfilUsuario = () => {
                     )}
 
                     {usuario?.es_empleado && (
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
+                        <div className="card p-5">
                             <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wide mb-4 flex items-center gap-2">
                                 <FiLock className="w-4 h-4 text-purple-500" /> Credenciales de Acceso
                             </h3>
@@ -878,7 +879,7 @@ const PerfilUsuario = () => {
                         </div>
                     )}
 
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
+                    <div className="card p-5">
                         <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wide mb-4 flex items-center gap-2">
                             <FiShield className="w-4 h-4 text-blue-500" /> Roles
                         </h3>
@@ -897,11 +898,11 @@ const PerfilUsuario = () => {
                 </div>
 
                 {/* COLUMNA DERECHA */}
-                <div className="lg:col-span-8 space-y-6">
+                <div className="lg:col-span-8 space-y-6 w-full lg:h-[calc(100vh-100px)] overflow-y-auto pr-2 pb-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
 
                     {/* APARTADO ESTADÍSTICAS */}
                     {usuario?.es_empleado && (
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-visible relative z-10">
+                        <div className="card p-0 overflow-visible relative z-10">
 
                             {/* HEADER COMBINADO */}
                             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1078,7 +1079,7 @@ const PerfilUsuario = () => {
                                                                         {new Date(registro.fecha_registro).toLocaleDateString()}
                                                                     </td>
                                                                     <td className="px-4 py-2.5 whitespace-nowrap text-xs font-medium text-gray-900 dark:text-white">
-                                                                        {new Date(registro.fecha_registro).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                        {formatTime(registro.fecha_registro)}
                                                                     </td>
                                                                     <td className="px-4 py-2.5 whitespace-nowrap">
                                                                         {(() => {
@@ -1129,8 +1130,8 @@ const PerfilUsuario = () => {
 
                     {/* Horario semanal */}
                     {usuario?.es_empleado && (
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                            <div className="px-6 py-4 border-b border-gray-50 dark:border-gray-700 flex justify-between items-center bg-gray-50/30 dark:bg-gray-900/30">
+                        <div className="card p-0">
+                            <div className="px-6 py-4 border-b border-slate-100 dark:border-gray-700 flex justify-between items-center bg-slate-50 dark:bg-gray-900/30">
                                 <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                                     <FiClock className="w-5 h-5 text-blue-600" /> Horario Semanal
                                 </h2>
@@ -1164,7 +1165,7 @@ const PerfilUsuario = () => {
                                                             {tieneTurnos ? turnos.map((turno, idx) => (
                                                                 <div key={idx} className="text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-2 py-1.5 rounded-md flex items-center gap-2">
                                                                     <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-                                                                    {turno.inicio} - {turno.fin}
+                                                                    {formatTime(turno.inicio)} - {formatTime(turno.fin)}
                                                                 </div>
                                                             )) : (
                                                                 <div className="h-6"></div>
@@ -1192,8 +1193,8 @@ const PerfilUsuario = () => {
 
                     {/* Dispositivo Asignado */}
                     {usuario?.es_empleado && (
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-gray-50 dark:border-gray-700 flex justify-between items-center bg-gray-50/30 dark:bg-gray-900/30">
+                        <div className="card p-0 overflow-hidden">
+                            <div className="px-6 py-4 border-b border-slate-100 dark:border-gray-700 flex justify-between items-center bg-slate-50 dark:bg-gray-900/30">
                                 <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                                     <FiSmartphone className="w-5 h-5 text-blue-600" /> Dispositivo Móvil
                                 </h2>

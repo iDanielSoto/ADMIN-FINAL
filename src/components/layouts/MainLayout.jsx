@@ -94,7 +94,7 @@ const MainLayout = ({ children }) => {
     };
 
     return (
-        <div className="select-none flex min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+        <div className="select-none flex min-h-screen bg-slate-50 dark:bg-gray-900 transition-colors duration-200">
             {/* Sidebar con autenticación */}
             <SidebarWithAuth />
 
@@ -120,59 +120,61 @@ const MainLayout = ({ children }) => {
                 )}
 
                 {/* Header */}
-                <header className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 sticky top-0 z-20 transition-colors duration-200">
+                <header className="h-[72px] bg-white/70 backdrop-blur-xl dark:bg-gray-900/80 border-b border-slate-100 dark:border-gray-800 flex items-center justify-between px-8 sticky top-0 z-20 transition-all duration-200 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)]">
                     <div>
-                        <h1 className="text-xl font-semibold text-gray-800 dark:text-white">
+                        <h1 className="text-xl font-extrabold text-slate-800 dark:text-white tracking-tight">
                             {currentPage.titulo}
                         </h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-[13px] font-medium text-slate-500 dark:text-gray-400 mt-0.5 tracking-wide">
                             {currentPage.descripcion}
                         </p>
                     </div>
 
                     {/* Acciones del header */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4">
 
                         {/* Notifications */}
-                        <NotificationBell />
+                        <div className="p-1">
+                            <NotificationBell />
+                        </div>
+
+                        {/* Separador vertical sutil */}
+                        <div className="h-6 w-px bg-slate-200 dark:bg-gray-700/50 mx-1 hidden sm:block"></div>
 
                         {/* Perfil de Usuario */}
-                        <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-1.5 rounded-lg transition-colors"
+                        <div className="flex items-center gap-3 cursor-pointer hover:bg-white dark:hover:bg-gray-800 p-1.5 pr-4 rounded-full border border-transparent hover:border-slate-200 dark:hover:border-gray-700 hover:shadow-sm transition-all duration-300 group"
                             onClick={() => navigate(`/empleados/usuario/${user?.usuario?.usuario}`)}
                         >
-                            <div className="text-right hidden md:block">
-                                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 leading-none">
-                                    {user?.usuario?.nombre}
-                                </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    {user?.roles?.[0]?.nombre || 'Usuario'}
-                                </p>
-                            </div>
-                            <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-primary-700 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm ring-2 ring-white overflow-hidden">
+                            <div className="w-9 h-9 bg-slate-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-slate-700 dark:text-white font-bold text-sm shadow-inner overflow-hidden border border-slate-200 dark:border-gray-600 group-hover:ring-2 group-hover:ring-blue-100 dark:group-hover:ring-gray-600 transition-all">
                                 {user?.usuario?.foto ? (
                                     <img src={user.usuario.foto} alt={user.usuario.nombre} className="w-full h-full object-cover" />
                                 ) : (
                                     <span>{getInitials(user?.usuario?.nombre)}</span>
                                 )}
                             </div>
+                            <div className="text-left hidden lg:block">
+                                <p className="text-sm font-bold text-slate-800 dark:text-gray-200 leading-none">
+                                    {user?.usuario?.nombre}
+                                </p>
+                                <p className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-gray-400 mt-1 font-bold">
+                                    {user?.roles?.[0]?.nombre || 'Usuario'}
+                                </p>
+                            </div>
                         </div>
-
-                        {/* Separador vertical para Logout */}
-                        <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
 
                         {/* Botón Logout */}
                         <button
                             onClick={handleLogout}
-                            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400 rounded-lg transition-colors"
+                            className="p-2 text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 rounded-full transition-colors duration-200 ml-1"
                             title="Cerrar Sesión"
                         >
-                            <LogOut className="w-5 h-5" />
+                            <LogOut className="w-[18px] h-[18px]" strokeWidth={2.5} />
                         </button>
                     </div>
                 </header>
 
                 {/* Contenido */}
-                <div className="p-6 max-w-7xl mx-auto">
+                <div className="p-6 md:p-8 max-w-8xl">
                     {children}
                 </div>
             </main>

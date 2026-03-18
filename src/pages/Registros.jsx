@@ -60,6 +60,7 @@ const Registros = () => {
     useEffect(() => {
         fetchEventos();
         fetchStats();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pagina]); // Recargar cuando cambia la página
 
     const fetchEventos = async () => {
@@ -121,9 +122,14 @@ const Registros = () => {
         setCategoriasExpandidas(prev => ({ ...prev, [tipo]: !prev[tipo] }));
     };
 
-    // Agrupar eventos para vista agrupada
+    // Agrupar eventos para vista agrupada (Forzando la normalización de categorías)
     const eventosAgrupados = eventos.reduce((acc, evento) => {
-        const tipo = evento.tipo_evento || 'sistema';
+        let tipo = evento.tipo_evento;
+        // Si el tipo no existe en nuestro mapeo de Iconos, forzamos que sea 'sistema'
+        if (!CATEGORIAS[tipo]) {
+            tipo = 'sistema';
+        }
+
         if (!acc[tipo]) acc[tipo] = [];
         acc[tipo].push(evento);
         return acc;
@@ -136,42 +142,41 @@ const Registros = () => {
     return (
         <div className="space-y-6 max-w-7xl mx-auto p-4 md:p-6">
 
-            {/* Encabezado */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Bitácora del Sistema</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Monitoreo de actividad, seguridad y operaciones.</p>
-                </div>
-                <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-1 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-                    <button
-                        onClick={() => setVistaAgrupada(false)}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${!vistaAgrupada ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
-                    >
-                        <div className="flex items-center gap-2"><FiList /> Tabla</div>
-                    </button>
-                    <button
-                        onClick={() => setVistaAgrupada(true)}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${vistaAgrupada ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
-                    >
-                        <div className="flex items-center gap-2"><FiGrid /> Agrupada</div>
-                    </button>
-                    <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1"></div>
-                    <button onClick={fetchEventos} className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors" title="Actualizar">
-                        <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                    </button>
-                </div>
-            </div>
-
             {/* Barra de Filtros */}
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                <div className="flex items-center gap-2 mb-3 text-gray-700 dark:text-gray-300 font-medium text-sm">
+            <div className="card flex flex-col gap-4">
+
+                {/* Selectores de Vista y Refresh */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex bg-slate-100 dark:bg-gray-800 rounded-lg p-1 border border-slate-200 dark:border-gray-700 w-fit">
+                        <button
+                            onClick={() => setVistaAgrupada(false)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${!vistaAgrupada ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-gray-300'}`}
+                        >
+                            <FiList className="w-4 h-4" /> Tabla
+                        </button>
+                        <button
+                            onClick={() => setVistaAgrupada(true)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${vistaAgrupada ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-gray-300'}`}
+                        >
+                            <FiGrid className="w-4 h-4" /> Agrupada
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <button onClick={fetchEventos} className="p-2 text-slate-400 hover:text-primary-600 hover:bg-slate-50 rounded-md transition-colors" title="Actualizar">
+                            <FiRefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 font-medium text-sm">
                     <FiSearch className="w-4 h-4" /> Búsqueda Avanzada
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     <select
                         value={filtros.tipo_evento}
                         onChange={(e) => setFiltros({ ...filtros, tipo_evento: e.target.value })}
-                        className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-gray-600 transition-all"
+                        className="input text-sm py-2 cursor-pointer"
                     >
                         <option value="">Todas las Categorías</option>
                         {Object.entries(CATEGORIAS).map(([key, conf]) => <option key={key} value={key}>{conf.label}</option>)}
@@ -180,7 +185,7 @@ const Registros = () => {
                     <select
                         value={filtros.prioridad}
                         onChange={(e) => setFiltros({ ...filtros, prioridad: e.target.value })}
-                        className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-gray-600 transition-all"
+                        className="input text-sm py-2 cursor-pointer"
                     >
                         <option value="">Cualquier Prioridad</option>
                         {Object.entries(PRIORIDADES).map(([key, conf]) => <option key={key} value={key}>{conf.label}</option>)}
@@ -190,20 +195,20 @@ const Registros = () => {
                         type="date"
                         value={filtros.fecha_inicio}
                         onChange={(e) => setFiltros({ ...filtros, fecha_inicio: e.target.value })}
-                        className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-gray-600 transition-all"
+                        className="input text-sm py-2"
                     />
                     <input
                         type="date"
                         value={filtros.fecha_fin}
                         onChange={(e) => setFiltros({ ...filtros, fecha_fin: e.target.value })}
-                        className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-gray-600 transition-all"
+                        className="input text-sm py-2"
                     />
 
                     <div className="flex gap-2">
-                        <button onClick={handleFiltrar} className="flex-1 bg-gray-900 dark:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-600 transition-colors shadow-sm">
+                        <button onClick={handleFiltrar} className="btn-primary flex-1 py-1.5 text-sm">
                             Filtrar
                         </button>
-                        <button onClick={handleLimpiar} className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        <button onClick={handleLimpiar} className="px-4 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors shadow-sm">
                             Limpiar
                         </button>
                     </div>
@@ -232,7 +237,7 @@ const Registros = () => {
                                 const expandido = categoriasExpandidas[tipo];
 
                                 return (
-                                    <div key={tipo} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md">
+                                    <div key={tipo} className="card p-0 overflow-hidden transition-all hover:shadow-md">
                                         <button
                                             onClick={() => toggleCategoria(tipo)}
                                             className="w-full flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
@@ -264,7 +269,7 @@ const Registros = () => {
                         </div>
                     ) : (
                         /* VISTA DE TABLA (Nueva implementación) */
-                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden">
+                        <div className="card p-0 overflow-hidden">
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                     <thead className="bg-gray-50 dark:bg-gray-900">
@@ -287,7 +292,7 @@ const Registros = () => {
                                                     <td className="px-6 py-4">
                                                         <div className="flex flex-col">
                                                             <span className="text-sm font-medium text-gray-900 dark:text-white">{evento.titulo}</span>
-                                                            <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-xs">{evento.descripcion}</span>
+                                                            <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-xs">{limpiarDescripcion(evento.descripcion)}</span>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -339,14 +344,14 @@ const Registros = () => {
                             <button
                                 onClick={() => setPagina(prev => Math.max(prev - 1, 1))}
                                 disabled={pagina === 1 || loading}
-                                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
                             >
                                 <FiArrowLeft className="w-4 h-4" /> Anterior
                             </button>
                             <button
                                 onClick={() => setPagina(prev => prev + 1)}
                                 disabled={eventos.length < ITEMS_POR_PAGINA || loading}
-                                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
                             >
                                 Siguiente <FiArrowRight className="w-4 h-4" />
                             </button>
@@ -356,6 +361,14 @@ const Registros = () => {
             )}
         </div >
     );
+};
+
+// Función auxiliar para remover UUIDs (32+ caracteres) de las descripciones
+const limpiarDescripcion = (texto) => {
+    if (!texto) return '';
+    // Expresión regular para encontrar UUIDs (v4 y similares sin guiones también)
+    return texto.replace(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/g, '[ID-OCULTO]')
+        .replace(/[a-zA-Z0-9-]{30,}/g, '...');
 };
 
 // Componente auxiliar para el contenido de una fila (reusado en acordeón)
@@ -372,7 +385,7 @@ const EventoRowContent = ({ evento }) => {
                         {priConfig.label}
                     </span>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{evento.descripcion}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{limpiarDescripcion(evento.descripcion)}</p>
                 <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
                     <span className="flex items-center gap-1"><FiClock className="w-3 h-3" /> {formatDate(evento.fecha_registro)} {formatTime(evento.fecha_registro)}</span>
                     {evento.empleado_nombre && (

@@ -115,7 +115,7 @@ const EmpresasSaaS = () => {
                         placeholder="Buscar por nombre o identificador..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-lg focus:ring-1 focus:ring-primary-600 outline-none transition text-gray-800 font-medium"
+                        className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary-600 outline-none transition text-gray-800 dark:text-gray-100 font-medium placeholder-gray-400 dark:placeholder-gray-500"
                     />
                 </div>
                 <button
@@ -133,46 +133,36 @@ const EmpresasSaaS = () => {
             )}
 
             {/* Listado Principal de Empresas SaaS */}
-            <div className="mt-8 card">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Directorio de Entidades</h3>
+            <div className="mt-8">
+                <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-6">Directorio de Entidades</h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     {empresasPaginadas.map((empresa) => (
-                        <div key={empresa.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-md transition-all flex flex-col overflow-hidden group relative min-h-[140px]">
+                        <div key={empresa.id} className="card p-0 overflow-hidden flex flex-col group relative min-h-[160px] hover:border-slate-300 dark:hover:border-gray-500 transition-colors">
+                            {/* Decoración superior sutil */}
+                            <div className={`h-1.5 w-full ${empresa.es_activo ? 'bg-primary-600' : 'bg-slate-300 dark:bg-slate-600'}`} />
 
-                            {/* Capa de opacidad para asegurar legibilidad */}
-                            <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/80 z-0"></div>
-
-                            {/* Marca de agua gráfica del Logo (Detrás del Título) */}
-                            {empresa.logo && (
-                                <img
-                                    src={empresa.logo}
-                                    alt="watermark"
-                                    className="absolute -right-6 -top-6 w-36 h-36 object-contain opacity-[0.10] dark:opacity-[0.05] group-hover:opacity-[0.15] dark:group-hover:opacity-[0.10] transition-all duration-500 filter blur-sm transform rotate-12 group-hover:scale-110 group-hover:-rotate-6 z-0"
-                                />
-                            )}
-
-                            <div className="relative z-10 p-5 flex-grow flex flex-col justify-center">
-                                <div className="z-20">
-                                    <h3 className="font-extrabold text-xl text-gray-900 dark:text-white mb-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors drop-shadow-sm">
-                                        {empresa.nombre}
-                                    </h3>
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded border border-gray-200 dark:border-gray-600">
+                            <div className="p-5 flex-grow flex flex-col justify-start">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="flex-1 pr-3">
+                                        <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors leading-tight">
+                                            {empresa.nombre}
+                                        </h3>
+                                        <p className="text-[11px] text-slate-500 font-mono tracking-tight">
                                             {empresa.identificador || 'Sin ID'}
                                         </p>
-                                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${empresa.es_activo ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
-                                            {empresa.es_activo ? 'Activo' : 'Suspendido'}
-                                        </span>
                                     </div>
+                                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${empresa.es_activo ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                                        {empresa.es_activo ? 'Activo' : 'Suspendido'}
+                                    </span>
                                 </div>
                             </div>
 
-                            <div className="flex px-3 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700 relative z-10 mt-auto justify-between gap-2">
+                            <div className="flex px-4 py-3 bg-slate-50 border-t border-slate-100 justify-between gap-3">
                                 <button
                                     onClick={() => handleImpersonate(empresa.id)}
                                     title="Entrar como Administrador de esta empresa"
-                                    className="flex-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-400 rounded transition-colors text-xs font-bold flex justify-center items-center gap-1"
+                                    className="flex-1 px-3 py-1.5 bg-white border border-slate-200 hover:border-primary-300 hover:text-primary-700 text-slate-700 rounded transition-colors text-xs font-semibold flex justify-center items-center gap-1 shadow-sm"
                                 >
                                     <FiLogIn className="w-3.5 h-3.5" /> Entrar
                                 </button>
@@ -180,9 +170,9 @@ const EmpresasSaaS = () => {
                                 <button
                                     onClick={() => navigate(`/empresas/${empresa.id}`)}
                                     title="Configuración SaaS de la Empresa"
-                                    className="flex-1 px-3 py-1.5 bg-gray-100 font-bold hover:bg-primary-50 text-gray-700 hover:text-primary-700 dark:bg-gray-700 dark:hover:bg-primary-900/30 dark:text-gray-300 dark:hover:text-primary-400 rounded transition-colors text-xs flex justify-center items-center gap-1"
+                                    className="flex-1 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded transition-colors text-xs font-semibold flex justify-center items-center gap-1 shadow-sm"
                                 >
-                                    Configurar <FiArrowRight className="w-3.5 h-3.5" />
+                                    Ajustes <FiArrowRight className="w-3.5 h-3.5 text-slate-400" />
                                 </button>
                             </div>
                         </div>

@@ -203,13 +203,13 @@ const Horarios = () => {
                             placeholder="Buscar por empleado..."
                             value={busqueda}
                             onChange={(e) => setBusqueda(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
+                            className="input pl-10"
                         />
                     </div>
                     <select
                         value={filtroEstado}
                         onChange={(e) => setFiltroEstado(e.target.value)}
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="input w-auto cursor-pointer"
                     >
                         <option value="">Todos los estados</option>
                         <option value="activo">Activos</option>
@@ -218,12 +218,12 @@ const Horarios = () => {
                 </div>
                 <div className="flex items-center gap-2">
                     {/* Toggle de vista */}
-                    <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                    <div className="flex bg-slate-100 dark:bg-gray-800 rounded-lg p-1 border border-slate-200 dark:border-gray-700">
                         <button
                             onClick={() => setVista('cards')}
                             className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${vista === 'cards'
-                                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                                ? 'bg-white dark:bg-gray-700 shadow-sm text-primary-600 dark:text-primary-400'
+                                : 'text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-300'
                                 }`}
                         >
                             Horarios
@@ -231,8 +231,8 @@ const Horarios = () => {
                         <button
                             onClick={() => setVista('festivos')}
                             className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${vista === 'festivos'
-                                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                                ? 'bg-white dark:bg-gray-700 shadow-sm text-primary-600 dark:text-primary-400'
+                                : 'text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-300'
                                 }`}
                         >
                             Días Festivos
@@ -241,7 +241,7 @@ const Horarios = () => {
                     {vista !== 'festivos' && (
                         <button
                             onClick={handleCreate}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            className="btn-primary flex items-center gap-2"
                         >
                             <FiPlus className="w-5 h-5" />
                             Nuevo Horario
