@@ -45,14 +45,14 @@ const BiometricStatus = ({ label, status, details, ip }) => {
     const StatusIcon = styles.icon;
 
     return (
-        <div className={`p-4 rounded-xl border ${styles.border} ${styles.bg} transition-all hover:shadow-md`}>
+        <div className={`p-4 rounded-xl border ${styles.border} ${styles.bg} transition-all`}>
             <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
                     <Activity className={`w-5 h-5 ${styles.text}`} />
                     <h4 className="font-semibold text-gray-900 dark:text-white">{label}</h4>
                 </div>
-                <div className={`flex items-center gap-1 text-xs uppercase font-bold tracking-wider ${styles.text}`}>
-                    <StatusIcon className="w-4 h-4" />
+                <div className={`flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider ${styles.text}`}>
+                    <StatusIcon className="w-3.5 h-3.5" />
                     <span>{styles.label}</span>
                 </div>
             </div>
@@ -179,305 +179,198 @@ const EscritorioProfile = ({ dispositivo }) => {
     if (!dispositivo) return <div className="p-6 text-center text-gray-500">No hay información del dispositivo.</div>;
 
     return (
-        <div className="space-y-6">
-            {/* Header del Dispositivo - Estandarizado */}
-            <div className="flex items-start gap-5">
-                <div className="p-5 rounded-2xl bg-blue-50 dark:bg-blue-900/20">
-                    <Monitor className="w-10 h-10 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{dispositivo.nombre_equipo || dispositivo.nombre || 'PC Sin Nombre'}</h3>
-                    <div className="flex items-center gap-3 mt-2">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-full ${dispositivo.es_activo !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {dispositivo.es_activo !== false ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                            {dispositivo.es_activo !== false ? 'Activo' : 'Inactivo'}
+        <div className="flex flex-col lg:flex-row gap-8">
+            {/* Columna Izquierda: Identidad y Resumen */}
+            <div className="w-full lg:w-1/3 space-y-6">
+                <div className="bg-slate-50 dark:bg-gray-900/50 rounded-2xl p-6 text-center border border-slate-100 dark:border-gray-800">
+                    <div className="mx-auto w-24 h-24 flex items-center justify-center rounded-2xl mb-5 bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 shadow-sm border border-slate-100 dark:border-gray-700">
+                        <Monitor className="w-12 h-12" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{dispositivo.nombre_equipo || dispositivo.nombre || 'PC Sin Nombre'}</h3>
+                    {dispositivo.correo && <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{dispositivo.correo}</p>}
+                    
+                    <div className="flex flex-wrap justify-center gap-2 mb-6">
+                        <span className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border ${dispositivo.es_activo !== false ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:border-green-800/50 dark:text-green-400' : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:border-red-800/50 dark:text-red-400'}`}>
+                            {dispositivo.es_activo !== false ? 'Kiosco Activo' : 'Kiosco Inactivo'}
                         </span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400 capitalize px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
-                            Escritorio
+                        <span className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-400 border border-slate-200 dark:border-gray-700">
+                            Escritorio Físico
                         </span>
                     </div>
+
+                    <div className="w-full h-px bg-slate-200 dark:bg-gray-700 mb-6"></div>
+
+                    <div className="space-y-4 text-left">
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-500 dark:text-gray-400 font-medium">SO</span>
+                            <span className="font-semibold text-gray-900 dark:text-gray-200">{dispositivo.sistema_operativo || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-500 dark:text-gray-400 font-medium">Registro</span>
+                            <span className="font-semibold text-gray-900 dark:text-gray-200">{dispositivo.fecha_registro ? new Date(dispositivo.fecha_registro).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                    </div>
                 </div>
+
+                {dispositivo.descripcion && (
+                    <div>
+                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Notas Adicionales</h4>
+                        <div className="bg-slate-50 dark:bg-gray-900 p-4 rounded-xl border border-slate-100 dark:border-gray-800 text-sm text-gray-700 dark:text-gray-300">
+                            {dispositivo.descripcion}
+                        </div>
+                    </div>
+                )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Conectividad */}
-                <div className="space-y-4">
-                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 pb-2">Conectividad</h4>
-                    <div className="space-y-3">
-                        <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
-                            <div className="flex items-center gap-3 mb-1">
-                                <div className="p-2 bg-white dark:bg-gray-700 rounded-md shadow-sm text-gray-500 dark:text-gray-300"><Wifi className="w-4 h-4" /></div>
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Dirección IP</span>
-                            </div>
-                            <span className="block text-sm font-mono text-gray-900 dark:text-white break-all whitespace-pre-wrap pl-11">{dispositivo.ip || 'N/A'}</span>
+            {/* Columna Derecha: Detalles Técnicos & Biométricos & Configuración */}
+            <div className="w-full lg:w-2/3 space-y-8">
+                
+                {/* Redes */}
+                <section>
+                    <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <Wifi className="w-4 h-4" /> Interfaces de Red
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="card p-4 flex flex-col gap-1.5">
+                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">IP Address Local</span>
+                            <span className="text-sm font-mono font-bold text-gray-900 dark:text-white break-all">{dispositivo.ip || 'No asignada'}</span>
                         </div>
-                        <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
-                            <div className="flex items-center gap-3 mb-1">
-                                <div className="p-2 bg-white dark:bg-gray-700 rounded-md shadow-sm text-gray-500 dark:text-gray-300"><Cpu className="w-4 h-4" /></div>
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Dirección MAC</span>
-                            </div>
-                            <span className="block text-sm font-mono text-gray-900 dark:text-white break-all whitespace-pre-wrap pl-11">{dispositivo.mac || 'N/A'}</span>
+                        <div className="card p-4 flex flex-col gap-1.5">
+                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Physical MAC</span>
+                            <span className="text-sm font-mono font-bold text-gray-900 dark:text-white break-all">{dispositivo.mac || 'No rastreada'}</span>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                {/* Sistema Operativo e Info */}
-                <div className="space-y-4">
-                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 pb-2">Sistema</h4>
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-white dark:bg-gray-700 rounded-md shadow-sm text-gray-500 dark:text-gray-300"><Server className="w-4 h-4" /></div>
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">OS</span>
-                            </div>
-                            <span className="text-sm font-semibold text-gray-900 dark:text-white">{dispositivo.sistema_operativo || 'N/A'}</span>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-white dark:bg-gray-700 rounded-md shadow-sm text-gray-500 dark:text-gray-300"><Clock className="w-4 h-4" /></div>
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Registrado</span>
-                            </div>
-                            <span className="text-sm font-semibold text-gray-900 dark:text-white">{dispositivo.fecha_registro ? new Date(dispositivo.fecha_registro).toLocaleDateString() : 'N/A'}</span>
-                        </div>
+                {/* Biométricos */}
+                <section>
+                    <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                            <Fingerprint className="w-4 h-4" /> Hardware Biométrico Activo
+                        </h4>
+                        {loadingBio && <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-bold animate-pulse">Sincronizando...</span>}
                     </div>
-                </div>
-            </div>
 
-            {/* Estado de Periféricos Biométricos */}
-            <div>
-                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 pb-2">
-                    <Activity className="w-5 h-5 text-blue-500" />
-                    Biométricos Conectados
-                </h3>
-
-                {loadingBio ? (
-                    <div className="text-center py-8 text-gray-500 animate-pulse">Cargando estado de biométricos...</div>
-                ) : errorBio ? (
-                    <div className="p-8 text-center bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-900">
-                        <p className="text-red-600 dark:text-red-400 font-medium">Error: {errorBio}</p>
-                    </div>
-                ) : (() => {
-                    return biometricos.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {biometricos.map((bio) => (
-                                <BiometricStatus
-                                    key={bio.id}
-                                    label={bio.nombre}
-                                    status={bio.estado}
-                                    details={bio.tipo + ' - ' + (bio.puerto || 'USB')}
-                                    ip={bio.ip}
-                                />
-                            ))}
+                    {errorBio ? (
+                        <div className="p-4 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 rounded-xl text-sm font-medium">
+                            Error al leer biométricos: {errorBio}
                         </div>
                     ) : (
-                        <div className="p-8 text-center bg-gray-50 dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-                            <p className="text-gray-500 dark:text-gray-400">No se detectaron lectores biométricos activos en este equipo.</p>
-                        </div>
-                    );
-                })()}
-            </div>
-
-            {/* Configuración del Kiosco / Dispositivo */}
-            {loadingConfig ? (
-                <div className="text-center py-8 text-gray-500 animate-pulse">Cargando configuración local...</div>
-            ) : configuracion ? (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
-                    <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Settings className="w-5 h-5 text-indigo-500" />
-                            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Configuración Local del Nodo</h3>
-                        </div>
-                        <button
-                            onClick={saveConfiguracion}
-                            disabled={savingConfig}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg text-white ${savingConfig ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 transition-colors'}`}
-                        >
-                            <Save className="w-4 h-4" />
-                            {savingConfig ? 'Guardando...' : 'Guardar Ajustes'}
-                        </button>
-                    </div>
-
-                    {mensaje.text && (
-                        <div className={`m-4 p-3 rounded-lg text-sm font-medium ${mensaje.type === 'success' ? 'bg-green-50 text-green-800 border-l-4 border-green-500' : 'bg-red-50 text-red-800 border-l-4 border-red-500'}`}>
-                            {mensaje.text}
-                        </div>
+                        biometricos.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {biometricos.map((bio) => (
+                                    <BiometricStatus
+                                        key={bio.id}
+                                        label={bio.nombre}
+                                        status={bio.estado}
+                                        details={bio.tipo + ' - ' + (bio.puerto || 'USB')}
+                                        ip={bio.ip}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="p-6 text-center bg-slate-50 dark:bg-gray-900/50 rounded-xl border border-dashed border-slate-300 dark:border-gray-700">
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Sin sensores periféricos emparejados</p>
+                            </div>
+                        )
                     )}
+                </section>
 
-                    <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Configuración Kiosco */}
+                <section>
+                    <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                            <Settings className="w-4 h-4" /> Modos y Permisos (Local)
+                        </h4>
+                        {!loadingConfig && configuracion && (
+                            <button
+                                onClick={saveConfiguracion}
+                                disabled={savingConfig}
+                                className={`btn-primary bg-primary-600 hover:bg-primary-700 text-white px-3 py-1 text-xs rounded-md flex items-center gap-1 shadow-sm ${savingConfig ? 'opacity-75 cursor-wait' : ''}`}
+                            >
+                                <Save className="w-3.5 h-3.5" /> {savingConfig ? 'Guardando...' : 'Guardar RAM'}
+                            </button>
+                        )}
+                    </div>
 
-                        {/* Prioridad de Métodos de Autenticación */}
-                        <div>
-                            <h4 className="flex items-center gap-2 text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 pb-2 border-b border-gray-100 dark:border-gray-700">
-                                <KeyRound className="w-4 h-4" /> Prioridad de Métodos
-                            </h4>
-                            <p className="text-xs text-gray-400 mb-4">Activa o desactiva los métodos de validación y define su prioridad para el reloj checador.</p>
-                            <div className="space-y-2">
-                                {getPrioridad().map((item, index, arr) => {
-                                    const Icon = METODO_ICONS[item.metodo] || KeyRound;
-                                    return (
-                                        <div
-                                            key={item.metodo}
-                                            className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${item.activo
-                                                ? 'bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700'
-                                                : 'bg-gray-50/50 dark:bg-gray-900/10 border-gray-100 dark:border-gray-800 opacity-60'
-                                                }`}
-                                        >
-                                            {/* Badge nivel */}
-                                            <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white ${item.activo ? 'bg-indigo-500' : 'bg-gray-400'
-                                                }`}>{item.nivel}</div>
+                    {loadingConfig ? (
+                        <div className="card p-8 text-center animate-pulse text-gray-400 text-sm">Obteniendo ajustes del nodo...</div>
+                    ) : configuracion ? (
+                        <div className="card p-0 overflow-hidden divide-y divide-slate-100 dark:divide-gray-800">
+                            {mensaje.text && (
+                                <div className={`px-4 py-3 text-sm font-medium ${mensaje.type === 'success' ? 'bg-green-50 text-green-700 border-l-4 border-green-500' : 'bg-red-50 text-red-700 border-l-4 border-red-500'}`}>
+                                    {mensaje.text}
+                                </div>
+                            )}
 
-                                            {/* Info */}
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-semibold text-sm text-gray-900 dark:text-white flex items-center gap-1.5">
-                                                    <Icon className="w-4 h-4 text-gray-400" />
-                                                    {METODO_LABELS[item.metodo]}
+                            {/* Options */}
+                            <div className="p-5 grid grid-cols-1 gap-6">
+                                {/* Permisos Toggles */}
+                                <div className="space-y-4">
+                                    <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Comportamiento del App Cliente</h5>
+                                    
+                                    <div className="flex flex-col sm:flex-row gap-4 p-4 rounded-xl border border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-gray-900/30 justify-between items-center">
+                                        <div>
+                                            <p className="font-medium text-sm text-gray-800 dark:text-gray-200">Arranque Inmediato (Startup)</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">Ejecutar el nodo FASITLAC al iniciar sesión en OS.</p>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" className="sr-only peer" checked={configuracion.iniciar_con_windows} onChange={(e) => handleConfigChange('iniciar_con_windows', e.target.checked)} />
+                                            <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                                        </label>
+                                    </div>
+
+
+
+                                    <div className="flex flex-col sm:flex-row gap-4 p-4 rounded-xl border border-orange-100 dark:border-orange-900/30 bg-orange-50/50 dark:bg-orange-900/10 justify-between items-center">
+                                        <div>
+                                            <p className="font-medium text-sm text-gray-800 dark:text-gray-200">Modo Mantenimiento Parcial</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">Suspende el registro de asistencias al público externo.</p>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" className="sr-only peer" checked={configuracion.es_mantenimiento || false} onChange={(e) => handleConfigChange('es_mantenimiento', e.target.checked)} />
+                                            <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                                        </label>
+                                    </div>
+
+                                </div>
+
+                                {/* Orden Biometrico Alterno */}
+                                <div className="pt-2">
+                                    <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Precedencia de Identificación</h5>
+                                    <p className="text-xs text-gray-500 mb-4">La pantalla de este kiosco ofrecerá las opciones en el siguiente orden, ignorando las inhabilitadas.</p>
+                                    <div className="space-y-2">
+                                        {getPrioridad().map((item, index, arr) => {
+                                            const Icon = METODO_ICONS[item.metodo] || KeyRound;
+                                            return (
+                                                <div key={item.metodo} className={`flex items-center justify-between p-3 rounded-lg border ${item.activo ? 'bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700 shadow-sm' : 'bg-slate-50 dark:bg-gray-900 border-slate-100 dark:border-gray-800 opacity-60'}`}>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-white ${item.activo ? 'bg-primary-500' : 'bg-slate-400'}`}>{item.nivel}</div>
+                                                        <div className="flex items-center gap-2">
+                                                            <Icon className={`w-4 h-4 ${item.activo ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400'}`} />
+                                                            <span className={`text-sm font-medium ${item.activo ? 'text-gray-900 dark:text-white' : 'text-slate-500'}`}>{METODO_LABELS[item.metodo]}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-4">
+                                                        <label className="relative inline-flex items-center cursor-pointer">
+                                                            <input type="checkbox" className="sr-only peer" checked={item.activo} onChange={() => togglePrioridad(item.metodo)} />
+                                                            <div className="w-8 h-4 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary-600"></div>
+                                                        </label>
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <button onClick={() => movePrioridad(index, -1)} disabled={index === 0} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-30 disabled:hover:text-gray-400"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" /></svg></button>
+                                                            <button onClick={() => movePrioridad(index, 1)} disabled={index === arr.length - 1} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-30 disabled:hover:text-gray-400"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg></button>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <p className="text-[10px] uppercase tracking-wider text-gray-400 font-medium">Prioridad de acceso</p>
-                                            </div>
-
-                                            {/* Toggle activo */}
-                                            <div className="relative inline-block w-10 flex-shrink-0">
-                                                <input
-                                                    type="checkbox"
-                                                    id={`bio-toggle-${item.metodo}`}
-                                                    checked={item.activo}
-                                                    onChange={() => togglePrioridad(item.metodo)}
-                                                    className="sr-only peer"
-                                                />
-                                                <label
-                                                    htmlFor={`bio-toggle-${item.metodo}`}
-                                                    className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600 cursor-pointer block"
-                                                />
-                                            </div>
-
-                                            {/* Botones ↑/↓ */}
-                                            <div className="flex flex-col gap-0.5 flex-shrink-0">
-                                                <button
-                                                    onClick={() => movePrioridad(index, -1)}
-                                                    disabled={index === 0}
-                                                    className="p-1 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-                                                    title="Subir prioridad"
-                                                >
-                                                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" /></svg>
-                                                </button>
-                                                <button
-                                                    onClick={() => movePrioridad(index, 1)}
-                                                    disabled={index === arr.length - 1}
-                                                    className="p-1 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-                                                    title="Bajar prioridad"
-                                                >
-                                                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                            <p className="text-xs text-gray-400 mt-3">Los métodos desactivados no se solicitarán. La prioridad determina el orden de verificación.</p>
-                        </div>
-
-                        {/* Modos y Sincronización */}
-                        <div className="space-y-6">
-                            <div>
-                                <h4 className="flex items-center gap-2 text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-                                    <Laptop className="w-4 h-4" /> Comportamiento ("Kiosco")
-                                </h4>
-                                <div className="space-y-4">
-                                    <label className="flex items-center justify-between">
-                                        <div>
-                                            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">Iniciar con Windows</span>
-                                            <p className="text-xs text-gray-500">La aplicación se abre sola al prender la PC.</p>
-                                        </div>
-                                        <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                                            <input type="checkbox" checked={configuracion.iniciar_con_windows} onChange={(e) => handleConfigChange('iniciar_con_windows', e.target.checked)} className="sr-only peer" />
-                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
-                                        </div>
-                                    </label>
-                                    <label className="flex items-center justify-between">
-                                        <div>
-                                            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">Bloquear Cierre de App</span>
-                                            <p className="text-xs text-gray-500">Pide PIN para minimizar o salir al escritorio.</p>
-                                        </div>
-                                        <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                                            <input type="checkbox" checked={configuracion.bloquear_cierre_app} onChange={(e) => handleConfigChange('bloquear_cierre_app', e.target.checked)} className="sr-only peer" />
-                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
-                                        </div>
-                                    </label>
-                                    {configuracion.bloquear_cierre_app && (
-                                        <div className="pl-2 border-l-2 border-indigo-200 dark:border-indigo-800 pt-2 pb-1">
-                                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block mb-1">PIN del Administrador Local</label>
-                                            <input
-                                                type="password"
-                                                maxLength="8"
-                                                placeholder="Ej. 1234"
-                                                value={configuracion.pin_administrador || ''}
-                                                onChange={(e) => handleConfigChange('pin_administrador', e.target.value)}
-                                                className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                            />
-                                        </div>
-                                    )}
-
-                                    <label className="flex items-center justify-between">
-                                        <div>
-                                            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">Modo Mantenimiento</span>
-                                            <p className="text-xs text-gray-500">Impide que los empleados registren asistencia en este equipo.</p>
-                                        </div>
-                                        <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                                            <input type="checkbox" checked={configuracion.es_mantenimiento || false} onChange={(e) => handleConfigChange('es_mantenimiento', e.target.checked)} className="sr-only peer" />
-                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-500"></div>
-                                        </div>
-                                    </label>
+                                            )
+                                        })}
+                                    </div>
                                 </div>
                             </div>
-
-                            <div>
-                                <h4 className="flex items-center gap-2 text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-                                    <Wifi className="w-4 h-4" /> Red y Sincronización
-                                </h4>
-                                <div className="space-y-4">
-                                    <label className="flex items-center justify-between">
-                                        <div>
-                                            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">Permitir Registro Offline</span>
-                                            <p className="text-xs text-gray-500">Guarda asistencias en disco duro si no hay red.</p>
-                                        </div>
-                                        <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                                            <input type="checkbox" checked={configuracion.modo_offline_permitido} onChange={(e) => handleConfigChange('modo_offline_permitido', e.target.checked)} className="sr-only peer" />
-                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
-                                        </div>
-                                    </label>
-
-                                    {configuracion.modo_offline_permitido && (
-                                        <div className="pl-2 pt-2">
-                                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block mb-1">Frecuencia de Sincronización (minutos)</label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                value={configuracion.frecuencia_sincronizacion_min || 15}
-                                                onChange={(e) => handleConfigChange('frecuencia_sincronizacion_min', parseInt(e.target.value) || 15)}
-                                                className="w-32 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm p-2 outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
                         </div>
-                    </div>
-                </div>
-            ) : null}
-
-            {/* Información Técnica Adicional */}
-            {dispositivo.descripcion && (
-                <div>
-                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 pb-2 mb-4">Información Adicional</h4>
-                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
-                        <div className="mb-1">
-                            <p className="text-xs text-gray-500 uppercase mb-1">Descripción</p>
-                            <p className="text-sm text-gray-800 dark:text-white bg-white dark:bg-gray-700 p-3 rounded border border-gray-100 dark:border-gray-600">{dispositivo.descripcion}</p>
-                        </div>
-                    </div>
-                </div>
-            )}
+                    ) : null}
+                </section>
+            </div>
         </div>
     );
 };

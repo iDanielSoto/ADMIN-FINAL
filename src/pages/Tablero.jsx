@@ -11,6 +11,7 @@ import { API_CONFIG } from '../config/Apiconfig';
 import Pagination from '../components/Pagination';
 import { useRealTime } from '../hooks/useRealTime';
 import DynamicLoader from '../components/common/DynamicLoader';
+import { useTour } from '../hooks/useTour';
 import { useAuth } from '../context/AuthContext';
 import { useConfig } from '../context/ConfigContext';
 import SaasDashboard from './SaasDashboard';
@@ -31,6 +32,16 @@ const Dashboard = () => {
     const [ultimasAsistencias, setUltimasAsistencias] = useState([]);
     const [paginaAsistencias, setPaginaAsistencias] = useState(1);
     const asistenciasPorPagina = 4;
+
+    // Definición del Tour
+    const tourSteps = [
+        { element: '#dash-metrics', popover: { title: 'Indicadores en Vivo', description: 'Monitorea el total de empleados, asistencias, puntualidad y retardos del día actual.', side: "bottom" } },
+        { element: '#dash-attendance-table', popover: { title: 'Registros Recientes', description: 'Visualiza las últimas entradas y salidas procesadas por el sistema en tiempo real.', side: "top" } },
+        { element: '#dash-quick-actions', popover: { title: 'Accesos Directos', description: 'Navega rápidamente a la gestión de personal, horarios o incidencias.', side: "left" } },
+        { element: '#dash-day-summary', popover: { title: 'Resumen de Operación', description: 'Gráficas comparativas de asistencia y puntualidad para una toma de decisiones rápida.', side: "left" } }
+    ];
+
+    useTour('dashboard', tourSteps, !loading);
 
     useEffect(() => {
         if (!user?.esPropietarioSaaS) {
@@ -141,7 +152,7 @@ const Dashboard = () => {
             </p>
 
             {/* Tarjetas de estadísticas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div id="dash-metrics" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Total Empleados */}
                 <div
                     className="card cursor-pointer hover:-translate-y-1 transition-transform p-5"
@@ -217,7 +228,7 @@ const Dashboard = () => {
             {/* Sección de últimas asistencias */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[420px]">
                 {/* Últimas asistencias */}
-                <div className="lg:col-span-2 card p-0 overflow-hidden flex flex-col">
+                <div id="dash-attendance-table" className="lg:col-span-2 card p-0 overflow-hidden flex flex-col">
                     <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-gray-700">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                             Últimas Asistencias Registradas
@@ -330,7 +341,7 @@ const Dashboard = () => {
                 {/* Panel lateral */}
                 <div className="space-y-6">
                     {/* Acciones rápidas */}
-                    <div className="card">
+                    <div id="dash-quick-actions" className="card">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                             Acciones Rápidas
                         </h3>
@@ -360,7 +371,7 @@ const Dashboard = () => {
                     </div>
 
                     {/* Resumen del día */}
-                    <div className="card">
+                    <div id="dash-day-summary" className="card">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 w-max-xl">
                             Resumen del Día
                         </h3>

@@ -4,8 +4,10 @@ import ConfirmBox from '../components/ConfirmBox';
 import Pagination from '../components/Pagination';
 import ScheduleCard from '../components/cards/ScheduleCard';
 import ScheduleModal from '../components/modals/ScheduleModal';
+import ImportHorariosModal from '../components/modals/ImportHorariosModal';
 import DynamicLoader from '../components/common/DynamicLoader';
 import HolidaysCalendar from '../components/schedules/HolidaysCalendar';
+import { useTour } from '../hooks/useTour';
 
 import { API_CONFIG } from '../config/Apiconfig';
 const API_URL = API_CONFIG.BASE_URL;
@@ -18,7 +20,19 @@ const Horarios = () => {
     const [filtroEstado, setFiltroEstado] = useState('activo');
     const [vista, setVista] = useState('cards'); // 'cards' | 'festivos'
 
+    // Definición del Tour
+    const tourSteps = [
+        { element: '#search-input', popover: { title: 'Buscador', description: 'Encuentra horarios rápidamente por nombre de empleado.', side: "bottom", align: 'start' } },
+        { element: '#status-filter', popover: { title: 'Filtros de Estado', description: 'Alterna entre horarios activos e inactivos.', side: "bottom", align: 'start' } },
+        { element: '#view-toggle', popover: { title: 'Vista de Calendario', description: 'Cambia entre la lista de horarios y el calendario de días festivos.', side: "bottom", align: 'start' } },
+        { element: '#import-button', popover: { title: 'Importación Masiva', description: 'Sube archivos CSV para asignar horarios a múltiples empleados a la vez.', side: "left", align: 'start' } },
+        { element: '#create-button', popover: { title: 'Nuevo Horario', description: 'Crea un horario personalizado de forma manual.', side: "left", align: 'start' } }
+    ];
+
+    useTour('horarios', tourSteps, !loading);
+
     const [modalOpen, setModalOpen] = useState(false);
+    const [importModalOpen, setImportModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('create');
     const [saving, setSaving] = useState(false);
     const [editingHorario, setEditingHorario] = useState(null);
@@ -94,11 +108,12 @@ const Horarios = () => {
             const token = localStorage.getItem('auth_token');
 
             const body = {
-                empleado_id: formData.empleado_id,
+                empleados_ids: formData.empleados_ids,
                 fecha_inicio: formData.fecha_inicio,
                 fecha_fin: formData.fecha_fin || null,
                 configuracion: {
                     configuracion_semanal: formData.configuracion_semanal,
+                    tipo_periodo: formData.tipo_periodo || 'semestral',
                     excepciones: {}
                 }
             };
@@ -173,17 +188,25 @@ const Horarios = () => {
     };
 
     const getEmpleadoNombre = (horario) => {
-        if (horario.empleado_nombre) return horario.empleado_nombre;
-        if (horario.empleado_id) {
-            const empleado = empleados.find(e => e.id === horario.empleado_id);
-            return empleado?.nombre || 'Desconocido';
+        if (horario.empleados && horario.empleados.length > 0) {
+            if (horario.empleados.length === 1) return horario.empleados[0].nombre;
+            return `${horario.empleados.length} empleados asignados`;
         }
         return 'Sin asignar';
     };
 
     const filteredHorarios = horarios.filter(h => {
-        const empleadoNombre = getEmpleadoNombre(h);
-        const matchesBusqueda = empleadoNombre.toLowerCase().includes(busqueda.toLowerCase());
+        let matchesBusqueda = false;
+        
+        if (!busqueda) {
+            matchesBusqueda = true;
+        } else if (h.empleados && h.empleados.length > 0) {
+            matchesBusqueda = h.empleados.some(emp => 
+                emp.nombre?.toLowerCase().includes(busqueda.toLowerCase())
+            );
+        } else {
+            matchesBusqueda = 'sin asignar'.includes(busqueda.toLowerCase());
+        }
 
         if (!matchesBusqueda) return false;
 
@@ -203,12 +226,14 @@ const Horarios = () => {
                             placeholder="Buscar por empleado..."
                             value={busqueda}
                             onChange={(e) => setBusqueda(e.target.value)}
+                            id="search-input"
                             className="input pl-10"
                         />
                     </div>
                     <select
                         value={filtroEstado}
                         onChange={(e) => setFiltroEstado(e.target.value)}
+                        id="status-filter"
                         className="input w-auto cursor-pointer"
                     >
                         <option value="">Todos los estados</option>
@@ -218,7 +243,7 @@ const Horarios = () => {
                 </div>
                 <div className="flex items-center gap-2">
                     {/* Toggle de vista */}
-                    <div className="flex bg-slate-100 dark:bg-gray-800 rounded-lg p-1 border border-slate-200 dark:border-gray-700">
+                    <div id="view-toggle" className="flex bg-slate-100 dark:bg-gray-800 rounded-lg p-1 border border-slate-200 dark:border-gray-700">
                         <button
                             onClick={() => setVista('cards')}
                             className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${vista === 'cards'
@@ -239,13 +264,26 @@ const Horarios = () => {
                         </button>
                     </div>
                     {vista !== 'festivos' && (
-                        <button
-                            onClick={handleCreate}
-                            className="btn-primary flex items-center gap-2"
-                        >
-                            <FiPlus className="w-5 h-5" />
-                            Nuevo Horario
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setImportModalOpen(true)}
+                                id="import-button"
+                                className="btn-secondary flex items-center gap-2 border-dashed border-2 hover:border-blue-500 hover:text-blue-600 transition-colors bg-white dark:bg-gray-800"
+                                title="Importar desde archivo del sistema Tec"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                                <span className="hidden sm:inline">Importar CSV</span>
+                            </button>
+
+                            <button
+                                onClick={handleCreate}
+                                id="create-button"
+                                className="btn-primary flex items-center gap-2"
+                            >
+                                <FiPlus className="w-5 h-5" />
+                                <span className="hidden sm:inline">Nuevo Horario</span>
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>
@@ -295,6 +333,12 @@ const Horarios = () => {
                 initialData={editingHorario}
                 onSave={handleSave}
                 saving={saving}
+            />
+
+            <ImportHorariosModal 
+                isOpen={importModalOpen}
+                onClose={() => setImportModalOpen(false)}
+                onSuccess={fetchData}
             />
         </div >
     );

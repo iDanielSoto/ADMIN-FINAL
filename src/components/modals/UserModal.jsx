@@ -171,6 +171,41 @@ const UserModal = ({
         setShowScheduleModal(false);
     };
 
+    // --- HANDLER POST NUEVO HORARIO (REPARADO API) ---
+    const handleSaveSchedule = async (scheduleData) => {
+        try {
+            setSaving(true);
+            const token = localStorage.getItem('auth_token');
+            const body = {
+                empleado_id: null, // Modal de usuario no puede asignar a si mismo aún
+                fecha_inicio: scheduleData.fecha_inicio,
+                fecha_fin: scheduleData.fecha_fin || null,
+                configuracion: {
+                    configuracion_semanal: scheduleData.configuracion_semanal,
+                    excepciones: {}
+                }
+            };
+
+            const response = await fetch(`${API_URL}/api/horarios`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(body)
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                // Selecciona el horario global generado
+                handleScheduleSuccess(result.data);
+            } else {
+                setMensaje({ tipo: 'error', texto: result.message || 'Error al guardar el horario' });
+            }
+        } catch (error) {
+            setMensaje({ tipo: 'error', texto: 'Error de red al guardar horario' });
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -541,11 +576,14 @@ const UserModal = ({
                 </div>
             </div>
 
-            {/* Modal anidado para crear horario */}
+            {/* Modal anidado para crear horario (Enrutamiento corregido) */}
             <ScheduleModal
                 isOpen={showScheduleModal}
                 onClose={() => setShowScheduleModal(false)}
-                onSuccess={handleScheduleSuccess}
+                onSave={handleSaveSchedule}
+                empleados={[]}
+                empleadoActualNombre={formData.nombre || 'Nuevo Empleado'}
+                saving={saving}
             />
         </div>,
         document.body

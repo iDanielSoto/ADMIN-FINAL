@@ -39,8 +39,8 @@ const Login = () => {
         if (error) setError('');
     };
 
-    const [animationState, setAnimationState] = useState('idle');
-
+    const [isSuccess, setIsSuccess] = useState(false);
+    
     // Re-enviar login con empresa_id seleccionado (multi-tenant)
     const handleSubmitWithEmpresa = async (empresaId) => {
         setIsSubmitting(true);
@@ -51,20 +51,10 @@ const Login = () => {
                 setError(result.message || 'Error al iniciar sesión');
                 setIsSubmitting(false);
             } else {
-                setAnimationState('start');
+                setIsSuccess(true);
                 setTimeout(() => {
-                    setAnimationState('falling');
-                    setTimeout(() => {
-                        setAnimationState('squash');
-                        setTimeout(() => {
-                            setAnimationState('ripple');
-                            setAnimationState('expanding');
-                            setTimeout(() => {
-                                if (result.confirmLogin) result.confirmLogin();
-                            }, 2500);
-                        }, 250);
-                    }, 1400);
-                }, 100);
+                    if (result.confirmLogin) result.confirmLogin();
+                }, 600);
             }
         } catch (err) {
             setError('Error al conectar con el servidor');
@@ -110,27 +100,12 @@ const Login = () => {
                 setError(result.message || 'Error al iniciar sesión');
                 setIsSubmitting(false);
             } else {
-                // Secuencia de animación
-                setAnimationState('start');
-
+                setIsSuccess(true);
                 setTimeout(() => {
-                    setAnimationState('falling');
-
-                    setTimeout(() => {
-                        setAnimationState('squash');
-
-                        setTimeout(() => {
-                            setAnimationState('ripple');
-                            setAnimationState('expanding');
-
-                            setTimeout(() => {
-                                if (result.confirmLogin) {
-                                    result.confirmLogin();
-                                }
-                            }, 2500);
-                        }, 250);
-                    }, 1400);
-                }, 100);
+                    if (result.confirmLogin) {
+                        result.confirmLogin();
+                    }
+                }, 600);
             }
         } catch (err) {
             setError('Error al conectar con el servidor');
@@ -141,54 +116,17 @@ const Login = () => {
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-gray-900 overflow-hidden relative font-sans flex items-center justify-center">
 
-            {/* Animación de Gota con Deformación */}
-            {animationState !== 'idle' && (
-                <div className="fixed inset-0 pointer-events-none z-[9999] flex items-center justify-center">
-
-                    {/* Fondo Inmersivo */}
-                    <div
-                        className={`absolute inset-0 bg-blue-900 transition-opacity duration-[2000ms] ease-out ${['ripple', 'expanding'].includes(animationState) ? 'opacity-100' : 'opacity-0'
-                            }`}
-                    />
-
-                    {/* Ondas de Choque Multiples (Efecto Oleaje) */}
-                    {[0, 150, 300, 450].map((delay, i) => (
-                        <div
-                            key={i}
-                            className={`absolute rounded-full border-[15px] border-blue-300/30 transform -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 transition-all ease-out ${['ripple', 'expanding'].includes(animationState)
-                                ? 'w-[300vmax] h-[300vmax] opacity-0 duration-[3000ms] border-[300px]'
-                                : 'w-0 h-0 opacity-100 border-[0px] duration-0'
-                                }`}
-                            style={{ transitionDelay: `${delay}ms` }}
-                        />
-                    ))}
-
-                    {/* Gota Principal */}
-                    <div
-                        className={`absolute bg-gradient-to-b from-blue-300 to-blue-600 shadow-2xl transition-all transform -translate-x-1/2 left-1/2 ${animationState === 'start'
-                            ? '-top-40 w-24 h-32 opacity-100 duration-0 rounded-[50%] rounded-t-[0%] translate-y-0 scale-y-100'
-                            : animationState === 'falling'
-                                ? 'top-1/2 w-20 h-36 opacity-100 duration-[1500ms] ease-in rounded-full -translate-y-1/2 scale-y-110'
-                                : animationState === 'squash'
-                                    ? 'top-1/2 w-48 h-12 opacity-100 duration-[200ms] ease-out rounded-[40%] -translate-y-1/2 scale-x-150 scale-y-40'
-                                    : ['ripple', 'expanding'].includes(animationState)
-                                        ? 'top-1/2 w-[500vmax] h-[500vmax] opacity-100 duration-[2000ms] ease-in rounded-full -translate-y-1/2 scale-100'
-                                        : 'opacity-0'
-                            }`}
-                    >
-                        {/* Reflejos Realistas */}
-                        <div className="absolute top-[20%] left-[25%] w-[20%] h-[15%] bg-white rounded-full opacity-60 blur-sm"></div>
-                    </div>
+            {/* Overlay de Éxito Profesional */}
+            <div className={`fixed inset-0 z-[9999] bg-white dark:bg-gray-900 transition-all duration-500 ease-in-out flex items-center justify-center pointer-events-none ${isSuccess ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
+                }`}>
+                <div className="flex flex-col items-center">
+                    <DynamicLoader text="Accediendo..." size="large" />
                 </div>
-            )}
+            </div>
 
-            {/* Contenedor del Contenido (Se deforma al impacto) */}
+            {/* Contenedor del Contenido */}
             <div
-                className={`flex flex-col items-center justify-center w-full max-w-md transition-all duration-300 ease-out transform ${['squash', 'ripple'].includes(animationState)
-                    ? 'scale-90 blur-[4px] skew-x-2 skew-y-2 brightness-125' // Distorsión violenta al impacto
-                    : animationState === 'falling'
-                        ? 'scale-100 blur-[0.5px]' // Ligera tensión mientras cae
-                        : 'scale-100 blur-0'
+                className={`flex flex-col items-center justify-center w-full max-w-md transition-all duration-500 ease-out transform ${isSuccess ? 'scale-95 opacity-0 blur-sm' : 'scale-100 opacity-100 blur-0'
                     }`}
             >
                 {/* Sección de Logo y Marca */}

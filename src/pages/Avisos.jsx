@@ -295,10 +295,16 @@ const Avisos = () => {
                                 {/* LEFT COLUMN: GENERAL INFO */}
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título</label>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Título</label>
+                                            <span className={`text-[10px] font-medium transition-colors ${formData.titulo.length >= 50 ? 'text-amber-500' : 'text-gray-400'}`}>
+                                                {formData.titulo.length}/55
+                                            </span>
+                                        </div>
                                         <input
                                             type="text"
                                             value={formData.titulo}
+                                            maxLength={55}
                                             onChange={e => setFormData({ ...formData, titulo: e.target.value })}
                                             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white"
                                             placeholder="Ej: Mantenimiento programado"
@@ -307,9 +313,15 @@ const Avisos = () => {
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contenido</label>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Contenido</label>
+                                            <span className={`text-[10px] font-medium transition-colors ${formData.contenido.length >= 480 ? 'text-amber-500' : 'text-gray-400'}`}>
+                                                {formData.contenido.length}/512
+                                            </span>
+                                        </div>
                                         <textarea
                                             value={formData.contenido}
+                                            maxLength={512}
                                             onChange={e => setFormData({ ...formData, contenido: e.target.value })}
                                             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white h-32 resize-none"
                                             placeholder="Escribe el contenido del aviso..."

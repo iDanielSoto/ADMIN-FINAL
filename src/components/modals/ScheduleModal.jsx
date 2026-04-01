@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { FiX, FiPlus, FiTrash2, FiAlertCircle, FiLayers, FiClock, FiZap, FiChevronDown } from 'react-icons/fi';
+import { FiX, FiPlus, FiTrash2, FiAlertCircle, FiLayers, FiClock, FiZap, FiChevronDown, FiSearch, FiCheck, FiSquare, FiCheckSquare } from 'react-icons/fi';
 import ConfirmBox from '../ConfirmBox';
 import DynamicLoader from '../common/DynamicLoader';
 import { fusionarBloquesContinuos, DIAS_SEMANA } from '../../utils/scheduleUtils';
@@ -109,9 +109,10 @@ const TimeInput = ({ value, onChange, error, placeholder }) => {
 };
 
 // --- COMPONENTE PRINCIPAL ---
-const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, saving }) => {
+const ScheduleModal = ({ isOpen, onClose, mode, empleados = [], initialData, onSave, saving, empleadoActualNombre }) => {
     const [formData, setFormData] = useState({
-        empleado_id: '',
+        empleados_ids: [],
+        tipo_periodo: 'semestral',
         fecha_inicio: '',
         fecha_fin: '',
         configuracion_semanal: {
@@ -124,11 +125,27 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
     const [alertMsg, setAlertMsg] = useState(null);
     const [confirmAction, setConfirmAction] = useState(null);
 
+    // Multi-Select state
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [searchEmpleado, setSearchEmpleado] = useState('');
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
     useEffect(() => {
         if (isOpen) {
             if (mode === 'edit' && initialData) {
                 setFormData({
-                    empleado_id: initialData.empleado_id || '',
+                    empleados_ids: initialData.empleados ? initialData.empleados.map(e => e.id) : [],
+                    tipo_periodo: initialData.configuracion?.tipo_periodo || 'semestral',
                     fecha_inicio: initialData.fecha_inicio?.split('T')[0] || '',
                     fecha_fin: initialData.fecha_fin?.split('T')[0] || '',
                     configuracion_semanal: initialData.configuracion?.configuracion_semanal || {
@@ -137,7 +154,8 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
                 });
             } else {
                 setFormData({
-                    empleado_id: '',
+                    empleados_ids: [],
+                    tipo_periodo: 'semestral',
                     fecha_inicio: new Date().toISOString().split('T')[0],
                     fecha_fin: '',
                     configuracion_semanal: {
@@ -147,8 +165,24 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
             }
             setSelectedDay('lunes');
             setMensaje(null);
+            setSearchEmpleado('');
+            setDropdownOpen(false);
         }
     }, [isOpen, mode, initialData]);
+
+    const filteredEmpleados = empleados.filter(e => 
+        e.nombre.toLowerCase().includes(searchEmpleado.toLowerCase()) || 
+        (e.rfc && e.rfc.toLowerCase().includes(searchEmpleado.toLowerCase()))
+    );
+
+    const toggleEmpleado = (id) => {
+        setFormData(prev => ({
+            ...prev,
+            empleados_ids: prev.empleados_ids.includes(id) 
+                ? prev.empleados_ids.filter(eId => eId !== id)
+                : [...prev.empleados_ids, id]
+        }));
+    };
 
     const agregarTurno = (inicio = '09:00', fin = '18:00') => {
         const nuevosHorarios = [...formData.configuracion_semanal[selectedDay]];
@@ -200,7 +234,7 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
     };
 
     const validar = () => {
-        if (!formData.empleado_id) return 'Debes seleccionar un empleado';
+        if (formData.empleados_ids.length === 0 && empleados.length > 0 && !empleadoActualNombre) return 'Debes seleccionar al menos un empleado';
         if (!formData.fecha_inicio) return 'Debes especificar una fecha de inicio';
         if (formData.fecha_fin && formData.fecha_fin < formData.fecha_inicio) return 'La fecha de fin debe ser posterior a la de inicio';
 
@@ -268,24 +302,112 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados, initialData, onSave, 
 
                     {/* Fila 1: Datos Generales */}
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6 bg-white dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
-                        <div className="md:col-span-6">
-                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Empleado *</label>
+                        <div className="md:col-span-12">
+                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Empleados (Asignación Múltiple) *</label>
+                            {empleadoActualNombre ? (
+                                <div className="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-600/50 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 font-medium select-none flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                    {empleadoActualNombre} (Automático)
+                                </div>
+                            ) : (
+                                <div className="relative" ref={dropdownRef}>
+                                    <div 
+                                        className="w-full min-h-[42px] px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg cursor-text flex flex-wrap gap-1 items-center"
+                                        onClick={() => setDropdownOpen(true)}
+                                    >
+                                        {formData.empleados_ids.length === 0 ? (
+                                            <span className="text-gray-500 dark:text-gray-400 text-sm">Buscar y seleccionar empleados...</span>
+                                        ) : (
+                                            formData.empleados_ids.map(id => {
+                                                const emp = empleados.find(e => e.id === id);
+                                                if(!emp) return null;
+                                                return (
+                                                    <span key={id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300">
+                                                        {emp.nombre.split(' ')[0]} {emp.nombre.split(' ')[1] || ''}
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={(e) => { e.stopPropagation(); toggleEmpleado(id); }}
+                                                            className="ml-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full p-0.5 transition-colors"
+                                                        >
+                                                            <FiX className="w-3 h-3"/>
+                                                        </button>
+                                                    </span>
+                                                )
+                                            })
+                                        )}
+                                        <div className="flex-1 min-w-[120px]">
+                                            <input 
+                                                type="text" 
+                                                className="w-full bg-transparent outline-none text-sm text-gray-800 dark:text-white" 
+                                                value={searchEmpleado}
+                                                onChange={(e) => {setSearchEmpleado(e.target.value); setDropdownOpen(true);}}
+                                                placeholder={formData.empleados_ids.length > 0 ? "" : ""}
+                                            />
+                                        </div>
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                            <FiChevronDown className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                                        </div>
+                                    </div>
+
+                                    {dropdownOpen && (
+                                        <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-1 animate-fadeIn">
+                                            {filteredEmpleados.length === 0 ? (
+                                                <div className="p-3 text-sm text-gray-500 text-center">No se encontraron empleados.</div>
+                                            ) : (
+                                                <>
+                                                    <div 
+                                                        className="px-4 py-2 text-xs font-semibold text-blue-600 dark:text-blue-400 cursor-pointer hover:bg-blue-50 dark:hover:bg-gray-700 transition"
+                                                        onClick={() => {
+                                                            const allFilteredIds = filteredEmpleados.map(e => e.id);
+                                                            const allSelected = allFilteredIds.every(id => formData.empleados_ids.includes(id));
+                                                            if (allSelected) {
+                                                                setFormData(p => ({ ...p, empleados_ids: p.empleados_ids.filter(id => !allFilteredIds.includes(id)) }));
+                                                            } else {
+                                                                const newSelection = new Set([...formData.empleados_ids, ...allFilteredIds]);
+                                                                setFormData(p => ({ ...p, empleados_ids: Array.from(newSelection) }));
+                                                            }
+                                                        }}
+                                                    >
+                                                        Seleccionar / Deseleccionar todos
+                                                    </div>
+                                                    {filteredEmpleados.map(emp => {
+                                                        const isSelected = formData.empleados_ids.includes(emp.id);
+                                                        return (
+                                                            <label key={emp.id} className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors group">
+                                                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-600 group-hover:border-blue-400'}`}>
+                                                                    {isSelected && <FiCheck className="w-3 h-3" />}
+                                                                </div>
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{emp.nombre}</span>
+                                                                    {emp.rfc && <span className="text-xs text-gray-500 dark:text-gray-400">{emp.rfc}</span>}
+                                                                </div>
+                                                            </label>
+                                                        );
+                                                    })}
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="md:col-span-4">
+                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Tipo de Periodo</label>
                             <select
-                                value={formData.empleado_id}
-                                onChange={(e) => setFormData(prev => ({ ...prev, empleado_id: e.target.value }))}
+                                value={formData.tipo_periodo}
+                                onChange={(e) => setFormData(prev => ({ ...prev, tipo_periodo: e.target.value }))}
                                 className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-gray-600 text-gray-900 dark:text-white transition-all outline-none"
                             >
-                                <option value="">Seleccionar empleado...</option>
-                                {empleados.map(emp => (
-                                    <option key={emp.id} value={emp.id}>{emp.nombre} {emp.rfc && `(${emp.rfc})`}</option>
-                                ))}
+                                <option value="semestral">Semestral</option>
+                                <option value="intersemestral">Intersemestral (Corrido)</option>
                             </select>
                         </div>
-                        <div className="md:col-span-3">
+                        <div className="md:col-span-4">
                             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Desde *</label>
                             <input type="date" value={formData.fecha_inicio} onChange={(e) => setFormData(prev => ({ ...prev, fecha_inicio: e.target.value }))} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white" />
                         </div>
-                        <div className="md:col-span-3">
+                        <div className="md:col-span-4">
                             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Hasta (Opcional)</label>
                             <input type="date" value={formData.fecha_fin} onChange={(e) => setFormData(prev => ({ ...prev, fecha_fin: e.target.value }))} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white" />
                         </div>

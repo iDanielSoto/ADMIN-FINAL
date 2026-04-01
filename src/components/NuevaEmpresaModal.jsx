@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { FiX, FiGlobe, FiUser, FiActivity, FiShield, FiSave, FiInfo } from 'react-icons/fi';
+import { FiX, FiGlobe, FiUser, FiActivity, FiShield, FiSave, FiInfo, FiMapPin, FiRefreshCw, FiBookOpen, FiBriefcase } from 'react-icons/fi';
 import { API_CONFIG } from '../config/Apiconfig';
 
 const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
@@ -9,18 +9,28 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
     const [successData, setSuccessData] = useState(null);
+    const [currentStep, setCurrentStep] = useState(1);
 
     const [formParams, setFormParams] = useState({
         nombre: '',
+        departamento_nombre: '',
         telefono: '',
         correo: '', // Correo de contacto general (opcional)
         logo: '',
+        tipo_institucion: 'corporativa', // 'educativa' | 'corporativa'
         admin_usuario: '', // Requerido para SaaS
         admin_correo: '',  // Requerido para SaaS
         limite_empleados: '',
         limite_dispositivos: '',
         fecha_vencimiento: ''
     });
+
+    // Estado y referencias para el mapa de ubicación del departamento inicial
+    const mapRef = useRef(null);
+    const mapInstanceRef = useRef(null);
+    const drawnItemsRef = useRef(null);
+    const [zonas, setZonas] = useState([]);
+    const [mapReady, setMapReady] = useState(false);
 
     const API_URL = API_CONFIG.BASE_URL;
 
@@ -42,6 +52,99 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
         }));
     };
 
+    // Efecto para inicializar el mapa cuando el modal abre y el contenedor está listo
+    useEffect(() => {
+        if (!isOpen) {
+            setCurrentStep(1);
+            setSuccessData(null);
+        }
+        // El mapa ahora se inicializará cuando estemos en el paso 4 y el contenedor esté listo
+        if (isOpen && currentStep === 4 && mapRef.current && !mapInstanceRef.current) {
+            initMap();
+        }
+        return () => {
+            if (!isOpen && mapInstanceRef.current) {
+                mapInstanceRef.current.remove();
+                mapInstanceRef.current = null;
+                drawnItemsRef.current = null;
+                setMapReady(false);
+            }
+        };
+    }, [isOpen, currentStep]);
+
+    const initMap = async () => {
+        if (typeof window === 'undefined') return;
+
+        const leafletModule = await import('leaflet');
+        const L = leafletModule.default || leafletModule;
+        await import('leaflet/dist/leaflet.css');
+        await import('leaflet-draw');
+        await import('leaflet-draw/dist/leaflet.draw.css');
+
+        delete L.Icon.Default.prototype._getIconUrl;
+        L.Icon.Default.mergeOptions({
+            iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+            iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+        });
+
+        // Coordenadas por defecto (Lázaro Cárdenas)
+        const map = L.map(mapRef.current).setView([17.9577, -102.2006], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        const drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+        drawnItemsRef.current = drawnItems;
+
+        const drawControl = new L.Control.Draw({
+            position: 'topright',
+            draw: {
+                polygon: { allowIntersection: false, shapeOptions: { color: '#EF4444' } },
+                rectangle: { shapeOptions: { color: '#EF4444' } },
+                circle: false, circlemarker: false, marker: false, polyline: false
+            },
+            edit: { featureGroup: drawnItems, remove: true }
+        });
+        map.addControl(drawControl);
+
+        map.on('draw:created', (e) => {
+            drawnItems.addLayer(e.layer);
+            updateZonasFromMap(drawnItems);
+        });
+        map.on('draw:edited', () => updateZonasFromMap(drawnItems));
+        map.on('draw:deleted', () => updateZonasFromMap(drawnItems));
+
+        mapInstanceRef.current = map;
+        setMapReady(true); // Signal that map is ready
+
+        // Corrección visual para mapas dentro de modales
+        setTimeout(() => {
+            if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+        }, 200);
+    };
+
+    const updateZonasFromMap = (layerGroup) => {
+        const newZonas = [];
+        layerGroup.eachLayer(layer => {
+            if (layer.getLatLngs) {
+                const latlngs = layer.getLatLngs()[0] || layer.getLatLngs();
+                const flatLatLngs = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
+                const coordinates = flatLatLngs.map(ll => [ll.lat, ll.lng]);
+                newZonas.push({ coordinates, type: 'polygon' });
+            }
+        });
+        setZonas(newZonas);
+    };
+
+    const clearMap = () => {
+        if (drawnItemsRef.current) {
+            drawnItemsRef.current.clearLayers();
+            setZonas([]);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -55,14 +158,18 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
             if (dataToSubmit.fecha_vencimiento === '') dataToSubmit.fecha_vencimiento = null;
 
             const token = localStorage.getItem('auth_token');
-            const response = await fetch(`${API_URL}/api/empresas`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(dataToSubmit)
-            });
+            // Incluir la ubicación del departamento inicial si se dibujó alguna zona
+        if (zonas.length > 0) {
+            dataToSubmit.departamento_ubicacion = { zonas };
+        }
+        const response = await fetch(`${API_URL}/api/empresas`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(dataToSubmit)
+        });
 
             const data = await response.json();
 
@@ -83,20 +190,79 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
         }
     };
 
+    const steps = [
+        { id: 1, label: 'Empresa' },
+        { id: 2, label: 'Administrador' },
+        { id: 3, label: 'Licencia' },
+        { id: 4, label: 'Ubicación' }
+    ];
+
+    const renderStepper = () => {
+        return (
+            <div className="flex px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 justify-between items-center overflow-x-auto">
+                {steps.map((step) => (
+                    <div key={step.id} className="flex items-center">
+                        <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
+                            currentStep === step.id 
+                                ? 'border-primary-500 bg-primary-500 text-white'
+                                : currentStep > step.id
+                                    ? 'border-green-500 bg-green-500 text-white'
+                                    : 'border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500'
+                        }`}>
+                            {currentStep > step.id ? '✓' : step.id}
+                        </div>
+                        <span className={`ml-2 text-sm font-medium hidden sm:block ${
+                            currentStep === step.id ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'
+                        }`}>
+                            {step.label}
+                        </span>
+                        {step.id < 4 && (
+                            <div className={`w-8 sm:w-16 h-0.5 mx-2 ${
+                                currentStep > step.id ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'
+                            }`}></div>
+                        )}
+                    </div>
+                ))}
+            </div>
+        );
+    };
+
+    const handleNext = () => {
+        if (currentStep === 1) {
+            if (!formParams.nombre) {
+                setError('Por favor complete todos los campos obligatorios (*) de Identidad del Cliente');
+                return;
+            }
+        }
+        if (currentStep === 2) {
+            if (!formParams.admin_correo || !formParams.admin_usuario) {
+                setError('Por favor complete todos los campos obligatorios (*) del Administrador');
+                return;
+            }
+        }
+        setError(null);
+        setCurrentStep(prev => prev + 1);
+    };
+
+    const handlePrev = () => {
+        setError(null);
+        setCurrentStep(prev => prev - 1);
+    };
+
     if (!isOpen) return null;
 
     return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-gray-700 w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-gray-700 w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
 
                 {/* Header Modal */}
-                <div className="bg-white dark:bg-gray-800 px-6 py-4 flex justify-between items-center border-b border-slate-100 dark:border-gray-700">
+                <div className="bg-white dark:bg-gray-800 px-6 py-4 flex justify-between items-center border-b border-slate-100 dark:border-gray-700 shrink-0">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <FiGlobe className="text-primary-500" /> Aprovisionar Nuevo Tenant
                         </h2>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            Este proceso creará el entorno aislado y un administrador maestro.
+                            Sigue los pasos para configurar el entorno de la empresa y su administrador maestro.
                         </p>
                     </div>
                     {!successData && (
@@ -110,11 +276,13 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                     )}
                 </div>
 
+                {!successData && renderStepper()}
+
                 {/* Body Content */}
                 <div className="p-6 overflow-y-auto flex-1">
 
                     {error && (
-                        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold rounded-lg border border-red-100 dark:border-red-800/50 flex items-start gap-2 text-sm">
+                        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold rounded-lg border border-red-100 dark:border-red-800/50 flex items-start gap-2 text-sm transition-all">
                             <FiActivity className="w-5 h-5 flex-shrink-0 mt-0.5" />
                             <p>{error}</p>
                         </div>
@@ -162,11 +330,11 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                         </div>
                     ) : (
                         // FORMULARIO DE CREACIÓN
-                        <form id="formNuevaEmpresa" onSubmit={handleSubmit} className="space-y-8">
+                        <form id="formNuevaEmpresa" onSubmit={handleSubmit} className="space-y-4">
 
                             {/* Bloque 1: Datos Generales */}
-                            <div className="space-y-4">
-                                <h3 className="font-bold text-lg text-gray-900 dark:text-white pb-2 border-b border-gray-100 dark:border-gray-700">1. Identidad del Cliente</h3>
+                            <div className={`space-y-4 ${currentStep === 1 ? 'block' : 'hidden'}`}>
+                                <h3 className="font-bold text-lg text-gray-900 dark:text-white pb-2 border-b border-gray-100 dark:border-gray-700">Identidad del Cliente</h3>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="md:col-span-2">
@@ -174,7 +342,6 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                                         <input
                                             type="text"
                                             name="nombre"
-                                            required
                                             value={formParams.nombre}
                                             onChange={handleChange}
                                             className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
@@ -204,6 +371,41 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                                         />
                                     </div>
                                     <div className="md:col-span-2">
+                                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Tipo de Institución <span className="text-red-500">*</span></label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormParams(prev => ({ ...prev, tipo_institucion: 'corporativa' }))}
+                                                className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                                                    formParams.tipo_institucion === 'corporativa'
+                                                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
+                                                        : 'border-slate-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-500 hover:border-slate-200'
+                                                }`}
+                                            >
+                                                <FiBriefcase className="w-5 h-5" />
+                                                <div className="text-left">
+                                                    <p className="font-bold text-sm">Corporativa</p>
+                                                    <p className="text-xs opacity-70">Empresas y oficinas</p>
+                                                </div>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormParams(prev => ({ ...prev, tipo_institucion: 'educativa' }))}
+                                                className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                                                    formParams.tipo_institucion === 'educativa'
+                                                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
+                                                        : 'border-slate-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-500 hover:border-slate-200'
+                                                }`}
+                                            >
+                                                <FiBookOpen className="w-5 h-5" />
+                                                <div className="text-left">
+                                                    <p className="font-bold text-sm">Educativa</p>
+                                                    <p className="text-xs opacity-70">Escuelas y universidades</p>
+                                                </div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="md:col-span-2">
                                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">URL del Logotipo (PNG/JPG)</label>
                                         <input
                                             type="url"
@@ -218,9 +420,9 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                             </div>
 
                             {/* Bloque 2: Administrador Principal */}
-                            <div className="space-y-4">
+                            <div className={`space-y-4 ${currentStep === 2 ? 'block' : 'hidden'}`}>
                                 <h3 className="font-bold text-lg text-gray-900 dark:text-white pb-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-                                    <FiUser /> 2. Credenciales del Administrador
+                                    <FiUser /> Credenciales del Administrador
                                 </h3>
 
                                 <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800/50 rounded-lg mb-4">
@@ -235,7 +437,6 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                                         <input
                                             type="email"
                                             name="admin_correo"
-                                            required
                                             value={formParams.admin_correo}
                                             onChange={handleChange}
                                             className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
@@ -248,7 +449,6 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                                             <input
                                                 type="text"
                                                 name="admin_usuario"
-                                                required
                                                 value={formParams.admin_usuario}
                                                 onChange={handleChange}
                                                 className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
@@ -267,12 +467,12 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                             </div>
 
                             {/* Bloque 3: Configuración de Licencia SaaS */}
-                            <div className="space-y-4">
+                            <div className={`space-y-4 ${currentStep === 3 ? 'block' : 'hidden'}`}>
                                 <h3 className="font-bold text-lg text-gray-900 dark:text-white pb-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-                                    <FiShield /> 3. Configuración de Licencia
+                                    <FiShield /> Configuración de Licencia SaaS
                                 </h3>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Límite de Trabajadores</label>
                                         <input
@@ -297,7 +497,7 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                                             placeholder="Ej. 10 (Vacio = Ilimitado)"
                                         />
                                     </div>
-                                    <div>
+                                    <div className="md:col-span-2">
                                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Fecha de Expiración</label>
                                         <input
                                             type="date"
@@ -311,30 +511,97 @@ const NuevaEmpresaModal = ({ isOpen, onClose, onEmpresaCreada }) => {
                                 </div>
                             </div>
 
+                            {/* Bloque 4: Ubicación Inicial */}
+                            <div className={`space-y-4 ${currentStep === 4 ? 'block' : 'hidden'}`}>
+                                <h3 className="font-bold text-lg text-gray-900 dark:text-white pb-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+                                    <FiMapPin /> Departamento Inicial y Ubicación
+                                </h3>
+                                
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Nombre del Departamento <span className="text-red-500">*</span></label>
+                                    <input
+                                        type="text"
+                                        name="departamento_nombre"
+                                        required={currentStep === 4}
+                                        value={formParams.departamento_nombre}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                                        placeholder="Ej. Departamento Principal u Oficina Central"
+                                    />
+                                </div>
+
+                                <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden relative" style={{ height: '350px' }}>
+                                    <div ref={mapRef} className="absolute inset-0 z-0 h-full w-full" />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    {zonas.length > 0 ? (
+                                        <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                                            {zonas.length} zona(s) delimitada(s)
+                                        </span>
+                                    ) : (
+                                        <span className="text-sm text-gray-500">
+                                            Sin delimitar
+                                        </span>
+                                    )}
+                                    <button 
+                                        type="button" 
+                                        onClick={clearMap} 
+                                        className="btn-secondary flex items-center gap-2 py-1 px-3 text-sm"
+                                        disabled={zonas.length === 0}
+                                    >
+                                        <FiRefreshCw size={14} /> Limpiar mapa
+                                    </button>
+                                </div>
+                            </div>
+
                         </form>
                     )}
                 </div>
 
                 {/* Footer Modal Actions */}
                 {!successData && (
-                    <div className="bg-slate-50/50 dark:bg-gray-800 px-6 py-4 flex justify-end gap-3 border-t border-slate-100 dark:border-gray-700">
+                    <div className="bg-slate-50/50 dark:bg-gray-800 px-6 py-4 flex justify-between items-center border-t border-slate-100 dark:border-gray-700 shrink-0">
                         <button
                             type="button"
                             onClick={onClose}
                             disabled={saving}
-                            className="btn-secondary"
+                            className="btn-secondary mr-auto"
                         >
                             Cancelar
                         </button>
-                        <button
-                            type="submit"
-                            form="formNuevaEmpresa"
-                            disabled={saving}
-                            className={`btn-primary flex items-center justify-center gap-2 ${saving ? 'opacity-70 cursor-wait' : ''}`}
-                        >
-                            {saving ? <FiActivity className="animate-spin w-5 h-5" /> : <FiSave className="w-5 h-5" />}
-                            {saving ? 'Aprovisionando...' : 'Crear y Aprovisionar Tenant'}
-                        </button>
+                        
+                        <div className="flex gap-3">
+                            {currentStep > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={handlePrev}
+                                    disabled={saving}
+                                    className="btn-secondary"
+                                >
+                                    Anterior
+                                </button>
+                            )}
+                            
+                            {currentStep < 4 ? (
+                                <button
+                                    type="button"
+                                    onClick={handleNext}
+                                    className="btn-primary"
+                                >
+                                    Siguiente
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={handleSubmit} // Llamado manual al submit, el form ya no usará onSubmit
+                                    disabled={saving}
+                                    className={`btn-primary flex items-center justify-center gap-2 ${saving ? 'opacity-70 cursor-wait' : ''}`}
+                                >
+                                    {saving ? <FiActivity className="animate-spin w-5 h-5" /> : <FiSave className="w-5 h-5" />}
+                                    {saving ? 'Aprovisionando...' : 'Crear y Aprovisionar'}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>

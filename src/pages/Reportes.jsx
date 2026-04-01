@@ -16,7 +16,12 @@ import {
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-// imports de docx omitidos para brevedad, mantener los tuyos...
+import { 
+    Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, 
+    AlignmentType, WidthType, HeadingLevel, BorderStyle, VerticalAlign,
+    Header, Footer, ImageRun
+} from 'docx';
+import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
 
 import { API_CONFIG } from '../config/Apiconfig';
@@ -304,22 +309,46 @@ const Reportes = () => {
     // --- FUNCIONES DE EXPORTACIÓN (Sin cambios) ---
     const handleExport = async (formato) => {
         setExporting(true);
-        if (formato === 'pdf' && exportCategoria === 'asistencias') {
-            if (alcance === 'empleado' && idSeleccionado) {
-                await generarPdfEmpleadoQuincenal();
+        try {
+            if (exportCategoria === 'incidencias_rrhh') {
+                if (alcance === 'empleado' && idSeleccionado) {
+                    if (formato === 'pdf') await generarPdfIncidenciasRRHH();
+                    else if (formato === 'excel') await generarExcelIncidenciasRRHH();
+                    else if (formato === 'word') await generarWordIncidenciasRRHH();
+                } else {
+                    setAlertMsg('Por favor selecciona un Empleado específico para este reporte.');
+                    setIsModalOpen(false);
+                }
+            } else if (exportCategoria === 'general' && alcance === 'global') {
+                if (formato === 'pdf') {
+                    // Simular PDF de dashboard o usar html2canvas (opcional)
+                    setAlertMsg('Exportando PDF de Dashboard... (Simulado)');
+                } else if (formato === 'excel') {
+                    await generarExcelResumenEjecutivo();
+                } else if (formato === 'word') {
+                    await generarWordResumenEjecutivo();
+                }
+            } else if (exportCategoria === 'asistencias') {
+                if (alcance === 'empleado' && idSeleccionado) {
+                    if (formato === 'pdf') await generarPdfEmpleadoQuincenal();
+                    else if (formato === 'excel') await generarExcelAsistencias('individual');
+                    else if (formato === 'word') await generarWordAsistencias('individual');
+                } else if (alcance === 'global') {
+                    if (formato === 'pdf') await generarPdfAsistenciasGlobal();
+                    else if (formato === 'excel') await generarExcelAsistencias('global');
+                    else if (formato === 'word') await generarWordAsistencias('global');
+                } else {
+                    setAlertMsg('Por favor selecciona un Empleado o Alcance global para este reporte.');
+                }
             } else {
-                setAlertMsg('Este formato de exportación avanzado aplica cuando filtras "Detalle de Asistencias" para un Empleado específico.');
-                setExporting(false);
-                setIsModalOpen(false);
-                return;
+                setAlertMsg(`Reporte ${formato.toUpperCase()} para ${exportCategoria} aún no implementado.`);
             }
-        } else {
-            // Lógica anterior simulada para otros formatos
-            setTimeout(() => {
-                setAlertMsg(`Reporte ${formato.toUpperCase()} generado correctamente. (Simulado)`);
-                setExporting(false);
-                setIsModalOpen(false);
-            }, 1500);
+        } catch (error) {
+            console.error(error);
+            setAlertMsg("Error al exportar: " + error.message);
+        } finally {
+            setExporting(false);
+            if (!alertMsg) setIsModalOpen(false);
         }
     };
 
@@ -351,6 +380,8 @@ const Reportes = () => {
             const dataEmpresa = await resEmpresa.json();
             const configReportes = dataEmpresa.data?.configuracion_reportes || {};
             const logoEmpresa = dataEmpresa.data?.logo;
+            const nombreEmpresa = dataEmpresa.data?.nombre || "REPORTE";
+            const marcaAgua = configReportes.marca_agua || { activo: true, tipo: 'texto', texto: nombreEmpresa, opacity: 10, imagen: '' };
 
             // 2. Obtener los datos del reporte quincenal
             const url = `${API_BASE_URL}/reportes/checadas/quincena?empleado_id=${idSeleccionado}&fecha_inicio=${fInit}&fecha_fin=${fEnd}`;
@@ -427,7 +458,9 @@ const Reportes = () => {
                     t3_e: '', t3_s: ''
                 };
 
-                if (!dia.aplica) {
+                if (!dia.aplica && dia.incidencia) {
+                    rowObj.t1_e = { content: `No Aplica (${dia.incidencia})`, colSpan: 6, styles: { halign: 'center', fontStyle: 'bold', textColor: '#0284c7', fillColor: '#f0f9ff' } };
+                } else if (!dia.aplica) {
                     rowObj.t1_e = { content: 'No Aplica', colSpan: 6, styles: { halign: 'center', fontStyle: 'italic', textColor: '#666' } };
                 } else if (dia.turnos.length === 0) {
                     rowObj.t1_e = { content: 'Festivo o Sin Registros', colSpan: 6, styles: { halign: 'center', fontStyle: 'italic', textColor: '#666' } };
@@ -484,6 +517,33 @@ const Reportes = () => {
                 didDrawPage: () => {
                     const pageSize = doc.internal.pageSize;
                     const pageHeight = pageSize.getHeight();
+                    const pageWidth = pageSize.getWidth();
+
+                    // --- MARCA DE AGUA ---
+                    if (marcaAgua.activo) {
+                        doc.saveGraphicsState();
+                        doc.setGState(new doc.GState({ opacity: (marcaAgua.opacity || 10) / 100 }));
+                        if (marcaAgua.tipo === 'imagen' && marcaAgua.imagen) {
+                            try {
+                                const imgProps = doc.getImageProperties(marcaAgua.imagen);
+                                const ratio = imgProps.width / imgProps.height;
+                                let wmWidth = pageWidth * 0.5;
+                                let wmHeight = wmWidth / ratio;
+                                if (wmHeight > pageHeight * 0.5) {
+                                    wmHeight = pageHeight * 0.5;
+                                    wmWidth = wmHeight * ratio;
+                                }
+                                doc.addImage(marcaAgua.imagen, imgProps.fileType || 'PNG', (pageWidth - wmWidth) / 2, (pageHeight - wmHeight) / 2, wmWidth, wmHeight);
+                            } catch (e) {
+                                console.warn('No se pudo procesar la imagen de marca de agua', e);
+                            }
+                        } else {
+                            doc.setFontSize(50);
+                            doc.setTextColor(100, 100, 100);
+                            doc.text((marcaAgua.texto || '').toUpperCase(), pageWidth / 2, pageHeight / 2, { align: 'center', angle: 45 });
+                        }
+                        doc.restoreGraphicsState();
+                    }
 
                     // --- DRAW HEADER (REPETITIVO) ---
                     if (encab.usar_imagen && encab.imagen) {
@@ -560,6 +620,503 @@ const Reportes = () => {
             setAlertMsg(`Error al generar el PDF: ${error.message}`);
         } finally {
             setExporting(false);
+        }
+    };
+
+    const generarPdfIncidenciasRRHH = async () => {
+        try {
+            const token = getToken();
+            const fInit = fechaInicio || '2024-01-01';
+            const fEnd = fechaFin || new Date().toISOString().split('T')[0];
+
+            const resEmpresa = await fetch(`${API_BASE_URL}/empresas/mi-empresa`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const dataEmpresa = await resEmpresa.json();
+            const configReportes = dataEmpresa.data?.configuracion_reportes || {};
+            const logoEmpresa = dataEmpresa.data?.logo;
+            const nombreEmpresa = dataEmpresa.data?.nombre || "REPORTE INCIDENCIAS";
+            const marcaAgua = configReportes.marca_agua || { activo: true, tipo: 'texto', texto: nombreEmpresa, opacity: 10, imagen: '' };
+
+            const url = `${API_BASE_URL}/reportes/incidencias/rrhh?empleado_id=${idSeleccionado}&fecha_inicio=${fInit}&fecha_fin=${fEnd}`;
+            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            const result = await res.json();
+
+            if (!result.success) throw new Error(result.message);
+
+            const { empleado, incidencias, resumen_texto } = result.data;
+
+            const doc = new jsPDF('p', 'pt', 'a4');
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const encab = configReportes.encabezado || {};
+            const pie = configReportes.pie_pagina || {};
+
+            let headerHeight = 80;
+            if (encab.usar_imagen && encab.imagen) {
+                const props = doc.getImageProperties(encab.imagen);
+                headerHeight = pageWidth * (props.height / props.width);
+            }
+
+            const footerHeight = 40;
+
+            const tableRows = incidencias.map(inc => [
+                empleado.nombre.toUpperCase(),
+                empleado.tipo_trabajador.toUpperCase(),
+                inc.mes,
+                inc.fecha,
+                inc.hora,
+                inc.turno,
+                inc.tipo,
+                resumen_texto
+            ]);
+
+            autoTable(doc, {
+                startY: headerHeight + 50,
+                margin: { top: headerHeight + 40, bottom: footerHeight + 20 },
+                head: [['NOMBRE DEL TRABAJADOR', 'TIPO DE TRABAJADOR', 'MES', 'FECHA DE LA INCIDENCIA', 'HORARIO DE LA INCIDENCIA', 'TURNO', 'TIPO (FALTA/RETARDO)', 'TOTAL DE INCIDENCIAS']],
+                body: tableRows,
+                theme: 'grid',
+                headStyles: { fillColor: '#f1f5f9', textColor: '#1e293b', fontStyle: 'bold', fontSize: 7, halign: 'center' },
+                bodyStyles: { fontSize: 7, textColor: '#334155' },
+                styles: { cellPadding: 3, halign: 'center', valign: 'middle', overflow: 'linebreak' },
+                columnStyles: {
+                    0: { cellWidth: 100 },
+                    1: { cellWidth: 70 },
+                    7: { cellWidth: 100 }
+                },
+                didDrawPage: (data) => {
+                    const pageWidth = doc.internal.pageSize.getWidth();
+                    const pageHeight = doc.internal.pageSize.getHeight();
+
+                    // --- MARCA DE AGUA ---
+                    if (marcaAgua.activo) {
+                        doc.saveGraphicsState();
+                        doc.setGState(new doc.GState({ opacity: (marcaAgua.opacity || 10) / 100 }));
+                        if (marcaAgua.tipo === 'imagen' && marcaAgua.imagen) {
+                            try {
+                                const imgProps = doc.getImageProperties(marcaAgua.imagen);
+                                const ratio = imgProps.width / imgProps.height;
+                                let wmWidth = pageWidth * 0.5;
+                                let wmHeight = wmWidth / ratio;
+                                if (wmHeight > pageHeight * 0.5) {
+                                    wmHeight = pageHeight * 0.5;
+                                    wmWidth = wmHeight * ratio;
+                                }
+                                doc.addImage(marcaAgua.imagen, imgProps.fileType || 'PNG', (pageWidth - wmWidth) / 2, (pageHeight - wmHeight) / 2, wmWidth, wmHeight);
+                            } catch (e) {
+                                console.warn('No se pudo procesar la imagen de marca de agua', e);
+                            }
+                        } else {
+                            doc.setFontSize(50);
+                            doc.setTextColor(100, 100, 100);
+                            doc.text((marcaAgua.texto || '').toUpperCase(), pageWidth / 2, pageHeight / 2, { align: 'center', angle: 45 });
+                        }
+                        doc.restoreGraphicsState();
+                    }
+
+                    if (encab.usar_imagen && encab.imagen) {
+                        doc.addImage(encab.imagen, 'JPEG', 0, 0, pageWidth, headerHeight);
+                    }
+                    // Numeración
+                    const str = "Página " + doc.internal.getNumberOfPages();
+                    doc.setFontSize(8);
+                    doc.text(str, pageWidth - 40, doc.internal.pageSize.getHeight() - 20, { align: 'right' });
+                }
+            });
+
+            doc.save(`Reporte_Incidencias_RRHH_${empleado.nombre.replace(/\s+/g, '_')}.pdf`);
+            setAlertMsg("Reporte generado con éxito");
+            setIsModalOpen(false);
+        } catch (error) {
+            console.error(error);
+            setAlertMsg("Error al generar PDF: " + error.message);
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    const generarExcelIncidenciasRRHH = async () => {
+        try {
+            const token = getToken();
+            const fInit = fechaInicio || '2024-01-01';
+            const fEnd = fechaFin || new Date().toISOString().split('T')[0];
+
+            const url = `${API_BASE_URL}/reportes/incidencias/rrhh?empleado_id=${idSeleccionado}&fecha_inicio=${fInit}&fecha_fin=${fEnd}`;
+            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            const result = await res.json();
+
+            if (!result.success) throw new Error(result.message);
+
+            const { empleado, incidencias, resumen_texto } = result.data;
+
+            const rows = incidencias.map(inc => ({
+                'NOMBRE DEL TRABAJADOR': empleado.nombre.toUpperCase(),
+                'TIPO DE TRABAJADOR': empleado.tipo_trabajador.toUpperCase(),
+                'MES': inc.mes,
+                'FECHA DE LA INCIDENCIA': inc.fecha,
+                'HORARIO DE LA INCIDENCIA': inc.hora,
+                'TURNO': inc.turno,
+                'TIPO (FALTA/RETARDO)': inc.tipo,
+                'TOTAL DE INCIDENCIAS': resumen_texto
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(rows);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Incidencias");
+
+            // Ajustar anchos
+            const wscols = [
+                { wch: 40 }, // Nombre
+                { wch: 20 }, // Tipo
+                { wch: 15 }, // Mes
+                { wch: 15 }, // Fecha
+                { wch: 15 }, // Hora
+                { wch: 15 }, // Turno
+                { wch: 20 }, // Tipo Inc
+                { wch: 40 }  // Total
+            ];
+            worksheet['!cols'] = wscols;
+
+            XLSX.writeFile(workbook, `Reporte_Incidencias_RRHH_${empleado.nombre.replace(/\s+/g, '_')}.xlsx`);
+            setAlertMsg("Reporte Excel generado con éxito");
+            setIsModalOpen(false);
+        } catch (error) {
+            console.error(error);
+            setAlertMsg("Error al generar Excel: " + error.message);
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    const generarWordIncidenciasRRHH = async () => {
+        try {
+            const token = getToken();
+            const fInit = fechaInicio || '2024-01-01';
+            const fEnd = fechaFin || new Date().toISOString().split('T')[0];
+
+            const url = `${API_BASE_URL}/reportes/incidencias/rrhh?empleado_id=${idSeleccionado}&fecha_inicio=${fInit}&fecha_fin=${fEnd}`;
+            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            const result = await res.json();
+
+            if (!result.success) throw new Error(result.message);
+
+            const { empleado, incidencias, resumen_texto } = result.data;
+
+            const tableRows = [
+                new TableRow({
+                    children: [
+                        'NOMBRE DEL TRABAJADOR', 'TIPO DE TRABAJADOR', 'MES', 'FECHA', 'HORARIO', 'TURNO', 'TIPO', 'TOTAL'
+                    ].map(h => new TableCell({
+                        children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 16 })], alignment: AlignmentType.CENTER })],
+                        shading: { fill: "F1F5F9" }
+                    }))
+                }),
+                ...incidencias.map(inc => new TableRow({
+                    children: [
+                        empleado.nombre.toUpperCase(),
+                        empleado.tipo_trabajador.toUpperCase(),
+                        inc.mes,
+                        inc.fecha,
+                        inc.hora,
+                        inc.turno,
+                        inc.tipo,
+                        resumen_texto
+                    ].map(text => new TableCell({
+                        children: [new Paragraph({ children: [new TextRun({ text, size: 14 })], alignment: AlignmentType.CENTER })]
+                    }))
+                }))
+            ];
+
+            const doc = new Document({
+                sections: [{
+                    properties: { page: { size: { orientation: 'landscape' } } },
+                    children: [
+                        new Paragraph({
+                            children: [new TextRun({ text: "REPORTE DE INCIDENCIAS RRHH", bold: true, size: 28 })],
+                            alignment: AlignmentType.CENTER,
+                            spacing: { after: 200 }
+                        }),
+                        new Table({
+                            width: { size: 100, type: WidthType.PERCENTAGE },
+                            rows: tableRows
+                        })
+                    ]
+                }]
+            });
+
+            const blob = await Packer.toBlob(doc);
+            saveAs(blob, `Reporte_Incidencias_RRHH_${empleado.nombre.replace(/\s+/g, '_')}.docx`);
+            setAlertMsg("Reporte Word generado con éxito");
+        } catch (error) {
+            console.error(error);
+            throw new Error("Error al generar Word: " + error.message);
+        }
+    };
+
+    const generarExcelResumenEjecutivo = async () => {
+        try {
+            if (!dashboardStats) return;
+
+            const resPunt = [
+                ['INDICADOR', 'CANTIDAD', 'PORCENTAJE'],
+                ['Puntuales', dashboardStats.asistencias.puntuales, `${((dashboardStats.asistencias.puntuales / dashboardStats.asistencias.total) * 100).toFixed(1)}%`],
+                ['Retardos', dashboardStats.asistencias.retardos, `${((dashboardStats.asistencias.retardos / dashboardStats.asistencias.total) * 100).toFixed(1)}%`],
+                ['Faltas', dashboardStats.asistencias.faltas, `${((dashboardStats.asistencias.faltas / dashboardStats.asistencias.total) * 100).toFixed(1)}%`],
+                ['TOTAL', dashboardStats.asistencias.total, '100%']
+            ];
+
+            const topRows = topDesempeno.map((emp, i) => ([
+                i + 1, emp.empleado_nombre, emp.puntuales, emp.retardos, emp.faltas, `${emp.porcentaje_puntualidad}%`
+            ]));
+
+            const workbook = XLSX.utils.book_new();
+            
+            const wsResumen = XLSX.utils.aoa_to_sheet([['RESUMEN EJECUTIVO DE ASISTENCIAS'], [], ...resPunt]);
+            XLSX.utils.book_append_sheet(workbook, wsResumen, "KPIs Generales");
+
+            const wsTop = XLSX.utils.aoa_to_sheet([
+                ['RANKING DE EMPLEADOS (TOP 10)'], 
+                [], 
+                ['PUESTO', 'EMPLEADO', 'PUNTUALES', 'RETARDOS', 'FALTAS', 'SCORE'],
+                ...topRows
+            ]);
+            XLSX.utils.book_append_sheet(workbook, wsTop, "Top Desempeño");
+
+            XLSX.writeFile(workbook, `Resumen_Ejecutivo_${fechaInicio || 'Histórico'}.xlsx`);
+            setAlertMsg("Resumen Ejecutivo Excel generado con éxito");
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
+    };
+
+    const generarWordResumenEjecutivo = async () => {
+        try {
+            if (!dashboardStats) return;
+
+            const kpiTable = new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: [
+                    new TableRow({
+                        children: ['INDICADOR', 'VALOR', '%'].map(h => new TableCell({
+                            children: [new Paragraph({ children: [new TextRun({ text: h, bold: true })], alignment: AlignmentType.CENTER })],
+                            shading: { fill: "E2E8F0" }
+                        }))
+                    }),
+                    ...[
+                        ['Puntuales', dashboardStats.asistencias.puntuales, `${((dashboardStats.asistencias.puntuales / dashboardStats.asistencias.total) * 100).toFixed(1)}%`],
+                        ['Retardos', dashboardStats.asistencias.retardos, `${((dashboardStats.asistencias.retardos / dashboardStats.asistencias.total) * 100).toFixed(1)}%`],
+                        ['Faltas', dashboardStats.asistencias.faltas, `${((dashboardStats.asistencias.faltas / dashboardStats.asistencias.total) * 100).toFixed(1)}%`]
+                    ].map(row => new TableRow({
+                        children: row.map(text => new TableCell({
+                            children: [new Paragraph({ children: [new TextRun({ text: String(text) })], alignment: AlignmentType.CENTER })]
+                        }))
+                    }))
+                ]
+            });
+
+            const topTable = new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: [
+                    new TableRow({
+                        children: ['#', 'EMPLEADO', 'SCORE'].map(h => new TableCell({
+                            children: [new Paragraph({ children: [new TextRun({ text: h, bold: true })], alignment: AlignmentType.CENTER })],
+                            shading: { fill: "E2E8F0" }
+                        }))
+                    }),
+                    ...topDesempeno.map((emp, i) => new TableRow({
+                        children: [
+                            String(i + 1),
+                            emp.empleado_nombre,
+                            `${emp.porcentaje_puntualidad}%`
+                        ].map(text => new TableCell({
+                            children: [new Paragraph({ children: [new TextRun({ text })], alignment: AlignmentType.CENTER })]
+                        }))
+                    }))
+                ]
+            });
+
+            const doc = new Document({
+                sections: [{
+                    children: [
+                        new Paragraph({ text: "RESUMEN EJECUTIVO DE ASISTENCIAS", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
+                        new Paragraph({ text: `Periodo: ${fechaInicio || 'Inicio'} al ${fechaFin || 'Hoy'}`, alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
+                        
+                        new Paragraph({ text: "KPIs de Puntualidad", heading: HeadingLevel.HEADING_2, spacing: { before: 400, after: 200 } }),
+                        kpiTable,
+
+                        new Paragraph({ text: "Ranking de Empleados (Top 10)", heading: HeadingLevel.HEADING_2, spacing: { before: 400, after: 200 } }),
+                        topTable
+                    ]
+                }]
+            });
+
+            const blob = await Packer.toBlob(doc);
+            saveAs(blob, `Resumen_Ejecutivo_${fechaInicio || 'Histórico'}.docx`);
+            setAlertMsg("Resumen Ejecutivo Word generado con éxito");
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
+    };
+
+    const generarExcelAsistencias = async (tipo) => {
+        try {
+            const token = getToken();
+            const fInit = fechaInicio || '2024-01-01';
+            const fEnd = fechaFin || new Date().toISOString().split('T')[0];
+            
+            let url = `${API_BASE_URL}/reportes/detalle-asistencias?fecha_inicio=${fInit}&fecha_fin=${fEnd}`;
+            if (tipo === 'individual') url += `&empleado_id=${idSeleccionado}`;
+            if (filtroDepartamento !== 'todos') url += `&departamento_id=${filtroDepartamento}`;
+
+            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            const result = await res.json();
+            if (!result.success) throw new Error(result.message);
+
+            const rows = result.data.map(reg => ({
+                'EMPLEADO': reg.empleado_nombre || 'N/A',
+                'DEPARTAMENTO': reg.departamento_nombre || 'N/A',
+                'FECHA': new Date(reg.fecha_registro).toLocaleDateString(),
+                'HORA': new Date(reg.fecha_registro).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                'TIPO': reg.tipo === 'entrada' ? 'Entrada' : 'Salida',
+                'ESTADO': reg.estado.toUpperCase()
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(rows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Asistencias");
+            XLSX.writeFile(wb, `Detalle_Asistencias_${tipo}_${fInit}_al_${fEnd}.xlsx`);
+            setAlertMsg("Exportación Excel completada");
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
+    };
+
+    const generarWordAsistencias = async (tipo) => {
+        try {
+            const token = getToken();
+            const fInit = fechaInicio || '2024-01-01';
+            const fEnd = fechaFin || new Date().toISOString().split('T')[0];
+            
+            let url = `${API_BASE_URL}/reportes/detalle-asistencias?fecha_inicio=${fInit}&fecha_fin=${fEnd}`;
+            if (tipo === 'individual') url += `&empleado_id=${idSeleccionado}`;
+            if (filtroDepartamento !== 'todos') url += `&departamento_id=${filtroDepartamento}`;
+
+            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            const result = await res.json();
+            if (!result.success) throw new Error(result.message);
+
+            const tableRows = [
+                new TableRow({
+                    children: ['EMPLEADO', 'DEPARTAMENTO', 'FECHA', 'HORA', 'TIPO', 'ESTADO'].map(h => new TableCell({
+                        children: [new Paragraph({ children: [new TextRun({ text: h, bold: true })], alignment: AlignmentType.CENTER })],
+                        shading: { fill: "F1F5F9" }
+                    }))
+                }),
+                ...result.data.map(reg => new TableRow({
+                    children: [
+                        reg.empleado_nombre || 'N/A',
+                        reg.departamento_nombre || 'N/A',
+                        new Date(reg.fecha_registro).toLocaleDateString(),
+                        new Date(reg.fecha_registro).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        reg.tipo === 'entrada' ? 'Entrada' : 'Salida',
+                        reg.estado.toUpperCase()
+                    ].map(text => new TableCell({
+                        children: [new Paragraph({ children: [new TextRun({ text })], alignment: AlignmentType.CENTER })]
+                    }))
+                }))
+            ];
+
+            const doc = new Document({
+                sections: [{
+                    children: [
+                        new Paragraph({ text: "DETALLE DE ASISTENCIAS", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
+                        new Paragraph({ text: `Periodo: ${fInit} al ${fEnd}`, alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
+                        new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: tableRows })
+                    ]
+                }]
+            });
+
+            const blob = await Packer.toBlob(doc);
+            saveAs(blob, `Detalle_Asistencias_${tipo}.docx`);
+            setAlertMsg("Exportación Word completada");
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
+    };
+
+    const generarPdfAsistenciasGlobal = async () => {
+        try {
+            const token = getToken();
+            const fInit = fechaInicio || '2024-01-01';
+            const fEnd = fechaFin || new Date().toISOString().split('T')[0];
+            
+            const url = `${API_BASE_URL}/reportes/detalle-asistencias?fecha_inicio=${fInit}&fecha_fin=${fEnd}${filtroDepartamento !== 'todos' ? `&departamento_id=${filtroDepartamento}` : ''}`;
+            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            const result = await res.json();
+            if (!result.success) throw new Error(result.message);
+
+            // Obtener nombre de empresa para marca de agua
+            const resEmpresa = await fetch(`${API_BASE_URL}/empresas/mi-empresa`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const dataEmpresa = await resEmpresa.json();
+            const nombreEmpresa = dataEmpresa.data?.nombre || "REPORTE GLOBAL";
+            const configReportes = dataEmpresa.data?.configuracion_reportes || {};
+            const marcaAgua = configReportes.marca_agua || { activo: true, tipo: 'texto', texto: nombreEmpresa, opacity: 10, imagen: '' };
+
+            const doc = new jsPDF('p', 'pt', 'a4');
+            const pageWidth = doc.internal.pageSize.getWidth();
+            autoTable(doc, {
+                head: [['EMPLEADO', 'DEPARTAMENTO', 'FECHA', 'HORA', 'TIPO', 'ESTADO']],
+                body: result.data.map(reg => [
+                    reg.empleado_nombre,
+                    reg.departamento_nombre,
+                    new Date(reg.fecha_registro).toLocaleDateString(),
+                    new Date(reg.fecha_registro).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    reg.tipo.toUpperCase(),
+                    reg.estado.toUpperCase()
+                ]),
+                theme: 'grid',
+                headStyles: { fillColor: '#f1f5f9', textColor: '#1e293b' },
+                styles: { fontSize: 8 },
+                didDrawPage: () => {
+                    const pageHeight = doc.internal.pageSize.getHeight();
+                    
+                    // --- MARCA DE AGUA ---
+                    if (marcaAgua.activo) {
+                        doc.saveGraphicsState();
+                        doc.setGState(new doc.GState({ opacity: (marcaAgua.opacity || 10) / 100 }));
+                        if (marcaAgua.tipo === 'imagen' && marcaAgua.imagen) {
+                            try {
+                                const imgProps = doc.getImageProperties(marcaAgua.imagen);
+                                const ratio = imgProps.width / imgProps.height;
+                                let wmWidth = pageWidth * 0.5;
+                                let wmHeight = wmWidth / ratio;
+                                if (wmHeight > pageHeight * 0.5) {
+                                    wmHeight = pageHeight * 0.5;
+                                    wmWidth = wmHeight * ratio;
+                                }
+                                doc.addImage(marcaAgua.imagen, imgProps.fileType || 'PNG', (pageWidth - wmWidth) / 2, (pageHeight - wmHeight) / 2, wmWidth, wmHeight);
+                            } catch (e) {
+                                console.warn('No se pudo procesar la imagen de marca de agua', e);
+                            }
+                        } else {
+                            doc.setFontSize(50);
+                            doc.setTextColor(100, 100, 100);
+                            doc.text((marcaAgua.texto || '').toUpperCase(), pageWidth / 2, pageHeight / 2, { align: 'center', angle: 45 });
+                        }
+                        doc.restoreGraphicsState();
+                    }
+                }
+            });
+
+            doc.save(`Detalle_Asistencias_Global_${fInit}_al_${fEnd}.pdf`);
+            setAlertMsg("Exportación PDF completada");
+        } catch (error) {
+            console.error(error);
+            throw error;
         }
     };
 
@@ -865,7 +1422,8 @@ const Reportes = () => {
                                                     </thead>
                                                     <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
                                                         {listadoAsistencias.slice((currentPage - 1) * 7, currentPage * 7).map((dia, idx) => {
-                                                            const noAplica = !dia.aplica;
+                                                            const noAplica = !dia.aplica && !dia.incidencia;
+                                                            const esIncidencia = !dia.aplica && dia.incidencia;
                                                             const festivo = dia.aplica && dia.turnos.length === 0;
 
                                                             return (
@@ -873,7 +1431,13 @@ const Reportes = () => {
                                                                     <td className="py-2 text-xs font-medium text-gray-800 dark:text-gray-200 border-r border-gray-100 dark:border-gray-700/50 pr-2 block md:table-cell">
                                                                         {dia.dia_semana.charAt(0).toUpperCase() + dia.dia_semana.slice(1)} <br /> {dia.fecha}
                                                                     </td>
-                                                                    {noAplica ? (
+                                                                    {esIncidencia ? (
+                                                                        <td colSpan={3} className="text-center py-2 relative">
+                                                                           <div className="inline-flex items-center justify-center px-4 py-1.5 bg-blue-50/80 dark:bg-blue-900/10 border border-blue-200/50 dark:border-blue-800/50 rounded-lg shadow-sm">
+                                                                               <span className="text-xs font-bold text-blue-700 dark:text-blue-400 tracking-wide uppercase">No Aplica: {dia.incidencia}</span>
+                                                                           </div>
+                                                                        </td>
+                                                                    ) : noAplica ? (
                                                                         <td colSpan={3} className="text-center text-xs text-gray-400 italic py-2">No Aplica</td>
                                                                     ) : festivo ? (
                                                                         <td colSpan={3} className="text-center text-xs text-gray-400 italic py-2">Festivo o Sin Registros</td>
@@ -970,7 +1534,7 @@ const Reportes = () => {
                                 >
                                     <option value="general">Resumen Ejecutivo (Dashboard)</option>
                                     <option value="asistencias">Detalle de Asistencias (Tabla)</option>
-                                    <option value="incidencias">Reporte de Incidencias</option>
+                                    <option value="incidencias_rrhh">Reporte de Incidencias RRHH (TecNM)</option>
                                 </select>
                             </div>
 

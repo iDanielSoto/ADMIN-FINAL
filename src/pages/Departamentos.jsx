@@ -5,6 +5,7 @@ import DepartamentsCard from '../components/cards/DepartamentsCard';
 import DepartamentsModal from '../components/modals/DepartamentsModal';
 import MapaDepartamentos from '../components/DepartamentsMap';
 import DynamicLoader from '../components/common/DynamicLoader';
+import { useTour } from '../hooks/useTour';
 
 import { API_CONFIG } from '../config/Apiconfig';
 const API_URL = API_CONFIG.BASE_URL;
@@ -24,6 +25,17 @@ const Departamentos = () => {
     const [saving, setSaving] = useState(false);
     const [alertMsg, setAlertMsg] = useState(null);
     const [confirmAction, setConfirmAction] = useState(null);
+
+    // Definición del Tour
+    const tourSteps = [
+        { element: '#deptos-search', popover: { title: 'Buscador de Sedes', description: 'Localiza departamentos o sucursales por nombre.', side: "bottom" } },
+        { element: '#deptos-view-toggle', popover: { title: 'Modo de Vista', description: 'Cambia entre vista de tarjetas o tabla detallada.', side: "bottom" } },
+        { element: '#deptos-create-btn', popover: { title: 'Gestión de Estructura', description: 'Crea nuevos departamentos y asigna sus responsables.', side: "left" } },
+        { element: '#deptos-list', popover: { title: 'Listado de Departamentos', description: 'Aquí verás el personal asignado y el número de geocercas configuradas.', side: "right" } },
+        { element: '#deptos-map-container', popover: { title: 'Geocercas y Perímetros', description: 'Define zonas de validez geográfica. Los empleados solo podrán marcar asistencia si su GPS se encuentra dentro de los círculos configurados.', side: "left" } }
+    ];
+
+    useTour('departamentos', tourSteps, !loading);
 
     // Estado para controlar el foco del mapa
     const [focusedDepto, setFocusedDepto] = useState(null);
@@ -177,7 +189,7 @@ const Departamentos = () => {
             {/* Toolbar */}
             <div className="flex justify-between items-center gap-4 flex-shrink-0">
                 <div className="flex flex-1 gap-3">
-                    <div className="relative flex-1 max-w-md">
+                    <div className="relative flex-1 max-w-md" id="deptos-search">
                         <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
                             type="text"
@@ -198,7 +210,7 @@ const Departamentos = () => {
                     </select>
 
                     {/* Toggle Vista */}
-                    <div className="flex bg-slate-100 dark:bg-gray-800 rounded-lg p-1 border border-slate-200 dark:border-gray-700">
+                    <div id="deptos-view-toggle" className="flex bg-slate-100 dark:bg-gray-800 rounded-lg p-1 border border-slate-200 dark:border-gray-700">
                         <button
                             onClick={() => setViewMode('grid')}
                             className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm text-primary-600 dark:text-primary-400' : 'text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
@@ -216,7 +228,7 @@ const Departamentos = () => {
                     </div>
 
                 </div>
-                <button onClick={handleCreate} className="btn-primary flex items-center gap-2">
+                <button id="deptos-create-btn" onClick={handleCreate} className="btn-primary flex items-center gap-2">
                     <FiPlus /> Nuevo Departamento
                 </button>
             </div>
@@ -225,7 +237,7 @@ const Departamentos = () => {
             <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_minmax(400px,_1fr)] xl:grid-cols-[1fr_minmax(500px,_1fr)] gap-6">
 
                 {/* Listado Scrollable */}
-                <div className="overflow-y-auto pr-2 pb-4 flex flex-col gap-4">
+                <div id="deptos-list" className="overflow-y-auto pr-2 pb-4 flex flex-col gap-4">
                     {loading ? (
                         <DynamicLoader text="Cargando departamentos..." />
                     ) : filteredDepartamentos.length === 0 ? (
@@ -331,7 +343,7 @@ const Departamentos = () => {
                 </div>
 
                 {/* Mapa General Fijo */}
-                <div className="card p-0 xl:min-w-[500px]">
+                <div id="deptos-map-container" className="card p-0 xl:min-w-[500px]">
                     <MapaDepartamentos
                         departamentos={filteredDepartamentos}
                         focusedDepto={focusedDepto} // Pasamos el departamento seleccionado

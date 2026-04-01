@@ -7,8 +7,9 @@ import {
     FiSave, FiUpload, FiTrash2, FiImage, FiGlobe, FiClock,
     FiAlertCircle, FiSettings, FiPhone, FiMail, FiShield,
     FiArrowUp, FiArrowDown, FiArrowRight, FiLock, FiLayout, FiChevronRight,
-    FiWifi
+    FiWifi, FiBookOpen, FiBriefcase, FiSearch
 } from 'react-icons/fi';
+import { useTour } from '../hooks/useTour';
 
 import { API_CONFIG } from '../config/Apiconfig';
 const API_URL = API_CONFIG.BASE_URL;
@@ -30,6 +31,77 @@ const SECCIONES = [
     { id: 'reportes', label: 'Reportes', icon: FiImage, description: 'Diseño de PDF, membretes y marca' }
 ];
 
+
+// Componente interno para selección múltiple de empleados en excepciones
+const EmployeeSelector = ({ selected, onChange, employees }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const isAll = selected.includes('*');
+
+    const filteredEmployees = employees.filter(emp =>
+        emp.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        emp.usuario?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    return (
+        <div className="space-y-3">
+            <label className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-gray-800 border-2 border-slate-100 dark:border-gray-700 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-all shadow-sm">
+                <input
+                    type="checkbox"
+                    checked={isAll}
+                    onChange={(e) => onChange(e.target.checked ? ['*'] : [])}
+                    className="w-5 h-5 text-blue-600 rounded-lg focus:ring-blue-500 border-gray-300 cursor-pointer"
+                />
+                <div className="flex flex-col">
+                    <span className="text-sm font-black text-gray-800 dark:text-gray-200 uppercase tracking-tight">Aplicar a todos (*)</span>
+                    <span className="text-[10px] text-gray-400 uppercase">Sin restricciones para movilidad</span>
+                </div>
+            </label>
+
+            {!isAll && (
+                <div className="space-y-2 animate-in fade-in duration-300">
+                    {/* Buscador */}
+                    <div className="relative group">
+                        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                        <input
+                            type="text"
+                            placeholder="Buscar por nombre o usuario..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 text-xs bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all dark:text-gray-200"
+                        />
+                    </div>
+
+                    <div className="max-h-56 overflow-y-auto border-2 border-slate-100 dark:border-gray-700 rounded-2xl p-3 space-y-1.5 bg-gray-50/50 dark:bg-gray-900/50 custom-scrollbar shadow-inner">
+                        {filteredEmployees.length === 0 && (
+                            <p className="text-center py-4 text-xs text-gray-400 italic">
+                                {employees.length === 0 ? 'No hay empleados activos' : 'No se encontraron coincidencias'}
+                            </p>
+                        )}
+                        {filteredEmployees.map(emp => (
+                            <label key={emp.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white dark:hover:bg-gray-800 cursor-pointer transition-all border border-transparent hover:border-slate-100 dark:hover:border-gray-700 hover:shadow-sm group">
+                                <input
+                                    type="checkbox"
+                                    checked={selected.includes(emp.id)}
+                                    onChange={(e) => {
+                                        const newSelected = e.target.checked
+                                            ? [...selected.filter(id => id !== '*'), emp.id]
+                                            : selected.filter(id => id !== emp.id);
+                                        onChange(newSelected);
+                                    }}
+                                    className="w-4 h-4 text-blue-500 rounded-md border-gray-300 group-hover:border-blue-400 transition-colors"
+                                />
+                                <div className="flex flex-col">
+                                    <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{emp.nombre}</span>
+                                    <span className="text-[9px] text-gray-400 uppercase">{emp.usuario || 'Sin usuario'}</span>
+                                </div>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const Configuracion = () => {
     const { theme, toggleTheme } = useTheme();
@@ -60,12 +132,14 @@ const Configuracion = () => {
         nombre: '',
         logo: '',
         telefono: '',
-        correo: ''
+        correo: '',
+        tipo_institucion: 'corporativa'
     });
 
     const [formReportes, setFormReportes] = useState({
         encabezado: { mostrar_logo: true, texto_izquierdo: '', texto_derecho: '', color_fondo: '#ffffff', color_texto: '#000000', usar_imagen: false, imagen: '' },
         pie_pagina: { texto_central: '', mostrar_numeracion: true, color_texto: '#666666', usar_imagen: false, imagen: '' },
+        marca_agua: { activo: true, tipo: 'texto', texto: 'REPORTE OFICIAL', opacity: 10, imagen: '' },
         fuente: 'Helvetica',
         etiquetas_turnos: [
             { nombre: 'Turno 1', inicio: '07:00', fin: '15:00' },
@@ -88,8 +162,14 @@ const Configuracion = () => {
             codigo: { prioridad: 3, activo: true }
         },
         requiere_salida: true,
-        paleta_colores: { primary: '#4f46e5', secondary: '#10b981' }
+        paleta_colores: { primary: '#4f46e5', secondary: '#10b981' },
+        omision_red_activa: false,
+        omision_red_empleados: [],
+        omision_gps_activa: false,
+        omision_gps_empleados: []
     });
+
+    const [usuariosLista, setUsuariosLista] = useState([]);
 
     useEffect(() => {
         if (config) {
@@ -101,7 +181,11 @@ const Configuracion = () => {
                 zona_horaria: config.zona_horaria,
                 es_mantenimiento: config.es_mantenimiento,
                 requiere_salida: config.requiere_salida ?? true,
-                paleta_colores: config.paleta_colores || { primary: '#4f46e5', secondary: '#10b981' }
+                paleta_colores: config.paleta_colores || { primary: '#4f46e5', secondary: '#10b981' },
+                omision_red_activa: config.omision_red_activa ?? prev.omision_red_activa,
+                omision_red_empleados: config.omision_red_empleados || prev.omision_red_empleados,
+                omision_gps_activa: config.omision_gps_activa ?? prev.omision_gps_activa,
+                omision_gps_empleados: config.omision_gps_empleados || prev.omision_gps_empleados
             }));
 
             if (config.intervalo_bloques_minutos !== undefined) {
@@ -187,6 +271,16 @@ const Configuracion = () => {
         fetchData();
     }, []);
 
+    // Definición del Tour Técnico
+    const tourSteps = [
+        { element: '#config-sidebar', popover: { title: 'Panel de Control Maestro', description: 'Desde aquí controlas la identidad, seguridad y lógica de asistencia de toda tu empresa.', side: "right" } },
+        { element: '#config-tab-tolerancia', popover: { title: 'Reglas de Tolerancia', description: 'Define márgenes de gracia para retardos, salidas tempranas y el tiempo máximo permitido para registrar asistencia antes de iniciar el turno.', side: "right" } },
+        { element: '#config-tab-red', popover: { title: 'Seguridad Perimetral (IP)', description: 'Configura los segmentos de red de tus sucursales. Esto asegura que solo los equipos dentro de tus oficinas puedan registrar asistencias.', side: "right" } },
+        { element: '#config-save-btn', popover: { title: 'Persistencia Global', description: 'No olvides guardar tus cambios. Estos afectarán en tiempo real a todas las terminales y apps móviles vinculadas.', side: "left" } }
+    ];
+
+    useTour('configuracion-avanzada', tourSteps, !loading);
+
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -205,7 +299,8 @@ const Configuracion = () => {
                     nombre: emp.nombre || '',
                     logo: emp.logo || '',
                     telefono: emp.telefono || '',
-                    correo: emp.correo || ''
+                    correo: emp.correo || '',
+                    tipo_institucion: emp.tipo_institucion || 'corporativa'
                 });
 
                 // La configuración ya viene incluida en la respuesta de /mi-empresa
@@ -233,6 +328,7 @@ const Configuracion = () => {
 
                         setFormReportes({
                             ...emp.configuracion_reportes,
+                            marca_agua: emp.configuracion_reportes.marca_agua || { activo: true, tipo: 'texto', texto: emp.nombre || 'REPORTE OFICIAL', opacity: 10, imagen: '' },
                             etiquetas_turnos: etiquetasParsed
                         });
                     }
@@ -252,7 +348,11 @@ const Configuracion = () => {
                         zona_horaria: cfg.zona_horaria || 'America/Mexico_City',
                         intentos_maximos: cfg.intentos_maximos || 3,
                         orden_credenciales: ordenCredenciales,
-                        requiere_salida: cfg.requiere_salida ?? true
+                        requiere_salida: cfg.requiere_salida ?? true,
+                        omision_red_activa: cfg.omision_red_activa || false,
+                        omision_red_empleados: Array.isArray(cfg.omision_red_empleados) ? cfg.omision_red_empleados : [],
+                        omision_gps_activa: cfg.omision_gps_activa || false,
+                        omision_gps_empleados: Array.isArray(cfg.omision_gps_empleados) ? cfg.omision_gps_empleados : []
                     });
 
                     if (cfg.intervalo_bloques_minutos !== undefined) {
@@ -313,7 +413,11 @@ const Configuracion = () => {
                             zona_horaria: cfg2.zona_horaria || 'America/Mexico_City',
                             intentos_maximos: cfg2.intentos_maximos || 3,
                             orden_credenciales: ordenCredenciales,
-                            requiere_salida: cfg2.requiere_salida ?? true
+                            requiere_salida: cfg2.requiere_salida ?? true,
+                            omision_red_activa: cfg2.omision_red_activa || false,
+                            omision_red_empleados: Array.isArray(cfg2.omision_red_empleados) ? cfg2.omision_red_empleados : [],
+                            omision_gps_activa: cfg2.omision_gps_activa || false,
+                            omision_gps_empleados: Array.isArray(cfg2.omision_gps_empleados) ? cfg2.omision_gps_empleados : []
                         });
 
                         // Cargar segmentos de red
@@ -336,6 +440,15 @@ const Configuracion = () => {
                 const general = dataTol.data[0];
                 setTolerancia(general);
                 cargarFormTolerancia(general);
+            }
+
+            // Cargar lista de usuarios para los selectores de omisión
+            const resUsuarios = await fetch(`${API_URL}/api/usuarios?estado=activo`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const dataUsuarios = await resUsuarios.json();
+            if (dataUsuarios.success) {
+                setUsuariosLista(dataUsuarios.data || []);
             }
 
         } catch (err) {
@@ -405,6 +518,33 @@ const Configuracion = () => {
         setFormReportes(prev => ({ ...prev, [tipo]: { ...prev[tipo], imagen: '' } }));
         if (tipo === 'encabezado' && encabInputRef.current) encabInputRef.current.value = '';
         if (tipo === 'pie_pagina' && pieInputRef.current) pieInputRef.current.value = '';
+    };
+
+    const handleImageUploadWatermark = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            setMensaje({ tipo: 'error', texto: 'Por favor selecciona una imagen válida' });
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            setMensaje({ tipo: 'error', texto: 'La imagen no debe superar los 5MB' });
+            return;
+        }
+
+        try {
+            const compressed = await compressImage(file, { maxWidth: 800, maxHeight: 800, quality: 0.8 });
+            setFormReportes(prev => ({
+                ...prev,
+                marca_agua: { ...prev.marca_agua, imagen: compressed }
+            }));
+        } catch {
+            setMensaje({ tipo: 'error', texto: 'Error al procesar la imagen de marca de agua' });
+        }
+    };
+
+    const handleRemoveWatermark = () => {
+        setFormReportes(prev => ({ ...prev, marca_agua: { ...prev.marca_agua, imagen: '' } }));
     };
 
     // --- FUNCIONES PARA MÉTODOS DE AUTENTICACIÓN ---
@@ -561,6 +701,7 @@ const Configuracion = () => {
                     logo: formEmpresa.logo || null,
                     telefono: formEmpresa.telefono,
                     correo: formEmpresa.correo,
+                    tipo_institucion: formEmpresa.tipo_institucion,
                     configuracion_reportes: formReportes
                 })
             });
@@ -591,7 +732,11 @@ const Configuracion = () => {
                     intervalo_bloques_minutos: formIntervaloBloques,
                     nombreEmpresa: formEmpresa.nombre,
                     logoEmpresa: formEmpresa.logo,
-                    paleta_colores: formConfig.paleta_colores
+                    paleta_colores: formConfig.paleta_colores,
+                    omision_red_activa: formConfig.omision_red_activa,
+                    omision_red_empleados: formConfig.omision_red_empleados,
+                    omision_gps_activa: formConfig.omision_gps_activa,
+                    omision_gps_empleados: formConfig.omision_gps_empleados
                 });
             }
 
@@ -655,7 +800,7 @@ const Configuracion = () => {
             <div className="w-full flex flex-col lg:flex-row gap-8">
 
                 {/* --- SIDEBAR DE CONFIGURACIÓN --- */}
-                <aside className="lg:w-72 flex-shrink-0">
+                <aside id="config-sidebar" className="lg:w-72 flex-shrink-0">
                     <div className="card p-0 overflow-hidden sticky top-6 transition-colors duration-200">
                         <div className="p-4 border-b border-slate-100 dark:border-gray-700 bg-slate-50 dark:bg-gray-900">
                             <h2 className="font-bold text-gray-700 dark:text-gray-200">Ajustes</h2>
@@ -668,6 +813,7 @@ const Configuracion = () => {
                                 return (
                                     <button
                                         key={seccion.id}
+                                        id={`config-tab-${seccion.id}`}
                                         onClick={() => setActiveTab(seccion.id)}
                                         className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
                                             ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 shadow-sm'
@@ -699,6 +845,7 @@ const Configuracion = () => {
                         </div>
 
                         <button
+                            id="config-save-btn"
                             onClick={handleSaveAll}
                             disabled={saving}
                             className="btn-primary flex items-center gap-2 px-6 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -788,6 +935,45 @@ const Configuracion = () => {
                                             onChange={(e) => setFormEmpresa(prev => ({ ...prev, correo: e.target.value }))}
                                             className="input"
                                             placeholder="contacto@empresa.com" />
+                                    </div>
+
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Tipo de Institución</label>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormEmpresa(prev => ({ ...prev, tipo_institucion: 'corporativa' }))}
+                                                className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${formEmpresa.tipo_institucion === 'corporativa'
+                                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
+                                                    : 'border-slate-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 hover:border-slate-200'
+                                                    }`}
+                                            >
+                                                <div className={`p-2 rounded-lg ${formEmpresa.tipo_institucion === 'corporativa' ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'}`}>
+                                                    <FiBriefcase className="w-5 h-5" />
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="font-bold text-sm">Corporativa</p>
+                                                    <p className="text-xs opacity-70">Empresas, corporativos y oficinas</p>
+                                                </div>
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormEmpresa(prev => ({ ...prev, tipo_institucion: 'educativa' }))}
+                                                className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${formEmpresa.tipo_institucion === 'educativa'
+                                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
+                                                    : 'border-slate-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 hover:border-slate-200'
+                                                    }`}
+                                            >
+                                                <div className={`p-2 rounded-lg ${formEmpresa.tipo_institucion === 'educativa' ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'}`}>
+                                                    <FiBookOpen className="w-5 h-5" />
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="font-bold text-sm">Educativa</p>
+                                                    <p className="text-xs opacity-70">Escuelas, colegios y universidades</p>
+                                                </div>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -905,6 +1091,77 @@ const Configuracion = () => {
                                         <p className="text-xs text-gray-500 mt-2">
                                             Los métodos desactivados no se solicitarán. La prioridad determina el orden de verificación.
                                         </p>
+                                    </div>
+                                </div>
+
+                                {/* NUEVA SECCIÓN: EXCEPCIONES DE MOVILIDAD (Bypass de Red/GPS) */}
+                                <div className="space-y-6 pt-8 border-t border-slate-100 dark:border-gray-800 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <div className="bg-gradient-to-br from-indigo-50/50 to-blue-50/50 dark:from-indigo-900/10 dark:to-blue-900/10 p-8 rounded-3xl border border-indigo-100/50 dark:border-indigo-900/30">
+                                        <div className="flex items-center gap-4 mb-6">
+                                            <div className="p-3 bg-white dark:bg-gray-800 rounded-2xl shadow-sm text-indigo-600 dark:text-indigo-400">
+                                                <FiShield className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight uppercase">Excepciones de Movilidad</h3>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">Configura qué empleados pueden omitir validaciones perimetrales en la app móvil.</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+                                            {/* Panel Omisión RED */}
+                                            <div className="space-y-6 bg-white/40 dark:bg-black/20 p-6 rounded-2xl border border-white/60 dark:border-gray-800 backdrop-blur-sm">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <FiWifi className={`w-5 h-5 ${formConfig.omision_red_activa ? 'text-blue-500' : 'text-gray-400'}`} />
+                                                        <label className="text-sm font-black text-gray-800 dark:text-gray-200 uppercase">Omitir Validación de Red</label>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setFormConfig(prev => ({ ...prev, omision_red_activa: !prev.omision_red_activa }))}
+                                                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 shadow-inner ${formConfig.omision_red_activa ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
+                                                    >
+                                                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-xl transition-all duration-300 ${formConfig.omision_red_activa ? 'translate-x-6' : 'translate-x-1'}`} />
+                                                    </button>
+                                                </div>
+                                                <p className="text-[11px] text-gray-500 leading-relaxed italic">Permite sincronizar asistencias sin estar conectado a una red autorizada.</p>
+                                                
+                                                {formConfig.omision_red_activa && (
+                                                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                                        <EmployeeSelector
+                                                            selected={formConfig.omision_red_empleados}
+                                                            onChange={(ids) => setFormConfig(prev => ({ ...prev, omision_red_empleados: ids }))}
+                                                            employees={usuariosLista}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Panel Omisión GPS */}
+                                            <div className="space-y-6 bg-white/40 dark:bg-black/20 p-6 rounded-2xl border border-white/60 dark:border-gray-800 backdrop-blur-sm">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <FiGlobe className={`w-5 h-5 ${formConfig.omision_gps_activa ? 'text-indigo-500' : 'text-gray-400'}`} />
+                                                        <label className="text-sm font-black text-gray-800 dark:text-gray-200 uppercase">Omitir Validación GPS</label>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setFormConfig(prev => ({ ...prev, omision_gps_activa: !prev.omision_gps_activa }))}
+                                                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 shadow-inner ${formConfig.omision_gps_activa ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'}`}
+                                                    >
+                                                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-xl transition-all duration-300 ${formConfig.omision_gps_activa ? 'translate-x-6' : 'translate-x-1'}`} />
+                                                    </button>
+                                                </div>
+                                                <p className="text-[11px] text-gray-500 leading-relaxed italic">Permite sincronizar asistencias fuera del polígono o radio del departamento.</p>
+
+                                                {formConfig.omision_gps_activa && (
+                                                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                                        <EmployeeSelector
+                                                            selected={formConfig.omision_gps_empleados}
+                                                            onChange={(ids) => setFormConfig(prev => ({ ...prev, omision_gps_empleados: ids }))}
+                                                            employees={usuariosLista}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1546,6 +1803,93 @@ const Configuracion = () => {
                                         </div>
                                     </div>
 
+                                    {/* SECCIÓN MARCA DE AGUA */}
+                                    <div>
+                                        <div className="flex items-center justify-between mt-8 mb-4 border-b border-gray-200 dark:border-gray-700 pb-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
+                                                    <FiImage className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-lg font-bold text-gray-800 dark:text-white">Marca de Agua</h3>
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">Configura la marca de fondo para PDFs</p>
+                                                </div>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" checked={formReportes.marca_agua?.activo ?? true}
+                                                    onChange={(e) => setFormReportes(prev => ({ ...prev, marca_agua: { ...prev.marca_agua, activo: e.target.checked } }))}
+                                                    className="sr-only peer" />
+                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                            </label>
+                                        </div>
+
+                                        {(formReportes.marca_agua?.activo ?? true) && (
+                                            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm animate-in fade-in zoom-in-95 space-y-6">
+                                                {/* Selector de Tipo */}
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo de Marca de Agua</label>
+                                                    <div className="flex gap-4">
+                                                        <label className="flex-1 flex items-center justify-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                                            <input type="radio" value="texto" checked={formReportes.marca_agua?.tipo === 'texto'} 
+                                                                onChange={() => setFormReportes(prev => ({ ...prev, marca_agua: { ...prev.marca_agua, tipo: 'texto' } }))}
+                                                                className="mr-2" />
+                                                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Solo Texto</span>
+                                                        </label>
+                                                        <label className="flex-1 flex items-center justify-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                                            <input type="radio" value="imagen" checked={formReportes.marca_agua?.tipo === 'imagen'} 
+                                                                onChange={() => setFormReportes(prev => ({ ...prev, marca_agua: { ...prev.marca_agua, tipo: 'imagen' } }))}
+                                                                className="mr-2" />
+                                                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Logotipo / Imagen</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+
+                                                {formReportes.marca_agua?.tipo === 'texto' ? (
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Texto de la Marca (Máx 40 letras)</label>
+                                                        <input type="text" value={formReportes.marca_agua?.texto || ''} maxLength={40}
+                                                            onChange={(e) => setFormReportes(prev => ({ ...prev, marca_agua: { ...prev.marca_agua, texto: e.target.value } }))}
+                                                            placeholder="Ej: DOCUMENTO OFICIAL CONFIDENCIAL"
+                                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm dark:text-white" />
+                                                    </div>
+                                                ) : (
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Subir Marca de Agua (Fondo transparente recomendado)</label>
+                                                        {formReportes.marca_agua?.imagen ? (
+                                                            <div className="relative w-32 h-32 bg-gray-100 rounded-lg overflow-hidden group border border-gray-200">
+                                                                <img src={formReportes.marca_agua.imagen} alt="Marca Agua" className="w-full h-full object-contain p-2" />
+                                                                <button onClick={handleRemoveWatermark}
+                                                                    className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" title="Quitar imagen">
+                                                                    <FiTrash2 className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer w-auto lg:w-3/4 mx-auto">
+                                                                <FiUpload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Seleccionar Imagen Central</span>
+                                                                <input type="file" accept="image/*" className="hidden" onChange={handleImageUploadWatermark} />
+                                                            </label>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                <div>
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Nivel de Opacidad (Transparencia)</label>
+                                                        <span className="text-sm font-bold text-blue-600">{formReportes.marca_agua?.opacity ?? 10}%</span>
+                                                    </div>
+                                                    <input type="range" min="1" max="100" value={formReportes.marca_agua?.opacity ?? 10}
+                                                        onChange={(e) => setFormReportes(prev => ({ ...prev, marca_agua: { ...prev.marca_agua, opacity: parseInt(e.target.value) } }))}
+                                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700" />
+                                                    <div className="flex justify-between text-xs text-gray-400 mt-1 uppercase tracking-wider font-bold">
+                                                        <span>Fantasmal (1%)</span>
+                                                        <span>Intensa (100%)</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
                                     {/* Etiquetas de Turnos */}
                                     <div className="space-y-4">
                                         <div className="flex items-center gap-3 pb-3 border-b border-gray-200 dark:border-gray-700">
@@ -1653,6 +1997,19 @@ const Configuracion = () => {
                                                 >
                                                     {formReportes.encabezado.texto_derecho || 'Texto Derecho...'}
                                                 </div>
+                                            </div>
+                                        )}
+
+                                        {/* Watermark Preview */}
+                                        {(formReportes.marca_agua?.activo ?? true) && (
+                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 overflow-hidden">
+                                                {formReportes.marca_agua?.tipo === 'imagen' && formReportes.marca_agua?.imagen ? (
+                                                    <img src={formReportes.marca_agua.imagen} alt="Watermark" style={{ opacity: (formReportes.marca_agua.opacity || 10) / 100, maxWidth: '60%', maxHeight: '60%' }} className="object-contain" />
+                                                ) : (
+                                                    <div style={{ opacity: (formReportes.marca_agua?.opacity || 10) / 100, transform: 'rotate(-45deg)', fontSize: '2rem', fontWeight: 'bold', color: '#000', whiteSpace: 'nowrap' }}>
+                                                        {formReportes.marca_agua?.texto || 'REPORTE'}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
 
