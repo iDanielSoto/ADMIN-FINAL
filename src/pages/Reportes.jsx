@@ -116,6 +116,7 @@ const Reportes = () => {
     // --- ESTADOS DE FILTROS ---
     const [alcance, setAlcance] = useState('global');
     const [idSeleccionado, setIdSeleccionado] = useState('');
+    const [filtroDepartamento, setFiltroDepartamento] = useState('todos');
     const [modoFecha, setModoFecha] = useState('intervalo');
 
     // Por defecto iniciamos con el último mes o quincena real
@@ -149,11 +150,26 @@ const Reportes = () => {
 
     const getToken = () => localStorage.getItem('auth_token');
 
-    // Carga inicial
+    // Helper para descargar imágenes y convertirlas a Buffer para Docx
+    const fetchImageBuffer = async (url) => {
+        try {
+            const resp = await fetch(url);
+            const blob = await resp.blob();
+            return await blob.arrayBuffer();
+        } catch (e) {
+            console.warn("Error cargando imagen para Word:", url, e);
+            return null;
+        }
+    };
+
+    // Carga inicial y cambios en filtros
     useEffect(() => {
         cargarCatalogos();
-        actualizarEstadisticas();
     }, []);
+
+    useEffect(() => {
+        actualizarEstadisticas();
+    }, [alcance, idSeleccionado, modoFecha, fechaInicio, fechaFin, filtroDepartamento]);
 
     const cargarCatalogos = async () => {
         try {
@@ -186,6 +202,11 @@ const Reportes = () => {
             if (modoFecha === 'intervalo' && fechaInicio && fechaFin) {
                 params.append('fecha_inicio', fechaInicio);
                 params.append('fecha_fin', fechaFin);
+            }
+
+            // 1.1 Filtro de departamento global
+            if (alcance === 'global' && filtroDepartamento !== 'todos') {
+                params.append('departamento_id', filtroDepartamento);
             }
 
             // 2. Determinar Endpoint Principal (KPIs)
@@ -306,11 +327,11 @@ const Reportes = () => {
         return { pieData, incidenciasData };
     }, [dashboardStats]);
 
-    // --- FUNCIONES DE EXPORTACIÓN (Sin cambios) ---
-    const handleExport = async (formato) => {
+    // --- FUNCIONES DE EXPORTACIÓN ---
+    const handleExport = async (categoria, formato) => {
         setExporting(true);
         try {
-            if (exportCategoria === 'incidencias_rrhh') {
+            if (categoria === 'incidencias_rrhh') {
                 if (alcance === 'empleado' && idSeleccionado) {
                     if (formato === 'pdf') await generarPdfIncidenciasRRHH();
                     else if (formato === 'excel') await generarExcelIncidenciasRRHH();
@@ -319,16 +340,15 @@ const Reportes = () => {
                     setAlertMsg('Por favor selecciona un Empleado específico para este reporte.');
                     setIsModalOpen(false);
                 }
-            } else if (exportCategoria === 'general' && alcance === 'global') {
+            } else if (categoria === 'general' && alcance === 'global') {
                 if (formato === 'pdf') {
-                    // Simular PDF de dashboard o usar html2canvas (opcional)
-                    setAlertMsg('Exportando PDF de Dashboard... (Simulado)');
+                    setAlertMsg('El formato PDF para el Resumen Ejecutivo se habilitará próximamente.');
                 } else if (formato === 'excel') {
                     await generarExcelResumenEjecutivo();
                 } else if (formato === 'word') {
                     await generarWordResumenEjecutivo();
                 }
-            } else if (exportCategoria === 'asistencias') {
+            } else if (categoria === 'asistencias') {
                 if (alcance === 'empleado' && idSeleccionado) {
                     if (formato === 'pdf') await generarPdfEmpleadoQuincenal();
                     else if (formato === 'excel') await generarExcelAsistencias('individual');
@@ -341,7 +361,7 @@ const Reportes = () => {
                     setAlertMsg('Por favor selecciona un Empleado o Alcance global para este reporte.');
                 }
             } else {
-                setAlertMsg(`Reporte ${formato.toUpperCase()} para ${exportCategoria} aún no implementado.`);
+                setAlertMsg(`Reporte ${formato.toUpperCase()} para ${categoria} aún no implementado.`);
             }
         } catch (error) {
             console.error(error);
@@ -651,13 +671,21 @@ const Reportes = () => {
             const encab = configReportes.encabezado || {};
             const pie = configReportes.pie_pagina || {};
 
-            let headerHeight = 80;
+            let headerHeight = 100;
             if (encab.usar_imagen && encab.imagen) {
-                const props = doc.getImageProperties(encab.imagen);
-                headerHeight = pageWidth * (props.height / props.width);
+                try {
+                    const props = doc.getImageProperties(encab.imagen);
+                    headerHeight = pageWidth * (props.height / props.width);
+                } catch { headerHeight = 80; }
             }
 
-            const footerHeight = 40;
+            let footerHeight = 40;
+            if (pie.usar_imagen && pie.imagen) {
+                try {
+                    const props = doc.getImageProperties(pie.imagen);
+                    footerHeight = pageWidth * (props.height / props.width);
+                } catch { footerHeight = 60; }
+            }
 
             const tableRows = incidencias.map(inc => [
                 empleado.nombre.toUpperCase(),
@@ -672,7 +700,7 @@ const Reportes = () => {
 
             autoTable(doc, {
                 startY: headerHeight + 50,
-                margin: { top: headerHeight + 40, bottom: footerHeight + 20 },
+                margin: { top: headerHeight + 50, bottom: footerHeight + 30 },
                 head: [['NOMBRE DEL TRABAJADOR', 'TIPO DE TRABAJADOR', 'MES', 'FECHA DE LA INCIDENCIA', 'HORARIO DE LA INCIDENCIA', 'TURNO', 'TIPO (FALTA/RETARDO)', 'TOTAL DE INCIDENCIAS']],
                 body: tableRows,
                 theme: 'grid',
@@ -684,9 +712,10 @@ const Reportes = () => {
                     1: { cellWidth: 70 },
                     7: { cellWidth: 100 }
                 },
-                didDrawPage: (data) => {
-                    const pageWidth = doc.internal.pageSize.getWidth();
+                didDrawPage: () => {
                     const pageHeight = doc.internal.pageSize.getHeight();
+                    const pageWidth = doc.internal.pageSize.getWidth();
+                    const logoEmpresa = dataEmpresa.data?.logo;
 
                     // --- MARCA DE AGUA ---
                     if (marcaAgua.activo) {
@@ -714,13 +743,38 @@ const Reportes = () => {
                         doc.restoreGraphicsState();
                     }
 
+                    // --- DRAW HEADER ---
                     if (encab.usar_imagen && encab.imagen) {
-                        doc.addImage(encab.imagen, 'JPEG', 0, 0, pageWidth, headerHeight);
+                        try { doc.addImage(encab.imagen, 'JPEG', 0, 0, pageWidth, headerHeight); } catch (e) { }
+                    } else {
+                        if (encab.mostrar_logo !== false && logoEmpresa) {
+                            try { doc.addImage(logoEmpresa, 'JPEG', 40, 20, 60, 60); } catch (e) { }
+                        }
+                        doc.setFontSize(10);
+                        doc.setTextColor(encab.color_texto || '#000000');
+                        if (encab.texto_izquierdo) doc.text(doc.splitTextToSize(encab.texto_izquierdo, 150), 110, 30);
+                        if (encab.texto_derecho) doc.text(doc.splitTextToSize(encab.texto_derecho, 200), pageWidth - 40, 30, { align: 'right' });
                     }
-                    // Numeración
-                    const str = "Página " + doc.internal.getNumberOfPages();
-                    doc.setFontSize(8);
-                    doc.text(str, pageWidth - 40, doc.internal.pageSize.getHeight() - 20, { align: 'right' });
+
+                    // --- DRAW FOOTER ---
+                    const pbY = pageHeight - Math.max(25, footerHeight / 2);
+                    if (pie.usar_imagen && pie.imagen) {
+                        try { doc.addImage(pie.imagen, 'JPEG', 0, pageHeight - footerHeight, pageWidth, footerHeight); } catch (e) { }
+                    } else {
+                        doc.setFontSize(8);
+                        doc.setTextColor(pie.color_texto || '#666666');
+                        if (pie.texto_central) doc.text(pie.texto_central, pageWidth / 2, pbY, { align: 'center' });
+                    }
+
+                    // --- NUMERACIÓN ---
+                    if (pie.mostrar_numeracion !== false) {
+                        doc.setFontSize(8);
+                        let colText = pie.color_texto || '#666666';
+                        if (pie.usar_imagen) colText = pie.color_texto || '#000000';
+                        doc.setTextColor(colText);
+                        const pageNumY = pie.usar_imagen && pie.imagen ? pageHeight - 15 : pbY;
+                        doc.text(`Página ${doc.internal.getNumberOfPages()}`, pageWidth - 40, pageNumY, { align: 'right' });
+                    }
                 }
             });
 
@@ -794,52 +848,136 @@ const Reportes = () => {
             const fInit = fechaInicio || '2024-01-01';
             const fEnd = fechaFin || new Date().toISOString().split('T')[0];
 
-            const url = `${API_BASE_URL}/reportes/incidencias/rrhh?empleado_id=${idSeleccionado}&fecha_inicio=${fInit}&fecha_fin=${fEnd}`;
-            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            const result = await res.json();
+            // 1. Obtener Datos
+            const [resEmpresa, resReporte] = await Promise.all([
+                fetch(`${API_BASE_URL}/empresas/mi-empresa`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`${API_BASE_URL}/reportes/incidencias/rrhh?empleado_id=${idSeleccionado}&fecha_inicio=${fInit}&fecha_fin=${fEnd}`, { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
+
+            const dataEmpresa = await resEmpresa.json();
+            const result = await resReporte.json();
 
             if (!result.success) throw new Error(result.message);
-
             const { empleado, incidencias, resumen_texto } = result.data;
+            const configReportes = dataEmpresa.data?.configuracion_reportes || {};
+            const logoEmpresa = dataEmpresa.data?.logo;
 
-            const tableRows = [
-                new TableRow({
-                    children: [
-                        'NOMBRE DEL TRABAJADOR', 'TIPO DE TRABAJADOR', 'MES', 'FECHA', 'HORARIO', 'TURNO', 'TIPO', 'TOTAL'
-                    ].map(h => new TableCell({
-                        children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 16 })], alignment: AlignmentType.CENTER })],
-                        shading: { fill: "F1F5F9" }
-                    }))
-                }),
-                ...incidencias.map(inc => new TableRow({
-                    children: [
-                        empleado.nombre.toUpperCase(),
-                        empleado.tipo_trabajador.toUpperCase(),
-                        inc.mes,
-                        inc.fecha,
-                        inc.hora,
-                        inc.turno,
-                        inc.tipo,
-                        resumen_texto
-                    ].map(text => new TableCell({
-                        children: [new Paragraph({ children: [new TextRun({ text, size: 14 })], alignment: AlignmentType.CENTER })]
-                    }))
-                }))
-            ];
+            // 2. Preparar Imágenes para Header/Footer
+            const encab = configReportes.encabezado || {};
+            const pie = configReportes.pie_pagina || {};
+            
+            let headerImage = null;
+            if (encab.usar_imagen && encab.imagen) {
+                headerImage = await fetchImageBuffer(encab.imagen);
+            } else if (encab.mostrar_logo !== false && logoEmpresa) {
+                headerImage = await fetchImageBuffer(logoEmpresa);
+            }
 
+            let footerImage = null;
+            if (pie.usar_imagen && pie.imagen) {
+                footerImage = await fetchImageBuffer(pie.imagen);
+            }
+
+            // 3. Definir Secciones de Header
+            const headerChildren = [];
+            if (headerImage) {
+                headerChildren.push(new Paragraph({
+                    children: [new ImageRun({ data: headerImage, transformation: { width: 600, height: 80 } })],
+                    alignment: AlignmentType.CENTER
+                }));
+            } else {
+                const headerParagraphs = [];
+                if (encab.texto_izquierdo || encab.texto_derecho) {
+                    headerParagraphs.push(new Paragraph({
+                        children: [
+                            new TextRun({ text: encab.texto_izquierdo || "", size: 18 }),
+                            new TextRun({ text: `\t${encab.texto_derecho || ""}`, size: 18 })
+                        ],
+                        tabStops: [{ type: "right", position: 9000 }]
+                    }));
+                }
+                headerChildren.push(...headerParagraphs);
+            }
+
+            // 4. Definir Secciones de Footer
+            const footerChildren = [];
+            if (footerImage) {
+                footerChildren.push(new Paragraph({
+                    children: [new ImageRun({ data: footerImage, transformation: { width: 600, height: 40 } })],
+                    alignment: AlignmentType.CENTER
+                }));
+            } else if (pie.texto_central) {
+                footerChildren.push(new Paragraph({
+                    children: [new TextRun({ text: pie.texto_central, size: 16, color: "666666" })],
+                    alignment: AlignmentType.CENTER
+                }));
+            }
+
+            if (pie.mostrar_numeracion !== false) {
+                footerChildren.push(new Paragraph({
+                    children: [
+                        new TextRun({ text: "Página ", size: 16 }),
+                        new TextRun({ children: ["PAGE_NUMBER"], isCounter: true, size: 16 })
+                    ],
+                    alignment: AlignmentType.RIGHT
+                }));
+            }
+
+            // 5. Crear Tabla de Contenido
+            const table = new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: [
+                    new TableRow({
+                        children: [
+                            'NOMBRE DEL TRABAJADOR', 'TIPO', 'MES', 'FECHA', 'HORARIO', 'TURNO', 'TIPO INCIDENCIA', 'TOTAL'
+                        ].map(h => new TableCell({
+                            children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 16 })], alignment: AlignmentType.CENTER })],
+                            shading: { fill: "F1F5F9" },
+                            verticalAlign: VerticalAlign.CENTER
+                        }))
+                    }),
+                    ...incidencias.map(inc => new TableRow({
+                        children: [
+                            empleado.nombre.toUpperCase(),
+                            empleado.tipo_trabajador.toUpperCase(),
+                            inc.mes, inc.fecha, inc.hora, inc.turno, inc.tipo, resumen_texto
+                        ].map(t => new TableCell({
+                            children: [new Paragraph({ children: [new TextRun({ text: String(t), size: 14 })], alignment: AlignmentType.CENTER })],
+                            verticalAlign: VerticalAlign.CENTER
+                        }))
+                    }))
+                ]
+            });
+
+            // 6. Construir Documento
             const doc = new Document({
                 sections: [{
-                    properties: { page: { size: { orientation: 'landscape' } } },
+                    properties: {
+                        page: { margin: { top: 720, bottom: 720, left: 720, right: 720 } }
+                    },
+                    headers: { default: new Header({ children: headerChildren }) },
+                    footers: { default: new Footer({ children: footerChildren }) },
                     children: [
                         new Paragraph({
-                            children: [new TextRun({ text: "REPORTE DE INCIDENCIAS RRHH", bold: true, size: 28 })],
+                            children: [new TextRun({ text: "REPORTE DE INCIDENCIAS RRHH", bold: true, size: 28, color: "1E293B" })],
                             alignment: AlignmentType.CENTER,
+                            spacing: { after: 400 }
+                        }),
+                        new Paragraph({
+                            children: [
+                                new TextRun({ text: `EMPLEADO: `, bold: true, size: 18 }),
+                                new TextRun({ text: empleado.nombre.toUpperCase(), size: 18 })
+                            ],
                             spacing: { after: 200 }
                         }),
-                        new Table({
-                            width: { size: 100, type: WidthType.PERCENTAGE },
-                            rows: tableRows
-                        })
+                        new Paragraph({
+                            children: [
+                                new TextRun({ text: `PERIODO: `, bold: true, size: 18 }),
+                                new TextRun({ text: `${fInit} al ${fEnd}`, size: 18 })
+                            ],
+                            spacing: { after: 400 }
+                        }),
+                        table
                     ]
                 }]
             });
@@ -847,9 +985,12 @@ const Reportes = () => {
             const blob = await Packer.toBlob(doc);
             saveAs(blob, `Reporte_Incidencias_RRHH_${empleado.nombre.replace(/\s+/g, '_')}.docx`);
             setAlertMsg("Reporte Word generado con éxito");
+            setIsModalOpen(false);
         } catch (error) {
             console.error(error);
-            throw new Error("Error al generar Word: " + error.message);
+            setAlertMsg("Error al generar Word: " + error.message);
+        } finally {
+            setExporting(false);
         }
     };
 
@@ -857,12 +998,15 @@ const Reportes = () => {
         try {
             if (!dashboardStats) return;
 
-            const resPunt = [
-                ['INDICADOR', 'CANTIDAD', 'PORCENTAJE'],
-                ['Puntuales', dashboardStats.asistencias.puntuales, `${((dashboardStats.asistencias.puntuales / dashboardStats.asistencias.total) * 100).toFixed(1)}%`],
-                ['Retardos', dashboardStats.asistencias.retardos, `${((dashboardStats.asistencias.retardos / dashboardStats.asistencias.total) * 100).toFixed(1)}%`],
-                ['Faltas', dashboardStats.asistencias.faltas, `${((dashboardStats.asistencias.faltas / dashboardStats.asistencias.total) * 100).toFixed(1)}%`],
-                ['TOTAL', dashboardStats.asistencias.total, '100%']
+            const totalAsis = parseInt(dashboardStats.asistencias.total || 0);
+            const asisRows = [
+                ['RESUMEN DE ASISTENCIAS'],
+                ['Categoría', 'Cantidad', 'Porcentaje'],
+                ['Puntuales', dashboardStats.asistencias.puntuales, totalAsis > 0 ? `${((dashboardStats.asistencias.puntuales / totalAsis) * 100).toFixed(1)}%` : '0%'],
+                ['Retardos', dashboardStats.asistencias.retardos, totalAsis > 0 ? `${((dashboardStats.asistencias.retardos / totalAsis) * 100).toFixed(1)}%` : '0%'],
+                ['Faltas', dashboardStats.asistencias.faltas, totalAsis > 0 ? `${((dashboardStats.asistencias.faltas / totalAsis) * 100).toFixed(1)}%` : '0%'],
+                ['Total Registros', totalAsis, '100%'],
+                []
             ];
 
             const topRows = topDesempeno.map((emp, i) => ([
@@ -871,7 +1015,7 @@ const Reportes = () => {
 
             const workbook = XLSX.utils.book_new();
             
-            const wsResumen = XLSX.utils.aoa_to_sheet([['RESUMEN EJECUTIVO DE ASISTENCIAS'], [], ...resPunt]);
+            const wsResumen = XLSX.utils.aoa_to_sheet([['RESUMEN EJECUTIVO DE ASISTENCIAS'], [], ...asisRows]);
             XLSX.utils.book_append_sheet(workbook, wsResumen, "KPIs Generales");
 
             const wsTop = XLSX.utils.aoa_to_sheet([
@@ -893,25 +1037,58 @@ const Reportes = () => {
     const generarWordResumenEjecutivo = async () => {
         try {
             if (!dashboardStats) return;
+            const token = getToken();
+
+            // 1. Obtener Config
+            const resEmpresa = await fetch(`${API_BASE_URL}/empresas/mi-empresa`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const dataEmpresa = await resEmpresa.json();
+            const configReportes = dataEmpresa.data?.configuracion_reportes || {};
+            const logoEmpresa = dataEmpresa.data?.logo;
+
+            // 2. Preparar Imágenes
+            const encab = configReportes.encabezado || {};
+            const pie = configReportes.pie_pagina || {};
+            let headerImage = null;
+            if (encab.usar_imagen && encab.imagen) headerImage = await fetchImageBuffer(encab.imagen);
+            else if (encab.mostrar_logo !== false && logoEmpresa) headerImage = await fetchImageBuffer(logoEmpresa);
+
+            let footerImage = null;
+            if (pie.usar_imagen && pie.imagen) footerImage = await fetchImageBuffer(pie.imagen);
+
+            // 3. Headers y Footers
+            const headerChildren = headerImage ? [new Paragraph({ children: [new ImageRun({ data: headerImage, transformation: { width: 600, height: 80 } })], alignment: AlignmentType.CENTER })] : [];
+            const footerChildren = footerImage ? [new Paragraph({ children: [new ImageRun({ data: footerImage, transformation: { width: 600, height: 40 } })], alignment: AlignmentType.CENTER })] : [];
+
+            if (pie.mostrar_numeracion !== false) {
+                footerChildren.push(new Paragraph({
+                    children: [new TextRun({ text: "Página ", size: 16 }), new TextRun({ children: ["PAGE_NUMBER"], isCounter: true, size: 16 })],
+                    alignment: AlignmentType.RIGHT
+                }));
+            }
+
+            const totalAsis = parseInt(dashboardStats.asistencias.total || 0);
 
             const kpiTable = new Table({
                 width: { size: 100, type: WidthType.PERCENTAGE },
                 rows: [
                     new TableRow({
-                        children: ['INDICADOR', 'VALOR', '%'].map(h => new TableCell({
-                            children: [new Paragraph({ children: [new TextRun({ text: h, bold: true })], alignment: AlignmentType.CENTER })],
-                            shading: { fill: "E2E8F0" }
+                        children: ['INDICADOR', 'CANTIDAD', 'PORCENTAJE'].map(h => new TableCell({
+                            children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 16 })], alignment: AlignmentType.CENTER })],
+                            shading: { fill: "F1F5F9" }
                         }))
                     }),
-                    ...[
-                        ['Puntuales', dashboardStats.asistencias.puntuales, `${((dashboardStats.asistencias.puntuales / dashboardStats.asistencias.total) * 100).toFixed(1)}%`],
-                        ['Retardos', dashboardStats.asistencias.retardos, `${((dashboardStats.asistencias.retardos / dashboardStats.asistencias.total) * 100).toFixed(1)}%`],
-                        ['Faltas', dashboardStats.asistencias.faltas, `${((dashboardStats.asistencias.faltas / dashboardStats.asistencias.total) * 100).toFixed(1)}%`]
-                    ].map(row => new TableRow({
-                        children: row.map(text => new TableCell({
-                            children: [new Paragraph({ children: [new TextRun({ text: String(text) })], alignment: AlignmentType.CENTER })]
-                        }))
-                    }))
+                    new TableRow({
+                        children: ['Puntuales', dashboardStats.asistencias.puntuales.toString(), totalAsis > 0 ? `${((dashboardStats.asistencias.puntuales / totalAsis) * 100).toFixed(1)}%` : '0%'].map(t => new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: t, size: 14 })], alignment: AlignmentType.CENTER })] }))
+                    }),
+                    new TableRow({
+                        children: ['Retardos', dashboardStats.asistencias.retardos.toString(), totalAsis > 0 ? `${((dashboardStats.asistencias.retardos / totalAsis) * 100).toFixed(1)}%` : '0%'].map(t => new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: t, size: 14 })], alignment: AlignmentType.CENTER })] }))
+                    }),
+                    new TableRow({
+                        children: ['Faltas', dashboardStats.asistencias.faltas.toString(), totalAsis > 0 ? `${((dashboardStats.asistencias.faltas / totalAsis) * 100).toFixed(1)}%` : '0%'].map(t => new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: t, size: 14 })], alignment: AlignmentType.CENTER })] }))
+                    }),
+                    new TableRow({
+                        children: ['TOTAL REGISTROS', totalAsis.toString(), '100%'].map(t => new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: t, bold: true, size: 14 })], alignment: AlignmentType.CENTER })], shading: { fill: "F8FAFC" } }))
+                    })
                 ]
             });
 
@@ -919,18 +1096,14 @@ const Reportes = () => {
                 width: { size: 100, type: WidthType.PERCENTAGE },
                 rows: [
                     new TableRow({
-                        children: ['#', 'EMPLEADO', 'SCORE'].map(h => new TableCell({
-                            children: [new Paragraph({ children: [new TextRun({ text: h, bold: true })], alignment: AlignmentType.CENTER })],
-                            shading: { fill: "E2E8F0" }
+                        children: ['#', 'EMPLEADO', 'PUNTUALES', 'RETARDOS', 'FALTAS', 'SCORE'].map(h => new TableCell({
+                            children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 16 })], alignment: AlignmentType.CENTER })],
+                            shading: { fill: "F1F5F9" }
                         }))
                     }),
                     ...topDesempeno.map((emp, i) => new TableRow({
-                        children: [
-                            String(i + 1),
-                            emp.empleado_nombre,
-                            `${emp.porcentaje_puntualidad}%`
-                        ].map(text => new TableCell({
-                            children: [new Paragraph({ children: [new TextRun({ text })], alignment: AlignmentType.CENTER })]
+                        children: [String(i + 1), emp.empleado_nombre, String(emp.puntuales), String(emp.retardos), String(emp.faltas), `${emp.porcentaje_puntualidad}%`].map(text => new TableCell({
+                            children: [new Paragraph({ children: [new TextRun({ text, size: 12 })], alignment: AlignmentType.CENTER })]
                         }))
                     }))
                 ]
@@ -938,14 +1111,18 @@ const Reportes = () => {
 
             const doc = new Document({
                 sections: [{
+                    headers: { default: new Header({ children: headerChildren }) },
+                    footers: { default: new Footer({ children: footerChildren }) },
                     children: [
-                        new Paragraph({ text: "RESUMEN EJECUTIVO DE ASISTENCIAS", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
-                        new Paragraph({ text: `Periodo: ${fechaInicio || 'Inicio'} al ${fechaFin || 'Hoy'}`, alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
-                        
-                        new Paragraph({ text: "KPIs de Puntualidad", heading: HeadingLevel.HEADING_2, spacing: { before: 400, after: 200 } }),
+                        new Paragraph({
+                            children: [new TextRun({ text: "RESUMEN EJECUTIVO DE ASISTENCIAS", bold: true, size: 28, color: "1E293B" })],
+                            alignment: AlignmentType.CENTER,
+                            spacing: { before: 200, after: 400 }
+                        }),
+                        new Paragraph({ children: [new TextRun({ text: `PERIODO: ${fechaInicio || 'Inicio'} al ${fechaFin || 'Hoy'}`, size: 18 })], alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
+                        new Paragraph({ children: [new TextRun({ text: "INDICADORES CLAVE DE DESEMPEÑO", bold: true, size: 20 })], spacing: { after: 200 } }),
                         kpiTable,
-
-                        new Paragraph({ text: "Ranking de Empleados (Top 10)", heading: HeadingLevel.HEADING_2, spacing: { before: 400, after: 200 } }),
+                        new Paragraph({ children: [new TextRun({ text: "RANKING DE PUNTUALIDAD (TOP 10)", bold: true, size: 20 })], spacing: { before: 600, after: 200 } }),
                         topTable
                     ]
                 }]
@@ -954,9 +1131,10 @@ const Reportes = () => {
             const blob = await Packer.toBlob(doc);
             saveAs(blob, `Resumen_Ejecutivo_${fechaInicio || 'Histórico'}.docx`);
             setAlertMsg("Resumen Ejecutivo Word generado con éxito");
+            setIsModalOpen(false);
         } catch (error) {
             console.error(error);
-            throw error;
+            setAlertMsg("Error al generar Word: " + error.message);
         }
     };
 
@@ -1004,47 +1182,89 @@ const Reportes = () => {
             if (tipo === 'individual') url += `&empleado_id=${idSeleccionado}`;
             if (filtroDepartamento !== 'todos') url += `&departamento_id=${filtroDepartamento}`;
 
-            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            const result = await res.json();
-            if (!result.success) throw new Error(result.message);
+            const [resEmpresa, resReporte] = await Promise.all([
+                fetch(`${API_BASE_URL}/empresas/mi-empresa`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
 
-            const tableRows = [
-                new TableRow({
-                    children: ['EMPLEADO', 'DEPARTAMENTO', 'FECHA', 'HORA', 'TIPO', 'ESTADO'].map(h => new TableCell({
-                        children: [new Paragraph({ children: [new TextRun({ text: h, bold: true })], alignment: AlignmentType.CENTER })],
-                        shading: { fill: "F1F5F9" }
+            const dataEmpresa = await resEmpresa.json();
+            const result = await resReporte.json();
+
+            if (!result.success) throw new Error(result.message);
+            const configReportes = dataEmpresa.data?.configuracion_reportes || {};
+            const logoEmpresa = dataEmpresa.data?.logo;
+
+            // 2. Preparar Imágenes
+            const encab = configReportes.encabezado || {};
+            const pie = configReportes.pie_pagina || {};
+            let headerImage = null;
+            if (encab.usar_imagen && encab.imagen) headerImage = await fetchImageBuffer(encab.imagen);
+            else if (encab.mostrar_logo !== false && logoEmpresa) headerImage = await fetchImageBuffer(logoEmpresa);
+
+            let footerImage = null;
+            if (pie.usar_imagen && pie.imagen) footerImage = await fetchImageBuffer(pie.imagen);
+
+            // 3. Headers y Footers
+            const headerChildren = headerImage ? [new Paragraph({ children: [new ImageRun({ data: headerImage, transformation: { width: 600, height: 80 } })], alignment: AlignmentType.CENTER })] : [];
+            const footerChildren = footerImage ? [new Paragraph({ children: [new ImageRun({ data: footerImage, transformation: { width: 600, height: 40 } })], alignment: AlignmentType.CENTER })] : [];
+
+            if (pie.mostrar_numeracion !== false) {
+                footerChildren.push(new Paragraph({
+                    children: [new TextRun({ text: "Página ", size: 16 }), new TextRun({ children: ["PAGE_NUMBER"], isCounter: true, size: 16 })],
+                    alignment: AlignmentType.RIGHT
+                }));
+            }
+
+            const table = new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: [
+                    new TableRow({
+                        children: ['EMPLEADO', 'DEPARTAMENTO', 'FECHA', 'HORA', 'TIPO', 'ESTADO'].map(h => new TableCell({
+                            children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 16 })], alignment: AlignmentType.CENTER })],
+                            shading: { fill: "F1F5F9" }
+                        }))
+                    }),
+                    ...result.data.map(reg => new TableRow({
+                        children: [
+                            reg.empleado_nombre || 'N/A',
+                            reg.departamento_nombre || 'N/A',
+                            new Date(reg.fecha_registro).toLocaleDateString(),
+                            new Date(reg.fecha_registro).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                            reg.tipo === 'entrada' ? 'Entrada' : 'Salida',
+                            reg.estado.toUpperCase()
+                        ].map(t => new TableCell({
+                            children: [new Paragraph({ children: [new TextRun({ text: String(t), size: 14 })], alignment: AlignmentType.CENTER })]
+                        }))
                     }))
-                }),
-                ...result.data.map(reg => new TableRow({
-                    children: [
-                        reg.empleado_nombre || 'N/A',
-                        reg.departamento_nombre || 'N/A',
-                        new Date(reg.fecha_registro).toLocaleDateString(),
-                        new Date(reg.fecha_registro).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                        reg.tipo === 'entrada' ? 'Entrada' : 'Salida',
-                        reg.estado.toUpperCase()
-                    ].map(text => new TableCell({
-                        children: [new Paragraph({ children: [new TextRun({ text })], alignment: AlignmentType.CENTER })]
-                    }))
-                }))
-            ];
+                ]
+            });
 
             const doc = new Document({
                 sections: [{
+                    properties: { page: { size: { orientation: tipo === 'individual' ? 'portrait' : 'landscape' } } },
+                    headers: { default: new Header({ children: headerChildren }) },
+                    footers: { default: new Footer({ children: footerChildren }) },
                     children: [
-                        new Paragraph({ text: "DETALLE DE ASISTENCIAS", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
-                        new Paragraph({ text: `Periodo: ${fInit} al ${fEnd}`, alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
-                        new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: tableRows })
+                        new Paragraph({
+                            children: [new TextRun({ text: tipo === 'individual' ? "DETALLE DE ASISTENCIAS INDIVIDUAL" : "REPORTE GLOBAL DE ASISTENCIAS", bold: true, size: 28, color: "1E293B" })],
+                            alignment: AlignmentType.CENTER,
+                            spacing: { before: 200, after: 400 }
+                        }),
+                        new Paragraph({ children: [new TextRun({ text: `PERIODO: ${fInit} al ${fEnd}`, size: 18 })], alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
+                        table
                     ]
                 }]
             });
 
             const blob = await Packer.toBlob(doc);
-            saveAs(blob, `Detalle_Asistencias_${tipo}.docx`);
-            setAlertMsg("Exportación Word completada");
+            saveAs(blob, `Detalle_Asistencias_${tipo}_${fInit}.docx`);
+            setAlertMsg("Reporte Word generado con éxito");
+            setIsModalOpen(false);
         } catch (error) {
             console.error(error);
-            throw error;
+            setAlertMsg("Error al generar Word: " + error.message);
+        } finally {
+            setExporting(false);
         }
     };
 
@@ -1083,6 +1303,26 @@ const Reportes = () => {
                 styles: { fontSize: 8 },
                 didDrawPage: () => {
                     const pageHeight = doc.internal.pageSize.getHeight();
+                    const pageWidth = doc.internal.pageSize.getWidth();
+                    const logoEmpresa = dataEmpresa.data?.logo;
+                    const encab = configReportes.encabezado || {};
+                    const pie = configReportes.pie_pagina || {};
+
+                    let headerHeight = 0;
+                    if (encab.usar_imagen && encab.imagen) {
+                        try {
+                            const props = doc.getImageProperties(encab.imagen);
+                            headerHeight = pageWidth * (props.height / props.width);
+                        } catch { headerHeight = 80; }
+                    }
+
+                    let footerHeight = 40;
+                    if (pie.usar_imagen && pie.imagen) {
+                        try {
+                            const props = doc.getImageProperties(pie.imagen);
+                            footerHeight = pageWidth * (props.height / props.width);
+                        } catch { footerHeight = 60; }
+                    }
                     
                     // --- MARCA DE AGUA ---
                     if (marcaAgua.activo) {
@@ -1108,6 +1348,39 @@ const Reportes = () => {
                             doc.text((marcaAgua.texto || '').toUpperCase(), pageWidth / 2, pageHeight / 2, { align: 'center', angle: 45 });
                         }
                         doc.restoreGraphicsState();
+                    }
+
+                    // --- DRAW HEADER ---
+                    if (encab.usar_imagen && encab.imagen) {
+                        try { doc.addImage(encab.imagen, 'JPEG', 0, 0, pageWidth, headerHeight); } catch (e) { }
+                    } else if (encab.texto_izquierdo || encab.texto_derecho) {
+                        if (encab.mostrar_logo !== false && logoEmpresa) {
+                            try { doc.addImage(logoEmpresa, 'JPEG', 40, 20, 60, 60); } catch (e) { }
+                        }
+                        doc.setFontSize(10);
+                        doc.setTextColor(encab.color_texto || '#000000');
+                        if (encab.texto_izquierdo) doc.text(doc.splitTextToSize(encab.texto_izquierdo, 150), 110, 30);
+                        if (encab.texto_derecho) doc.text(doc.splitTextToSize(encab.texto_derecho, 200), pageWidth - 40, 30, { align: 'right' });
+                    }
+
+                    // --- DRAW FOOTER ---
+                    const pbY = pageHeight - Math.max(25, footerHeight / 2);
+                    if (pie.usar_imagen && pie.imagen) {
+                        try { doc.addImage(pie.imagen, 'JPEG', 0, pageHeight - footerHeight, pageWidth, footerHeight); } catch (e) { }
+                    } else if (pie.texto_central) {
+                        doc.setFontSize(8);
+                        doc.setTextColor(pie.color_texto || '#666666');
+                        doc.text(pie.texto_central, pageWidth / 2, pbY, { align: 'center' });
+                    }
+
+                    // --- NUMERACIÓN ---
+                    if (pie.mostrar_numeracion !== false) {
+                        doc.setFontSize(8);
+                        let colText = pie.color_texto || '#666666';
+                        if (pie.usar_imagen) colText = pie.color_texto || '#000000';
+                        doc.setTextColor(colText);
+                        const pageNumY = pie.usar_imagen && pie.imagen ? pageHeight - 15 : pbY;
+                        doc.text(`Página ${doc.internal.getNumberOfPages()}`, pageWidth - 40, pageNumY, { align: 'right' });
                     }
                 }
             });
@@ -1143,7 +1416,7 @@ const Reportes = () => {
                     </div>
 
                     <div className="flex flex-col xl:flex-row gap-4 items-end xl:items-center">
-                        <div className={`w-full xl:w-auto grid gap-4 flex-1 ${alcance === 'empleado' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+                        <div className={`w-full xl:w-auto grid gap-4 flex-1 ${alcance === 'empleado' ? 'grid-cols-1 md:grid-cols-2' : alcance === 'global' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
 
                             {/* Selector Específico de Empleado (Oculto en Vista General) */}
                             {alcance === 'empleado' && (
@@ -1156,6 +1429,25 @@ const Reportes = () => {
                                         value={idSeleccionado}
                                         onChange={setIdSeleccionado}
                                     />
+                                </div>
+                            )}
+
+                            {/* Selector de Departamento (Solo en Vista General) */}
+                            {alcance === 'global' && (
+                                <div className="animate-in fade-in zoom-in-95 duration-200 w-full">
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
+                                        Filtrar por Departamento:
+                                    </label>
+                                    <select
+                                        value={filtroDepartamento}
+                                        onChange={(e) => setFiltroDepartamento(e.target.value)}
+                                        className="w-full pl-3 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border-transparent focus:bg-white dark:focus:bg-gray-600 border focus:border-blue-500 rounded-xl text-sm font-medium dark:text-white transition-all outline-none appearance-none"
+                                    >
+                                        <option value="todos">Todos los Departamentos</option>
+                                        {departamentos.map(d => (
+                                            <option key={d.id} value={d.id}>{d.nombre}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             )}
 
@@ -1511,72 +1803,133 @@ const Reportes = () => {
 
             {/* --- MODAL DE DESCARGA (Código previo mantenido igual) --- */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-300 my-auto">
 
-                        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
-                            <div>
-                                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Descargar Reporte</h2>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Selecciona el formato de salida</p>
+                        <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                    <FileSpreadsheet className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Centro de Reportes</h2>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Selecciona el tipo de reporte y formato que deseas generar</p>
+                                </div>
                             </div>
-                            <button onClick={() => setIsModalOpen(false)} className="p-2 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                            <button onClick={() => setIsModalOpen(false)} className="p-2 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-all">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
                         <div className="p-6">
-                            <div className="mb-6 space-y-3">
-                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Tipo de Detalle</label>
-                                <select
-                                    value={exportCategoria}
-                                    onChange={(e) => setExportCategoria(e.target.value)}
-                                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                >
-                                    <option value="general">Resumen Ejecutivo (Dashboard)</option>
-                                    <option value="asistencias">Detalle de Asistencias (Tabla)</option>
-                                    <option value="incidencias_rrhh">Reporte de Incidencias RRHH (TecNM)</option>
-                                </select>
-                            </div>
-
                             {exporting ? (
-                                <div className="py-6 text-center bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
-                                    <DynamicLoader size="small" />
-                                    <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Generando documento...</p>
+                                <div className="py-20 text-center bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100/50 dark:border-blue-800/50">
+                                    <DynamicLoader size="medium" />
+                                    <p className="mt-4 text-sm font-bold text-blue-700 dark:text-blue-300 animate-pulse">Procesando y generando documento...</p>
+                                    <p className="text-xs text-blue-500 dark:text-blue-400/70 mt-1">Esto puede tardar unos segundos dependiendo del volumen de datos</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 gap-3">
-                                    <button onClick={() => handleExport('excel')} className="flex items-center gap-4 p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-green-50 dark:hover:bg-green-900/30 hover:border-green-200 dark:hover:border-green-800 transition-all group text-left">
-                                        <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
-                                            <FileSpreadsheet className="w-5 h-5 text-green-700 dark:text-green-400" />
+                                <div className="grid grid-cols-1 gap-4">
+                                    {/* Card: Resumen Ejecutivo */}
+                                    {alcance === 'global' && (
+                                        <div className="group bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 hover:border-blue-500 dark:hover:border-blue-400 transition-all hover:shadow-lg">
+                                            <div className="flex items-start justify-between mb-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl group-hover:scale-110 transition-transform">
+                                                        <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-gray-900 dark:text-white">Resumen Ejecutivo</h4>
+                                                        <p className="text-[10px] uppercase font-bold text-indigo-600 dark:text-indigo-400 tracking-wider">Dashboard Global</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-5 leading-relaxed">
+                                                Contiene las métricas clave de puntualidad del periodo, la comparativa de desempeño entre departamentos y el ranking de empleados con mejor score. Ideal para juntas de gerencia.
+                                            </p>
+                                            <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-50 dark:border-gray-700/50">
+                                                <button onClick={() => handleExport('general', 'excel')} className="flex-1 min-w-[100px] flex items-center justify-center gap-2 py-2 px-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg text-xs font-bold hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors border border-green-100 dark:border-green-800/50">
+                                                    <FileSpreadsheet className="w-3.5 h-3.5" /> EXCEL
+                                                </button>
+                                                <button onClick={() => handleExport('general', 'word')} className="flex-1 min-w-[100px] flex items-center justify-center gap-2 py-2 px-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors border border-blue-100 dark:border-blue-800/50">
+                                                    <FileText className="w-3.5 h-3.5" /> WORD
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <span className="block font-bold text-sm text-gray-800 dark:text-gray-200 group-hover:text-green-800 dark:group-hover:text-green-300">Excel (.xlsx)</span>
-                                            <span className="text-xs text-gray-500 dark:text-gray-400">Ideal para análisis de datos</span>
-                                        </div>
-                                    </button>
+                                    )}
 
-                                    <button onClick={() => handleExport('pdf')} className="flex items-center gap-4 p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-200 dark:hover:border-red-800 transition-all group text-left">
-                                        <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-lg group-hover:bg-red-200 dark:group-hover:bg-red-900/50 transition-colors">
-                                            <FileIcon className="w-5 h-5 text-red-700 dark:text-red-400" />
+                                    {/* Card: Detalle de Asistencias */}
+                                    <div className="group bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 hover:border-blue-500 dark:hover:border-blue-400 transition-all hover:shadow-lg">
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl group-hover:scale-110 transition-transform">
+                                                    <FileSpreadsheet className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-gray-900 dark:text-white">Detalle de Asistencias</h4>
+                                                    <p className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">Control de Horarios</p>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <span className="block font-bold text-sm text-gray-800 dark:text-gray-200 group-hover:text-red-800 dark:group-hover:text-red-300">PDF (.pdf)</span>
-                                            <span className="text-xs text-gray-500 dark:text-gray-400">Documento visual para imprimir</span>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-5 leading-relaxed">
+                                            {alcance === 'empleado' 
+                                                ? "Reporte quincenal detallado del empleado. Muestra la comparativa exacta entre la hora de entrada/salida programada y el checado real, desglosado por turnos."
+                                                : "Listado completo de todos los registros de asistencia en el sistema. Incluye empleado, departamento, fecha, hora exacta y estado (puntual, retardo, falta)."}
+                                        </p>
+                                        <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-50 dark:border-gray-700/50">
+                                            <button onClick={() => handleExport('asistencias', 'pdf')} className="flex-1 min-w-[100px] flex items-center justify-center gap-2 py-2 px-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors border border-red-100 dark:border-red-800/50">
+                                                <FileIcon className="w-3.5 h-3.5" /> PDF
+                                            </button>
+                                            <button onClick={() => handleExport('asistencias', 'excel')} className="flex-1 min-w-[100px] flex items-center justify-center gap-2 py-2 px-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg text-xs font-bold hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors border border-green-100 dark:border-green-800/50">
+                                                <FileSpreadsheet className="w-3.5 h-3.5" /> EXCEL
+                                            </button>
+                                            <button onClick={() => handleExport('asistencias', 'word')} className="flex-1 min-w-[100px] flex items-center justify-center gap-2 py-2 px-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors border border-blue-100 dark:border-blue-800/50">
+                                                <FileText className="w-3.5 h-3.5" /> WORD
+                                            </button>
                                         </div>
-                                    </button>
+                                    </div>
 
-                                    <button onClick={() => handleExport('word')} className="flex items-center gap-4 p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-200 dark:hover:border-blue-800 transition-all group text-left">
-                                        <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
-                                            <FileText className="w-5 h-5 text-blue-700 dark:text-blue-400" />
+                                    {/* Card: Incidencias RRHH */}
+                                    {alcance === 'empleado' && (
+                                        <div className="group bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 hover:border-blue-500 dark:hover:border-blue-400 transition-all hover:shadow-lg">
+                                            <div className="flex items-start justify-between mb-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded-xl group-hover:scale-110 transition-transform">
+                                                        <FileText className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-gray-900 dark:text-white">Incidencias RRHH</h4>
+                                                        <p className="text-[10px] uppercase font-bold text-orange-600 dark:text-orange-400 tracking-wider">Formato TecNM / Oficial</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-5 leading-relaxed">
+                                                Genera el formato oficial para el Departamento de Recursos Humanos. Clasifica automáticamente faltas, retardos tipo A y B, indicando el turno, mes y detalle de la incidencia.
+                                            </p>
+                                            <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-50 dark:border-gray-700/50">
+                                                <button onClick={() => handleExport('incidencias_rrhh', 'pdf')} className="flex-1 min-w-[100px] flex items-center justify-center gap-2 py-2 px-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors border border-red-100 dark:border-red-800/50">
+                                                    <FileIcon className="w-3.5 h-3.5" /> PDF
+                                                </button>
+                                                <button onClick={() => handleExport('incidencias_rrhh', 'excel')} className="flex-1 min-w-[100px] flex items-center justify-center gap-2 py-2 px-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg text-xs font-bold hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors border border-green-100 dark:border-green-800/50">
+                                                    <FileSpreadsheet className="w-3.5 h-3.5" /> EXCEL
+                                                </button>
+                                                <button onClick={() => handleExport('incidencias_rrhh', 'word')} className="flex-1 min-w-[100px] flex items-center justify-center gap-2 py-2 px-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors border border-blue-100 dark:border-blue-800/50">
+                                                    <FileText className="w-3.5 h-3.5" /> WORD
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <span className="block font-bold text-sm text-gray-800 dark:text-gray-200 group-hover:text-blue-800 dark:group-hover:text-blue-300">Word (.docx)</span>
-                                            <span className="text-xs text-gray-500 dark:text-gray-400">Documento editable</span>
-                                        </div>
-                                    </button>
+                                    )}
                                 </div>
                             )}
                         </div>
+                        
+                        {!exporting && (
+                            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/30 border-t border-gray-100 dark:border-gray-700">
+                                <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center flex items-center justify-center gap-1">
+                                    <AlertCircle className="w-3 h-3" /> Todos los reportes usan el huso horario America/Mexico_City
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
