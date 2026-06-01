@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Book, Users, Calendar, Settings, BarChart3, AlertCircle, Menu, X, ChevronLeft, Building2, Shield, Cpu, WifiOff, MessageSquare, Globe, Activity } from 'lucide-react'
+import { Home, Book, Users, Calendar, Settings, BarChart3, AlertCircle, Menu, X, ChevronLeft, Building2, Shield, Cpu, WifiOff, MessageSquare, Globe, Activity, DownloadCloud } from 'lucide-react'
 import { useRealTime } from '../hooks/useRealTime';
 import { useNetwork } from '../context/NetworkContext';
 import { useNotifications } from '../context/NotificationContext';
@@ -10,18 +10,17 @@ import { useAuth } from '../context/AuthContext';
 import { API_CONFIG } from '../config/Apiconfig';
 const API_URL = API_CONFIG.BASE_URL;
 
-// Estructura base de menú
+// Estructura base de menú con bits de permisos asociados
 const BASE_MENU_ITEMS = [
     { id: 'dashboard', nombre: 'Dashboard', icono: Home, ruta: '/dashboard' },
-    { id: 'avisos', nombre: 'Avisos', icono: MessageSquare, ruta: '/avisos' },
-    { id: 'empleados', nombre: 'Empleados', icono: Users, ruta: '/empleados' },
-    { id: 'roles', nombre: 'Roles', icono: Shield, ruta: '/roles' },
-    { id: 'horarios', nombre: 'Horarios', icono: Calendar, ruta: '/horarios' },
-    { id: 'departamentos', nombre: 'Departamentos', icono: Building2, ruta: '/departamentos' },
-    { id: 'dispositivos', nombre: 'Dispositivos', icono: Cpu, ruta: '/dispositivos' },
-    { id: 'incidencias', nombre: 'Incidencias', icono: AlertCircle, ruta: '/incidencias' },
-    { id: 'reportes', nombre: 'Reportes', icono: BarChart3, ruta: '/reportes' },
-    { id: 'registros', nombre: 'Registros', icono: Book, ruta: '/registros' },
+    { id: 'empleados', nombre: 'Empleados', icono: Users, ruta: '/empleados', permiso: 'USUARIO_VER' },
+    { id: 'roles', nombre: 'Roles', icono: Shield, ruta: '/roles', permiso: 'ROL_VER' },
+    { id: 'horarios', nombre: 'Horarios e Incidencias', icono: Calendar, ruta: '/horarios', permiso: 'HORARIO_VER' },
+    { id: 'departamentos', nombre: 'Departamentos', icono: Building2, ruta: '/departamentos', permiso: 'DEPARTAMENTO_VER' },
+    { id: 'dispositivos', nombre: 'Dispositivos', icono: Cpu, ruta: '/dispositivos', permiso: 'DISPOSITIVO_VER' },
+    { id: 'reportes', nombre: 'Reportes', icono: BarChart3, ruta: '/reportes', permiso: 'REPORTE_VER' },
+    { id: 'registros', nombre: 'Registros', icono: Book, ruta: '/registros', permiso: 'REGISTRO_VER' },
+    { id: 'avisos', nombre: 'Avisos', icono: MessageSquare, ruta: '/avisos', permiso: 'AVISO_VER' },
 ];
 
 
@@ -35,7 +34,7 @@ const Sidebar = () => {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const { unreadCount } = useNotifications();
     const { empresa, loading: loadingEmpresa } = useCompany();
-    const { user } = useAuth();
+    const { user, hasPermission } = useAuth();
 
     // Opciones Exclusivas del Panel SaaS
     const SAAS_MENU_ITEMS = [
@@ -45,19 +44,18 @@ const Sidebar = () => {
         { id: 'saas-logs', nombre: 'System Logs', icono: Activity, ruta: '/saas-logs' },
     ];
 
-    // Determinar items del menú basado en rol y filtrar por permisos (opcional pero recomendado)
+    // Determinar items del menú basado en rol y filtrar por permisos bitwise
     const unfilteredMenuItems = user?.esPropietarioSaaS
         ? SAAS_MENU_ITEMS
         : BASE_MENU_ITEMS;
 
-    // Filtrar items: un empleado normal no debería ver "Roles", "Departamentos", etc. si no es admin
     const menuItems = unfilteredMenuItems.filter(item => {
         if (user?.esPropietarioSaaS) return true;
-
-        // Si no es admin, solo puede ver Dashboard, Avisos, Incidencias (y Perfil si existiera)
-        // Esta es una solución simple para limpiar la consola de 403s
-        const adminOnlyItems = ['empleados', 'roles', 'horarios', 'departamentos', 'dispositivos', 'reportes', 'registros'];
-        if (!user?.esAdmin && adminOnlyItems.includes(item.id)) return false;
+        
+        // Filtro bitwise dinámico
+        if (item.permiso) {
+            return hasPermission(item.permiso);
+        }
 
         return true;
     });

@@ -4,10 +4,12 @@ import {
 } from 'lucide-react';
 import { API_CONFIG } from '../config/Apiconfig';
 import DynamicLoader from '../components/common/DynamicLoader';
+import { useAuth } from '../context/AuthContext';
 
 const API_URL = API_CONFIG.BASE_URL;
 
 const Avisos = () => {
+    const { hasPermission } = useAuth();
     // --- ESTADOS ---
     const [avisos, setAvisos] = useState([]);
     const [empleados, setEmpleados] = useState([]);
@@ -194,12 +196,14 @@ const Avisos = () => {
                         className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition-colors"
                     />
                 </div>
-                <button
-                    onClick={handleOpenCreate}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl transition-colors font-medium shadow-sm"
-                >
-                    <Plus className="w-5 h-5" /> Nuevo Aviso
-                </button>
+                {hasPermission('AVISO_CREAR') && (
+                    <button
+                        onClick={handleOpenCreate}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl transition-colors font-medium shadow-sm"
+                    >
+                        <Plus className="w-5 h-5" /> Nuevo Aviso
+                    </button>
+                )}
             </div>
 
             {/* ERROR GENERAL */}
@@ -231,20 +235,24 @@ const Avisos = () => {
                                     {aviso.es_global ? 'Global' : 'Personalizo'}
                                 </div>
                                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                        onClick={() => handleOpenEdit(aviso)}
-                                        className="p-1.5 text-gray-500 hover:text-primary-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                                        title="Editar"
-                                    >
-                                        <Edit2 className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        onClick={() => setConfirmDelete(aviso)}
-                                        className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                        title="Eliminar"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    {hasPermission('AVISO_EDITAR') && (
+                                        <button
+                                            onClick={() => handleOpenEdit(aviso)}
+                                            className="p-1.5 text-gray-500 hover:text-primary-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                            title="Editar"
+                                        >
+                                            <Edit2 className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                    {hasPermission('AVISO_ELIMINAR') && (
+                                        <button
+                                            onClick={() => setConfirmDelete(aviso)}
+                                            className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                            title="Eliminar"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 

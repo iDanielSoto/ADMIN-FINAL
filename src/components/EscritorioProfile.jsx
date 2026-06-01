@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Monitor, Wifi, Cpu, HardDrive, Activity, CheckCircle, XCircle, AlertTriangle, Server, Clock, Settings, Laptop, Fingerprint, ScanFace, Lock, KeyRound, Save } from 'lucide-react';
+import { Monitor, Wifi, Cpu, HardDrive, Activity, CheckCircle, XCircle, AlertTriangle, Server, Clock, Settings, Laptop, Fingerprint, ScanFace, Lock, KeyRound, Save, Power, RefreshCw, PlayCircle } from 'lucide-react';
 import { useConfig } from '../context/ConfigContext';
 import { API_CONFIG } from '../config/Apiconfig';
 import { useBiometricosSync } from '../hooks/useBiometricosSync';
+import { useEscritorioSync } from '../hooks/useEscritorioSync';
+import ConfirmBox from './ConfirmBox';
 
 const API_URL = API_CONFIG.BASE_URL;
 
@@ -65,6 +67,12 @@ const BiometricStatus = ({ label, status, details, ip }) => {
 const EscritorioProfile = ({ dispositivo }) => {
     const { formatDate, formatTime } = useConfig();
 
+    // Usamos el hook de sincronización en tiempo real para el estado del escritorio
+    const { escritorio: escritorioSync } = useEscritorioSync(dispositivo?.id, 5000);
+    
+    // Priorizamos los datos sincronizados si están disponibles
+    const dataDisplay = escritorioSync || dispositivo;
+
     // Usamos el hook de sincronización en tiempo real para biométricos
     const { biometricos, loadingBio, errorBio } = useBiometricosSync(dispositivo?.id, 5000);
 
@@ -74,11 +82,73 @@ const EscritorioProfile = ({ dispositivo }) => {
     const [savingConfig, setSavingConfig] = useState(false);
     const [mensaje, setMensaje] = useState({ text: '', type: '' });
 
-    useEffect(() => {
-        if (dispositivo?.id) {
-            fetchConfiguracion(dispositivo.id);
+    // Estado para comandos remotos
+    const [sendingCommand, setSendingCommand] = useState(false);
+    const [pendingCommand, setPendingCommand] = useState(null); // 'starting', 'restarting', 'shutting-down'
+    const [confirmAction, setConfirmAction] = useState(null);
+
+    const sendRemoteCommand = async (objetivo, accion) => {
+        try {
+            setSendingCommand(true);
+            
+            // Congelar botones según la acción
+            if (accion === 'shutdown') setPendingCommand('shutting-down');
+            else if (accion === 'start') setPendingCommand('starting');
+
+            const token = localStorage.getItem('auth_token');
+            const response = await fetch(`${API_URL}/api/escritorio/${dispositivo.id}/comando`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ objetivo, accion })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                setMensaje({ text: `Comando '${accion}' puesto en cola exitosamente. Esperando respuesta del nodo...`, type: 'success' });
+            } else {
+                setMensaje({ text: result.message || 'Error al enviar comando.', type: 'error' });
+                setPendingCommand(null); // Liberar si falló el envío
+            }
+            setTimeout(() => setMensaje({ text: '', type: '' }), 5000);
+        } catch (error) {
+            console.error("Error sending command:", error);
+            setMensaje({ text: 'Error de red al enviar comando.', type: 'error' });
+            setPendingCommand(null); // Liberar si hubo error de red
+            setTimeout(() => setMensaje({ text: '', type: '' }), 5000);
+        } finally {
+            setSendingCommand(false);
         }
-    }, [dispositivo]);
+    };
+
+    // Efecto para gestionar el desbloqueo de botones (Freeze Logic)
+    useEffect(() => {
+        if (!pendingCommand) return;
+
+        // Timeout de seguridad: 1:30 minutos (90,000 ms)
+        const safetyTimeout = setTimeout(() => {
+            setPendingCommand(null);
+        }, 90000);
+
+        // Lógica de detección de cambio de estado para liberar botones
+        const isOnline = dataDisplay.esta_en_linea;
+        
+        if (pendingCommand === 'shutting-down' && !isOnline) {
+            setPendingCommand(null); // Se apagó con éxito
+        } else if (pendingCommand === 'starting' && isOnline) {
+            setPendingCommand(null); // Se encendió con éxito
+        }
+
+        return () => clearTimeout(safetyTimeout);
+    }, [dataDisplay.esta_en_linea, pendingCommand]);
+
+    useEffect(() => {
+        if (dataDisplay?.id) {
+            fetchConfiguracion(dataDisplay.id);
+        }
+    }, [dataDisplay?.id]);
 
     const fetchConfiguracion = async (id) => {
         try {
@@ -152,7 +222,7 @@ const EscritorioProfile = ({ dispositivo }) => {
             setSavingConfig(true);
             setMensaje({ text: '', type: '' });
             const token = localStorage.getItem('auth_token');
-            const response = await fetch(`${API_URL}/api/configuraciones-escritorio/${dispositivo.id}`, {
+            const response = await fetch(`${API_URL}/api/configuraciones-escritorio/${dataDisplay.id}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -176,7 +246,7 @@ const EscritorioProfile = ({ dispositivo }) => {
     };
 
     // Si no hay datos, mostrar placeholder
-    if (!dispositivo) return <div className="p-6 text-center text-gray-500">No hay información del dispositivo.</div>;
+    if (!dataDisplay) return <div className="p-6 text-center text-gray-500">No hay información del dispositivo.</div>;
 
     return (
         <div className="flex flex-col lg:flex-row gap-8">
@@ -186,15 +256,16 @@ const EscritorioProfile = ({ dispositivo }) => {
                     <div className="mx-auto w-24 h-24 flex items-center justify-center rounded-2xl mb-5 bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 shadow-sm border border-slate-100 dark:border-gray-700">
                         <Monitor className="w-12 h-12" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{dispositivo.nombre_equipo || dispositivo.nombre || 'PC Sin Nombre'}</h3>
-                    {dispositivo.correo && <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{dispositivo.correo}</p>}
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{dataDisplay.nombre_equipo || dataDisplay.nombre || 'PC Sin Nombre'}</h3>
+                    {dataDisplay.correo && <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{dataDisplay.correo}</p>}
                     
                     <div className="flex flex-wrap justify-center gap-2 mb-6">
-                        <span className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border ${dispositivo.es_activo !== false ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:border-green-800/50 dark:text-green-400' : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:border-red-800/50 dark:text-red-400'}`}>
-                            {dispositivo.es_activo !== false ? 'Kiosco Activo' : 'Kiosco Inactivo'}
+                        <span className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border ${dataDisplay.es_activo !== false ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:border-indigo-800/50 dark:text-indigo-400' : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:border-red-800/50 dark:text-red-400'}`}>
+                            {dataDisplay.es_activo !== false ? 'Kiosco Activo' : 'Kiosco Inactivo'}
                         </span>
-                        <span className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-400 border border-slate-200 dark:border-gray-700">
-                            Escritorio Físico
+                        <span className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border flex items-center gap-1.5 ${dataDisplay.esta_en_linea ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800/50 dark:text-emerald-400' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-gray-800/50 dark:border-gray-700 dark:text-gray-400'}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${dataDisplay.esta_en_linea ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                            {dataDisplay.esta_en_linea ? 'App En Línea' : 'App Desconectada'}
                         </span>
                     </div>
 
@@ -203,20 +274,26 @@ const EscritorioProfile = ({ dispositivo }) => {
                     <div className="space-y-4 text-left">
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-gray-500 dark:text-gray-400 font-medium">SO</span>
-                            <span className="font-semibold text-gray-900 dark:text-gray-200">{dispositivo.sistema_operativo || 'N/A'}</span>
+                            <span className="font-semibold text-gray-900 dark:text-gray-200">{dataDisplay.sistema_operativo || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-500 dark:text-gray-400 font-medium">Última Actividad</span>
+                            <span className="font-semibold text-gray-900 dark:text-gray-200">
+                                {dataDisplay.ultimo_visto ? `${formatDate(dataDisplay.ultimo_visto)} ${formatTime(dataDisplay.ultimo_visto)}` : 'Nunca'}
+                            </span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-gray-500 dark:text-gray-400 font-medium">Registro</span>
-                            <span className="font-semibold text-gray-900 dark:text-gray-200">{dispositivo.fecha_registro ? new Date(dispositivo.fecha_registro).toLocaleDateString() : 'N/A'}</span>
+                            <span className="font-semibold text-gray-900 dark:text-gray-200">{dataDisplay.fecha_registro ? formatDate(dataDisplay.fecha_registro) : 'N/A'}</span>
                         </div>
                     </div>
                 </div>
 
-                {dispositivo.descripcion && (
+                {dataDisplay.descripcion && (
                     <div>
                         <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Notas Adicionales</h4>
                         <div className="bg-slate-50 dark:bg-gray-900 p-4 rounded-xl border border-slate-100 dark:border-gray-800 text-sm text-gray-700 dark:text-gray-300">
-                            {dispositivo.descripcion}
+                            {dataDisplay.descripcion}
                         </div>
                     </div>
                 )}
@@ -233,11 +310,56 @@ const EscritorioProfile = ({ dispositivo }) => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="card p-4 flex flex-col gap-1.5">
                             <span className="text-xs font-medium text-gray-500 dark:text-gray-400">IP Address Local</span>
-                            <span className="text-sm font-mono font-bold text-gray-900 dark:text-white break-all">{dispositivo.ip || 'No asignada'}</span>
+                            <span className="text-sm font-mono font-bold text-gray-900 dark:text-white break-all">{dataDisplay.ip || 'No asignada'}</span>
                         </div>
                         <div className="card p-4 flex flex-col gap-1.5">
                             <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Physical MAC</span>
-                            <span className="text-sm font-mono font-bold text-gray-900 dark:text-white break-all">{dispositivo.mac || 'No rastreada'}</span>
+                            <span className="text-sm font-mono font-bold text-gray-900 dark:text-white break-all">{dataDisplay.mac || 'No rastreada'}</span>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Control de Energía Remoto */}
+                <section>
+                    <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                            <Power className="w-4 h-4" /> Control de Energía Remoto
+                        </h4>
+                        {(sendingCommand || pendingCommand) && (
+                            <span className="text-[10px] bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400 px-2 py-0.5 rounded font-bold animate-pulse flex items-center gap-1.5">
+                                <Clock className="w-3 h-3" />
+                                {pendingCommand ? 'Esperando al nodo...' : 'Enviando...'}
+                            </span>
+                        )}
+                    </div>
+
+                    <div className="card p-0 overflow-hidden divide-y divide-slate-100 dark:divide-gray-800 border border-slate-200 dark:border-gray-700">
+                        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button 
+                                onClick={() => sendRemoteCommand('watchdog', 'start')}
+                                disabled={sendingCommand || !!pendingCommand || dataDisplay.esta_en_linea}
+                                className="flex items-center justify-center gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700/50 text-slate-700 dark:text-slate-300 font-medium transition-all disabled:opacity-50 text-sm shadow-sm"
+                                title={dataDisplay.esta_en_linea ? "El Kiosco ya está en línea" : "Fuerza el arranque del Kiosco a través del servicio Watchdog."}
+                            >
+                                <PlayCircle className={`w-4 h-4 ${pendingCommand === 'starting' ? 'animate-spin' : 'text-emerald-500'}`} />
+                                <span>{pendingCommand === 'starting' ? 'Iniciando...' : 'Forzar Arranque'}</span>
+                            </button>
+
+                            <button 
+                                onClick={() => setConfirmAction({
+                                    message: '¿Estás seguro de que deseas apagar remotamente el Kiosco? El dispositivo dejará de recibir interacciones hasta que sea encendido manualmente o por Watchdog.',
+                                    onConfirm: () => {
+                                        setConfirmAction(null);
+                                        sendRemoteCommand('kiosko', 'shutdown');
+                                    }
+                                })}
+                                disabled={sendingCommand || !!pendingCommand || dataDisplay.esta_en_linea === false || dataDisplay.es_activo === false}
+                                className="flex items-center justify-center gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700/50 text-slate-700 dark:text-slate-300 font-medium transition-all disabled:opacity-50 text-sm shadow-sm"
+                                title="Apaga y cierra completamente el Kiosco."
+                            >
+                                <Power className={`w-4 h-4 ${pendingCommand === 'shutting-down' ? 'animate-pulse' : 'text-red-500'}`} />
+                                <span>{pendingCommand === 'shutting-down' ? 'Apagando...' : 'Apagar Kiosko'}</span>
+                            </button>
                         </div>
                     </div>
                 </section>
@@ -371,6 +493,13 @@ const EscritorioProfile = ({ dispositivo }) => {
                     ) : null}
                 </section>
             </div>
+            {confirmAction && (
+                <ConfirmBox
+                    message={confirmAction.message}
+                    onConfirm={confirmAction.onConfirm}
+                    onCancel={() => setConfirmAction(null)}
+                />
+            )}
         </div>
     );
 };

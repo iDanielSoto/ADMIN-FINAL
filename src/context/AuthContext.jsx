@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { tienePermisoPorCodigo, esMaestro, JERARQUIA_CONFIGURACION } from '../utils/permissions';
 
 import { API_CONFIG } from '../config/Apiconfig';
 import { useRealTime } from '../hooks/useRealTime';
@@ -203,13 +204,37 @@ export const AuthProvider = ({ children }) => {
 
     /**
      * Verificar si el usuario tiene un permiso específico
+     * @param {string} codigoPermiso - El código del permiso (ej: 'USUARIO_VER')
      */
-    const hasPermission = (permiso) => {
+    const hasPermission = (codigoPermiso) => {
         if (!user) return false;
-        if (user.esAdmin) return true;
+        
+        // El bypass solo aplica si NO es un permiso de configuración que requiera jerarquía,
+        // o si es un SuperAdmin (Maestro).
+        const esConfig = codigoPermiso && codigoPermiso.startsWith('CONFIG_');
+        const maestro = esMaestro(user);
 
-        // Verificar permisos bitwise (implementar según tu lógica)
-        // Por ahora retornamos true si está autenticado
+        if (maestro) return true;
+
+        // Si es admin pero no maestro, aún así evaluamos jerarquía para configuración
+        if (user.esAdmin && !esConfig) return true;
+
+        // Si no se proporcionó código, solo requiere estar autenticado
+        if (!codigoPermiso) return true;
+
+        // 1. Validar Bitwise
+        const tieneBit = tienePermisoPorCodigo(user.permisos, codigoPermiso);
+        if (!tieneBit) return false;
+
+        // 2. Validar Jerarquía para Configuración
+        if (esConfig) {
+            const rangoRequerido = JERARQUIA_CONFIGURACION[codigoPermiso];
+            const mejorPosicion = user.mejorPosicion || 999;
+            if (rangoRequerido !== undefined && mejorPosicion > rangoRequerido) {
+                return false;
+            }
+        }
+
         return true;
     };
 

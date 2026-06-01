@@ -12,10 +12,10 @@ const pageConfig = {
     '/dashboard': { titulo: 'Dashboard', descripcion: 'Resumen general del sistema' },
     '/empleados': { titulo: 'Empleados', descripcion: 'Gestión de empleados' },
     '/roles': { titulo: 'Roles', descripcion: 'Gestión de roles y permisos' },
-    '/horarios': { titulo: 'Horarios', descripcion: 'Gestión de horarios' },
+    '/horarios': { titulo: 'Horarios e Incidencias', descripcion: 'Gestión de calendarios laborales e incidencias' },
     '/departamentos': { titulo: 'Departamentos', descripcion: 'Gestión de departamentos' },
     '/dispositivos': { titulo: 'Dispositivos', descripcion: 'Gestión de dispositivos' },
-    '/incidencias': { titulo: 'Incidencias', descripcion: 'Gestión de incidencias' },
+    '/incidencias': { titulo: 'Horarios e Incidencias', descripcion: 'Gestión de calendarios laborales e incidencias' },
     '/reportes': { titulo: 'Reportes', descripcion: 'Reportes y estadísticas' },
     '/configuracion': { titulo: 'Configuración', descripcion: 'Configuración del sistema' },
     '/avisos': { titulo: 'Avisos', descripcion: 'Gestión de avisos y notificaciones' },
@@ -70,6 +70,7 @@ const MainLayout = ({ children }) => {
 
     // Función para cerrar sesión
     const [confirmAction, setConfirmAction] = useState(null);
+    const { hasPermission } = useAuth();
 
     const handleLogout = () => {
         setConfirmAction({

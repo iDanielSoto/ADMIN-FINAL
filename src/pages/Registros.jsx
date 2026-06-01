@@ -5,6 +5,7 @@ import {
     FiMonitor, FiFileText, FiSettings, FiChevronDown, FiChevronRight,
     FiList, FiArrowLeft, FiArrowRight, FiSearch
 } from 'react-icons/fi';
+import { useAuth } from '../context/AuthContext';
 
 import { API_CONFIG } from '../config/Apiconfig';
 const API_URL = API_CONFIG.BASE_URL;
@@ -38,6 +39,7 @@ const PRIORIDADES = {
 
 const Registros = () => {
     const { formatDate, formatTime } = useConfig();
+    const { hasPermission } = useAuth();
     const [eventos, setEventos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({ por_tipo: [], por_prioridad: [] });

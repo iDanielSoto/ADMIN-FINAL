@@ -8,11 +8,13 @@ import ImportHorariosModal from '../components/modals/ImportHorariosModal';
 import DynamicLoader from '../components/common/DynamicLoader';
 import HolidaysCalendar from '../components/schedules/HolidaysCalendar';
 import { useTour } from '../hooks/useTour';
+import { useAuth } from '../context/AuthContext';
 
 import { API_CONFIG } from '../config/Apiconfig';
 const API_URL = API_CONFIG.BASE_URL;
 
-const Horarios = () => {
+const Horarios = ({ isSubpage = false }) => {
+    const { hasPermission } = useAuth();
     const [horarios, setHorarios] = useState([]);
     const [empleados, setEmpleados] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -217,6 +219,14 @@ const Horarios = () => {
 
     return (
         <div className="space-y-6">
+            {!isSubpage && (
+                <div className="flex flex-col sm:flex-row gap-4 justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Horarios</h1>
+                        <p className="text-sm text-gray-500">Gestiona los horarios de los empleados</p>
+                    </div>
+                </div>
+            )}
             <div className="flex flex-col sm:flex-row gap-4 justify-between">
                 <div className="flex flex-1 gap-3">
                     <div className="relative flex-1 max-w-md">
@@ -265,24 +275,28 @@ const Horarios = () => {
                     </div>
                     {vista !== 'festivos' && (
                         <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setImportModalOpen(true)}
-                                id="import-button"
-                                className="btn-secondary flex items-center gap-2 border-dashed border-2 hover:border-blue-500 hover:text-blue-600 transition-colors bg-white dark:bg-gray-800"
-                                title="Importar desde archivo del sistema Tec"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-                                <span className="hidden sm:inline">Importar CSV</span>
-                            </button>
+                            {hasPermission('HORARIO_CREAR') && (
+                                <button
+                                    onClick={() => setImportModalOpen(true)}
+                                    id="import-button"
+                                    className="btn-secondary flex items-center gap-2 border-dashed border-2 hover:border-blue-500 hover:text-blue-600 transition-colors bg-white dark:bg-gray-800"
+                                    title="Importar desde archivo del sistema Tec"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                                    <span className="hidden sm:inline">Importar CSV</span>
+                                </button>
+                            )}
 
-                            <button
-                                onClick={handleCreate}
-                                id="create-button"
-                                className="btn-primary flex items-center gap-2"
-                            >
-                                <FiPlus className="w-5 h-5" />
-                                <span className="hidden sm:inline">Nuevo Horario</span>
-                            </button>
+                            {hasPermission('HORARIO_CREAR') && (
+                                <button
+                                    onClick={handleCreate}
+                                    id="create-button"
+                                    className="btn-primary flex items-center gap-2"
+                                >
+                                    <FiPlus className="w-5 h-5" />
+                                    <span className="hidden sm:inline">Nuevo Horario</span>
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>

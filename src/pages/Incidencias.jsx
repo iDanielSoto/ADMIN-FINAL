@@ -16,11 +16,13 @@ import { useConfig } from '../context/ConfigContext';
 import DynamicLoader from '../components/common/DynamicLoader';
 import ConfirmBox from '../components/ConfirmBox';
 import Pagination from '../components/Pagination';
+import { useAuth } from '../context/AuthContext';
 
 import { API_CONFIG } from '../config/Apiconfig';
 const API_URL = API_CONFIG.BASE_URL;
 
-const Incidencias = () => {
+const Incidencias = ({ isSubpage = false }) => {
+    const { hasPermission } = useAuth();
     const [incidencias, setIncidencias] = useState([]);
     const [empleados, setEmpleados] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -284,25 +286,29 @@ const Incidencias = () => {
 
     return (
         <div className="flex flex-col min-h-[calc(100vh-7rem)] gap-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Incidencias</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Gestiona justificantes, permisos y vacaciones
-                    </p>
+            {/* Header - Solo se muestra si no es subpágina */}
+            {!isSubpage && (
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Incidencias</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            Gestiona justificantes, permisos y vacaciones
+                        </p>
+                    </div>
+                    {hasPermission('HORARIO_CREAR') && (
+                        <button
+                            onClick={() => {
+                                resetForm();
+                                setShowModal(true);
+                            }}
+                            className="btn-primary flex items-center gap-2"
+                        >
+                            <FiPlus className="w-4 h-4" />
+                            Nueva Incidencia
+                        </button>
+                    )}
                 </div>
-                <button
-                    onClick={() => {
-                        resetForm();
-                        setShowModal(true);
-                    }}
-                    className="btn-primary flex items-center gap-2"
-                >
-                    <FiPlus className="w-4 h-4" />
-                    Nueva Incidencia
-                </button>
-            </div>
+            )}
 
             {/* Estadísticas */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -467,27 +473,33 @@ const Incidencias = () => {
                                                 </button>
                                                 {incidencia.estado === 'pendiente' && (
                                                     <>
-                                                        <button
-                                                            onClick={() => openEditModal(incidencia)}
-                                                            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                                            title="Editar"
-                                                        >
-                                                            <FiEdit2 className="w-4 h-4" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleAprobar(incidencia.id)}
-                                                            className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300"
-                                                            title="Aprobar"
-                                                        >
-                                                            <FiCheck className="w-4 h-4" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleRechazar(incidencia.id)}
-                                                            className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
-                                                            title="Rechazar"
-                                                        >
-                                                            <FiX className="w-4 h-4" />
-                                                        </button>
+                                                        {hasPermission('HORARIO_EDITAR') && (
+                                                            <button
+                                                                onClick={() => openEditModal(incidencia)}
+                                                                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                                                title="Editar"
+                                                            >
+                                                                <FiEdit2 className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                        {hasPermission('HORARIO_GESTIONAR') && (
+                                                            <button
+                                                                onClick={() => handleAprobar(incidencia.id)}
+                                                                className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300"
+                                                                title="Aprobar"
+                                                            >
+                                                                <FiCheck className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                        {hasPermission('HORARIO_GESTIONAR') && (
+                                                            <button
+                                                                onClick={() => handleRechazar(incidencia.id)}
+                                                                className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+                                                                title="Rechazar"
+                                                            >
+                                                                <FiX className="w-4 h-4" />
+                                                            </button>
+                                                        )}
                                                     </>
                                                 )}
                                             </div>

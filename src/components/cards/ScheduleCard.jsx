@@ -1,7 +1,8 @@
-import React from 'react';
 import { FiUser, FiCalendar, FiEdit2, FiTrash2, FiRefreshCw, FiClock } from 'react-icons/fi';
+import { useAuth } from '../../context/AuthContext';
 
 const ScheduleCard = ({ horario, empleadoNombre, onEdit, onDelete, onReactivar }) => {
+    const { hasPermission } = useAuth();
     const getTotalHours = () => {
         if (!horario.configuracion?.configuracion_semanal) return 0;
 
@@ -84,29 +85,35 @@ const ScheduleCard = ({ horario, empleadoNombre, onEdit, onDelete, onReactivar }
                 <div className="flex gap-2">
                     {horario.es_activo ? (
                         <>
-                            <button
-                                onClick={() => onEdit(horario)}
-                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-slate-300 dark:border-gray-600 rounded-md hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
-                            >
-                                <FiEdit2 className="w-3.5 h-3.5" />
-                                Editar
-                            </button>
-                            <button
-                                onClick={() => onDelete(horario)}
-                                className="flex items-center justify-center px-3 py-2 text-xs text-red-600 dark:text-red-400 bg-white dark:bg-gray-800 border border-slate-300 dark:border-gray-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors shadow-sm"
-                                title="Desactivar"
-                            >
-                                <FiTrash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {hasPermission('HORARIO_EDITAR') && (
+                                <button
+                                    onClick={() => onEdit(horario)}
+                                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-slate-300 dark:border-gray-600 rounded-md hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+                                >
+                                    <FiEdit2 className="w-3.5 h-3.5" />
+                                    Editar
+                                </button>
+                            )}
+                            {hasPermission('HORARIO_ELIMINAR') && (
+                                <button
+                                    onClick={() => onDelete(horario)}
+                                    className="flex items-center justify-center px-3 py-2 text-xs text-red-600 dark:text-red-400 bg-white dark:bg-gray-800 border border-slate-300 dark:border-gray-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors shadow-sm"
+                                    title="Desactivar"
+                                >
+                                    <FiTrash2 className="w-3.5 h-3.5" />
+                                </button>
+                            )}
                         </>
                     ) : (
-                        <button
-                            onClick={() => onReactivar(horario)}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-green-300 bg-white dark:bg-gray-800 border border-slate-300 dark:border-green-800 rounded-md hover:bg-slate-50 dark:hover:bg-green-900/20 transition-colors shadow-sm"
-                        >
-                            <FiRefreshCw className="w-3.5 h-3.5" />
-                            Reactivar
-                        </button>
+                        hasPermission('HORARIO_ELIMINAR') && (
+                            <button
+                                onClick={() => onReactivar(horario)}
+                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-green-300 bg-white dark:bg-gray-800 border border-slate-300 dark:border-green-800 rounded-md hover:bg-slate-50 dark:hover:bg-green-900/20 transition-colors shadow-sm"
+                            >
+                                <FiRefreshCw className="w-3.5 h-3.5" />
+                                Reactivar
+                            </button>
+                        )
                     )}
                 </div>
             </div>

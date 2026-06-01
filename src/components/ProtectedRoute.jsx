@@ -7,8 +7,8 @@ import DynamicLoader from './common/DynamicLoader';
  * Componente para proteger rutas que requieren autenticación
  * Si el usuario no está autenticado, redirige al login
  */
-const ProtectedRoute = ({ children, requireAdmin = false }) => {
-    const { isAuthenticated, isAdmin, loading } = useAuth();
+const ProtectedRoute = ({ children, permissionRequired = null }) => {
+    const { isAuthenticated, hasPermission, loading } = useAuth();
 
     // Mostrar loading mientras se verifica la autenticación
     if (loading) {
@@ -24,8 +24,8 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
         return <Navigate to="/login" replace />;
     }
 
-    // Si requiere admin y no es admin, mostrar acceso denegado
-    if (requireAdmin && !isAdmin()) {
+    // Si requiere permiso específico y no lo tiene, mostrar acceso denegado
+    if (permissionRequired && !hasPermission(permissionRequired)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="card max-w-md text-center">

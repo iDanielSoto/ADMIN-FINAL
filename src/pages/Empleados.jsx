@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import UserCard from '../components/cards/UserCard';
 import UserModal from '../components/modals/UserModal';
 import { useRealTime } from '../hooks/useRealTime';
+import { useAuth } from '../context/AuthContext';
 
 import { API_CONFIG } from '../config/Apiconfig';
 const API_URL = API_CONFIG.BASE_URL;
@@ -25,6 +26,7 @@ const Empleados = () => {
     const [loading, setLoading] = useState(true);
     const [alertMsg, setAlertMsg] = useState(null);
     const [confirmAction, setConfirmAction] = useState(null);
+    const { hasPermission } = useAuth();
 
     // --- FILTROS ---
     const [busqueda, setBusqueda] = useState('');
@@ -180,9 +182,11 @@ const Empleados = () => {
                         <option value="baja">Baja</option>
                     </select>
                 </div>
-                <button onClick={handleOpenCreate} className="btn-primary flex items-center gap-2">
-                    <FiPlus className="w-5 h-5" /> Nuevo Usuario
-                </button>
+                {hasPermission('USUARIO_CREAR') && (
+                    <button onClick={handleOpenCreate} className="btn-primary flex items-center gap-2">
+                        <FiPlus className="w-5 h-5" /> Nuevo Usuario
+                    </button>
+                )}
             </div>
 
             {/* LISTA DE USUARIOS */}

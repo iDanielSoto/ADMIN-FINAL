@@ -30,12 +30,15 @@ import {
     AlertTriangle,
     Settings,
     CheckCircle,
-    ScanFace
+    ScanFace,
+    DownloadCloud
 } from 'lucide-react';
 
 import EscritorioProfile from '../components/EscritorioProfile';
+import UpdatesModal from '../components/UpdatesModal';
 import DynamicLoader from '../components/common/DynamicLoader';
 import { useTour } from '../hooks/useTour';
+import { useAuth } from '../context/AuthContext';
 
 import { API_CONFIG } from '../config/Apiconfig';
 const API_URL = API_CONFIG.BASE_URL;
@@ -47,6 +50,7 @@ const ESTADOS = {
 };
 
 const Dispositivos = () => {
+    const { hasPermission } = useAuth();
     // Estado para Solicitudes
     const [solicitudes, setSolicitudes] = useState([]);
 
@@ -70,6 +74,9 @@ const Dispositivos = () => {
     // Modal de detalles
     const [modalDetalles, setModalDetalles] = useState(false);
     const [dispositivoDetalles, setDispositivoDetalles] = useState(null);
+
+    // Modal de Actualizaciones
+    const [isUpdatesModalOpen, setUpdatesModalOpen] = useState(false);
 
     const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState('');
     const [observaciones, setObservaciones] = useState('');
@@ -424,8 +431,17 @@ const Dispositivos = () => {
                     ))}
                 </div>
 
-                <div className="flex gap-3 w-full lg:w-auto">
-                    <div className="relative flex-1 lg:w-64" id="devices-search">
+                <div className="flex gap-3 w-full lg:w-auto items-center">
+                    {vistaActiva === 'escritorio' && hasPermission('CONFIG_VER') && (
+                        <button 
+                            onClick={() => setUpdatesModalOpen(true)}
+                            className="btn-primary py-2 px-4 shadow-sm flex flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap"
+                        >
+                            <DownloadCloud className="w-4 h-4" />
+                            Lanzar Actualización
+                        </button>
+                    )}
+                    <div className="relative flex-1 lg:w-48" id="devices-search">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
@@ -440,7 +456,7 @@ const Dispositivos = () => {
                         <select
                             value={filtroEstado}
                             onChange={(e) => setFiltroEstado(e.target.value)}
-                            className="input py-2 text-sm w-full lg:w-36"
+                            className="input py-2 text-sm w-full lg:w-32 flex-shrink-0"
                         >
                             <option value="">Status: Todos</option>
                             <option value="activo">Activos</option>
@@ -499,13 +515,17 @@ const Dispositivos = () => {
                                                 Ver Ficha Técnica
                                             </button>
                                             {dispositivo.es_activo === false ? (
-                                                <button onClick={() => handleReactivarDispositivo(dispositivo)} className="px-3 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg border border-slate-200 hover:border-green-200 transition-colors bg-white dark:bg-gray-800" title="Reactivar">
-                                                    <RefreshCw className="w-4 h-4" />
-                                                </button>
+                                                hasPermission('DISPOSITIVO_ELIMINAR') && (
+                                                    <button onClick={() => handleReactivarDispositivo(dispositivo)} className="px-3 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg border border-slate-200 hover:border-green-200 transition-colors bg-white dark:bg-gray-800" title="Reactivar">
+                                                        <RefreshCw className="w-4 h-4" />
+                                                    </button>
+                                                )
                                             ) : (
-                                                <button onClick={() => handleDesactivarDispositivo(dispositivo)} className="px-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-slate-200 hover:border-red-200 transition-colors bg-white dark:bg-gray-800" title="Desactivar">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                                hasPermission('DISPOSITIVO_ELIMINAR') && (
+                                                    <button onClick={() => handleDesactivarDispositivo(dispositivo)} className="px-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-slate-200 hover:border-red-200 transition-colors bg-white dark:bg-gray-800" title="Desactivar">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                )
                                             )}
                                         </div>
                                     </div>
@@ -554,12 +574,16 @@ const Dispositivos = () => {
                                                     <button onClick={() => openDetallesModal(solicitud, true)} className="px-3 py-2 text-xs font-semibold bg-slate-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-600 border border-slate-200 dark:border-gray-600 transition-colors" title="Detalles">
                                                         <FileText className="w-4 h-4" />
                                                     </button>
-                                                    <button onClick={() => openAceptarModal(solicitud)} className="flex-1 py-2 px-3 text-xs font-semibold bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800/50 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors flex items-center justify-center gap-1">
-                                                        <Check className="w-4 h-4" /> Aprobar
-                                                    </button>
-                                                    <button onClick={() => openRechazarModal(solicitud)} className="flex-1 py-2 px-3 text-xs font-semibold bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/50 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors flex items-center justify-center gap-1">
-                                                        <X className="w-4 h-4" /> Declinar
-                                                    </button>
+                                                    {hasPermission('DISPOSITIVO_GESTIONAR') && (
+                                                        <>
+                                                            <button onClick={() => openAceptarModal(solicitud)} className="flex-1 py-2 px-3 text-xs font-semibold bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800/50 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors flex items-center justify-center gap-1">
+                                                                <Check className="w-4 h-4" /> Aprobar
+                                                            </button>
+                                                            <button onClick={() => openRechazarModal(solicitud)} className="flex-1 py-2 px-3 text-xs font-semibold bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/50 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors flex items-center justify-center gap-1">
+                                                                <X className="w-4 h-4" /> Declinar
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         );
@@ -817,6 +841,8 @@ const Dispositivos = () => {
             )}
             {alertMsg && <ConfirmBox message={alertMsg} onConfirm={() => setAlertMsg(null)} />}
             {confirmAction && <ConfirmBox message={confirmAction.message} onConfirm={confirmAction.onConfirm} onCancel={() => setConfirmAction(null)} />}
+            
+            <UpdatesModal isOpen={isUpdatesModalOpen} onClose={() => setUpdatesModalOpen(false)} />
         </div>
     );
 };

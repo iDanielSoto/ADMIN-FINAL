@@ -23,6 +23,7 @@ import {
 } from 'docx';
 import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
+import { useAuth } from '../context/AuthContext';
 
 import { API_CONFIG } from '../config/Apiconfig';
 const API_BASE_URL = `${API_CONFIG.BASE_URL}/api`;
@@ -113,6 +114,7 @@ const SearchableSelect = ({ options, value, onChange, placeholder = "Buscar empl
 
 const Reportes = () => {
     const { formatTime } = useConfig();
+    const { hasPermission } = useAuth();
     // --- ESTADOS DE FILTROS ---
     const [alcance, setAlcance] = useState('global');
     const [idSeleccionado, setIdSeleccionado] = useState('');
@@ -230,16 +232,17 @@ const Reportes = () => {
                 fetch(`${API_BASE_URL}${endpointStats}?${params.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } })
             ];
 
-            // Si es vista por departamento (o global), traemos el Top 10 Empleados
-            if (localAlcance === 'departamento' && idSeleccionado) {
-                params.append('departamento_id', idSeleccionado);
-                requests.push(fetch(`${API_BASE_URL}/reportes/desempeno?${params.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } }));
-            } else if (localAlcance === 'global') {
-                // Petición 1: Top 10 Desempeño Empleados
-                requests.push(fetch(`${API_BASE_URL}/reportes/desempeno?${params.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } }));
+            // Si es vista global o por departamento, traemos ambos rankings para tener data disponible
+            if (localAlcance === 'global' || localAlcance === 'departamento') {
+                // Petición 1: Ranking de Empleados (Global o filtrado por dept seleccionado)
+                const pEmp = new URLSearchParams(params.toString());
+                if (localAlcance === 'departamento' && idSeleccionado) pEmp.set('departamento_id', idSeleccionado);
+                requests.push(fetch(`${API_BASE_URL}/reportes/desempeno?${pEmp.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } }));
 
-                // Petición 2: Comparativa de Departamentos
-                requests.push(fetch(`${API_BASE_URL}/reportes/comparativa-departamentos?${params.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } }));
+                // Petición 2: Ranking de Departamentos (General)
+                const pDep = new URLSearchParams(params.toString());
+                pDep.delete('departamento_id'); // Aseguramos traer todos para el ranking
+                requests.push(fetch(`${API_BASE_URL}/reportes/comparativa-departamentos?${pDep.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } }));
             }
 
             // Si es vista por empleado, traemos su listado de tabla Quincenal para previsualización
@@ -267,8 +270,8 @@ const Reportes = () => {
             if (dataStats.success) {
                 setDashboardStats(dataStats.data);
 
-                // Procesar Top 10 Empleados (Solo Global o Departamento)
-                if (alcance !== 'empleado' && responses[1]) {
+                // Procesar Rankings (Global o Departamento)
+                if ((localAlcance === 'global' || localAlcance === 'departamento') && responses[1]) {
                     const dataDesempeno = await responses[1].json();
                     if (dataDesempeno.success && Array.isArray(dataDesempeno.data)) {
                         const top = dataDesempeno.data
@@ -278,8 +281,7 @@ const Reportes = () => {
                     }
                 }
 
-                // Procesar Comparativa Departamentos
-                if (localAlcance === 'global' && responses[2]) {
+                if ((localAlcance === 'global' || localAlcance === 'departamento') && responses[2]) {
                     const dataDeptos = await responses[2].json();
                     if (dataDeptos.success && Array.isArray(dataDeptos.data)) {
                         setStatsDepartamentos(dataDeptos.data);
@@ -1399,7 +1401,6 @@ const Reportes = () => {
                 {/* --- BARRA DE FILTROS --- */}
                 <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col gap-4">
 
-                    {/* Selectores de Modalidad General vs Empleado */}
                     <div className="flex bg-gray-100 dark:bg-gray-900/50 p-1 rounded-xl w-fit">
                         <button
                             onClick={() => { setAlcance('global'); setIdSeleccionado(''); }}
@@ -1408,17 +1409,23 @@ const Reportes = () => {
                             Vista General
                         </button>
                         <button
-                            onClick={() => setAlcance('empleado')}
+                            onClick={() => { setAlcance('empleado'); setIdSeleccionado(''); }}
                             className={`px-5 py-2 text-sm font-bold rounded-lg transition-all ${alcance === 'empleado' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
                         >
                             Por Empleado
                         </button>
+                        <button
+                            onClick={() => { setAlcance('departamento'); setIdSeleccionado(''); }}
+                            className={`px-5 py-2 text-sm font-bold rounded-lg transition-all ${alcance === 'departamento' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                        >
+                            Por Departamento
+                        </button>
                     </div>
 
                     <div className="flex flex-col xl:flex-row gap-4 items-end xl:items-center">
-                        <div className={`w-full xl:w-auto grid gap-4 flex-1 ${alcance === 'empleado' ? 'grid-cols-1 md:grid-cols-2' : alcance === 'global' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+                        <div className="w-full xl:w-auto grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
 
-                            {/* Selector Específico de Empleado (Oculto en Vista General) */}
+                            {/* Selector Específico de Empleado */}
                             {alcance === 'empleado' && (
                                 <div className="animate-in fade-in zoom-in-95 duration-200 w-full">
                                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
@@ -1428,6 +1435,22 @@ const Reportes = () => {
                                         options={empleados}
                                         value={idSeleccionado}
                                         onChange={setIdSeleccionado}
+                                        placeholder="Buscar empleado..."
+                                    />
+                                </div>
+                            )}
+
+                            {/* Selector Específico de Departamento */}
+                            {alcance === 'departamento' && (
+                                <div className="animate-in fade-in zoom-in-95 duration-200 w-full">
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
+                                        Seleccionar Departamento:
+                                    </label>
+                                    <SearchableSelect
+                                        options={departamentos}
+                                        value={idSeleccionado}
+                                        onChange={setIdSeleccionado}
+                                        placeholder="Buscar departamento..."
                                     />
                                 </div>
                             )}
@@ -1510,7 +1533,7 @@ const Reportes = () => {
                                 </button>
                             </div>
 
-                            {alcance === 'empleado' && dashboardStats && (
+                            {alcance === 'empleado' && dashboardStats && hasPermission('REPORTE_EXPORTAR') && (
                                 <div className="flex-1 animate-in fade-in zoom-in">
                                     <label className="block text-xs font-bold text-transparent uppercase mb-1.5 ml-1 select-none hidden xl:block">.</label>
                                     <button
@@ -1643,25 +1666,27 @@ const Reportes = () => {
                                 )}
                             </div>
 
-                            {/* Top 10 Desempeño Empleados */}
+                            {/* Ranking de Desempeño (Invertido según preferencia del usuario) */}
                             {(alcance === 'departamento' || alcance === 'global') && (
                                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 col-span-1 lg:col-span-2 flex flex-col">
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
                                             <Trophy className="w-5 h-5 text-yellow-500" />
-                                            Top 10 Empleados
+                                            {alcance === 'global' ? 'Top 10 Empleados' : 'Ranking: Departamentos'}
                                         </h3>
                                         <span className="text-xs font-medium text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full">
-                                            Mayor Puntualidad
+                                            {alcance === 'global' ? 'Mayor Puntualidad' : 'Mayor Eficiencia'}
                                         </span>
                                     </div>
 
                                     <div className="flex-1 overflow-x-auto">
-                                        {topDesempeno.length > 0 ? (
+                                        {(alcance === 'global' ? topDesempeno : statsDepartamentos).length > 0 ? (
                                             <table className="min-w-full">
                                                 <thead>
                                                     <tr className="border-b border-gray-100 dark:border-gray-700">
-                                                        <th className="text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase py-2">Empleado</th>
+                                                        <th className="text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase py-2">
+                                                            {alcance === 'global' ? 'Empleado' : 'Departamento'}
+                                                        </th>
                                                         <th className="text-center text-xs font-bold text-green-600 dark:text-green-500 uppercase py-2">Puntuales</th>
                                                         <th className="text-center text-xs font-bold text-yellow-600 dark:text-yellow-500 uppercase py-2">Retardos</th>
                                                         <th className="text-center text-xs font-bold text-red-600 dark:text-red-500 uppercase py-2">Faltas</th>
@@ -1669,24 +1694,26 @@ const Reportes = () => {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
-                                                    {topDesempeno.map((emp, idx) => (
+                                                    {(alcance === 'global' ? topDesempeno : statsDepartamentos).map((item, idx) => (
                                                         <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                                             <td className="py-3 text-sm font-medium text-gray-800 dark:text-gray-200 flex items-center gap-2">
                                                                 <span className={`w-5 h-5 flex items-center justify-center rounded text-[10px] font-bold ${idx < 3 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
                                                                     {idx + 1}
                                                                 </span>
-                                                                {emp.empleado_nombre}
+                                                                {alcance === 'global' ? item.empleado_nombre : item.nombre}
                                                             </td>
-                                                            <td className="text-center text-sm text-gray-600 dark:text-gray-400">{emp.puntuales}</td>
-                                                            <td className="text-center text-sm text-gray-600 dark:text-gray-400">{emp.retardos}</td>
-                                                            <td className="text-center text-sm text-gray-600 dark:text-gray-400">{emp.faltas}</td>
-                                                            <td className="text-center text-sm font-bold text-blue-700 dark:text-blue-400">{emp.porcentaje_puntualidad}%</td>
+                                                            <td className="text-center text-sm text-gray-600 dark:text-gray-400">{item.puntuales}</td>
+                                                            <td className="text-center text-sm text-gray-600 dark:text-gray-400">{item.retardos}</td>
+                                                            <td className="text-center text-sm text-gray-600 dark:text-gray-400">{item.faltas}</td>
+                                                            <td className="text-center text-sm font-bold text-blue-700 dark:text-blue-400">
+                                                                {alcance === 'global' ? item.porcentaje_puntualidad : item.eficiencia}%
+                                                            </td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
                                             </table>
                                         ) : (
-                                            <div className="h-full flex items-center justify-center text-gray-400 italic text-sm">
+                                            <div className="h-full flex items-center justify-center text-gray-400 italic text-sm py-10">
                                                 No hay registros de desempeño suficientes
                                             </div>
                                         )}

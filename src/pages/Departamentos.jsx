@@ -6,11 +6,13 @@ import DepartamentsModal from '../components/modals/DepartamentsModal';
 import MapaDepartamentos from '../components/DepartamentsMap';
 import DynamicLoader from '../components/common/DynamicLoader';
 import { useTour } from '../hooks/useTour';
+import { useAuth } from '../context/AuthContext';
 
 import { API_CONFIG } from '../config/Apiconfig';
 const API_URL = API_CONFIG.BASE_URL;
 
 const Departamentos = () => {
+    const { hasPermission } = useAuth();
     const [departamentos, setDepartamentos] = useState([]);
     const [usuarios, setUsuarios] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -228,9 +230,11 @@ const Departamentos = () => {
                     </div>
 
                 </div>
-                <button id="deptos-create-btn" onClick={handleCreate} className="btn-primary flex items-center gap-2">
-                    <FiPlus /> Nuevo Departamento
-                </button>
+                {hasPermission('DEPARTAMENTO_CREAR') && (
+                    <button id="deptos-create-btn" onClick={handleCreate} className="btn-primary flex items-center gap-2">
+                        <FiPlus /> Nuevo Departamento
+                    </button>
+                )}
             </div>
 
             {/* Content Grid */}
@@ -314,20 +318,24 @@ const Departamentos = () => {
                                                                 </button>
                                                             ) : (
                                                                 <>
-                                                                    <button
-                                                                        onClick={(e) => { e.stopPropagation(); handleEdit(depto); }}
-                                                                        className="p-1.5 text-slate-500 bg-white hover:bg-slate-50 border border-slate-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-primary-400 rounded-lg transition-colors"
-                                                                        title="Editar"
-                                                                    >
-                                                                        <FiEdit2 className="w-4 h-4" />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={(e) => { e.stopPropagation(); handleDelete(depto); }}
-                                                                        className="p-1.5 text-slate-500 bg-white hover:bg-slate-50 border border-slate-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-red-400 rounded-lg transition-colors"
-                                                                        title="Desactivar"
-                                                                    >
-                                                                        <FiTrash2 className="w-4 h-4" />
-                                                                    </button>
+                                                                    {hasPermission('DEPARTAMENTO_EDITAR') && (
+                                                                        <button
+                                                                            onClick={(e) => { e.stopPropagation(); handleEdit(depto); }}
+                                                                            className="p-1.5 text-slate-500 bg-white hover:bg-slate-50 border border-slate-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-primary-400 rounded-lg transition-colors"
+                                                                            title="Editar"
+                                                                        >
+                                                                            <FiEdit2 className="w-4 h-4" />
+                                                                        </button>
+                                                                    )}
+                                                                    {hasPermission('DEPARTAMENTO_ELIMINAR') && (
+                                                                        <button
+                                                                            onClick={(e) => { e.stopPropagation(); handleDelete(depto); }}
+                                                                            className="p-1.5 text-slate-500 bg-white hover:bg-slate-50 border border-slate-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-red-400 rounded-lg transition-colors"
+                                                                            title="Desactivar"
+                                                                        >
+                                                                            <FiTrash2 className="w-4 h-4" />
+                                                                        </button>
+                                                                    )}
                                                                 </>
                                                             )}
                                                         </div>

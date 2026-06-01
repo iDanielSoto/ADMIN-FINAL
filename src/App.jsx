@@ -80,12 +80,12 @@ function AppRoutes() {
                 />
 
                 {/* Rutas protegidas generadas dinámicamente */}
-                {protectedRoutes.map(({ path, component: Component, requireAdmin }) => (
+                {protectedRoutes.map(({ path, component: Component, permissionRequired }) => (
                     <Route
                         key={path}
                         path={path}
                         element={
-                            <ProtectedRoute requireAdmin={requireAdmin}>
+                            <ProtectedRoute permissionRequired={permissionRequired}>
                                 <MainLayout>
                                     <Component />
                                 </MainLayout>
@@ -95,12 +95,12 @@ function AppRoutes() {
                 ))}
 
                 {/* Rutas especiales (con parámetros) */}
-                {specialRoutes.map(({ path, component: Component, requireAdmin }) => (
+                {specialRoutes.map(({ path, component: Component, permissionRequired }) => (
                     <Route
                         key={path}
                         path={path}
                         element={
-                            <ProtectedRoute requireAdmin={requireAdmin}>
+                            <ProtectedRoute permissionRequired={permissionRequired}>
                                 <MainLayout>
                                     <Component />
                                 </MainLayout>

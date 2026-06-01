@@ -1,7 +1,9 @@
 import React from 'react';
 import { FiEdit2, FiMail, FiPhone, FiChevronRight, FiTrash2, FiRefreshCw } from 'react-icons/fi';
+import { useAuth } from '../../context/AuthContext';
 
 const UserCard = ({ usuario, onEdit, onViewProfile, onDelete, onReactivar }) => {
+    const { hasPermission } = useAuth();
 
     const getInitials = (nombre) => {
         if (!nombre) return '?';
@@ -58,38 +60,44 @@ const UserCard = ({ usuario, onEdit, onViewProfile, onDelete, onReactivar }) => 
                 {/* 5. Acciones */}
                 <div className="flex items-center gap-1 flex-shrink-0 -mr-2">
                     {usuario.estado_cuenta === 'baja' ? (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onReactivar && onReactivar(usuario);
-                            }}
-                            className="p-1.5 text-green-600 hover:bg-green-100 rounded-md transition-colors"
-                            title="Reactivar usuario"
-                        >
-                            <FiRefreshCw className="w-4 h-4" />
-                        </button>
+                        hasPermission('USUARIO_ELIMINAR') && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onReactivar && onReactivar(usuario);
+                                }}
+                                className="p-1.5 text-green-600 hover:bg-green-100 rounded-md transition-colors"
+                                title="Reactivar usuario"
+                            >
+                                <FiRefreshCw className="w-4 h-4" />
+                            </button>
+                        )
                     ) : (
                         <>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onEdit(usuario);
-                                }}
-                                className="p-1.5 text-slate-400 hover:text-primary-600 hover:bg-slate-50 border border-transparent hover:border-slate-200 dark:hover:bg-gray-700 rounded-md transition-colors opacity-0 group-hover:opacity-100"
-                                title="Editar"
-                            >
-                                <FiEdit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDelete && onDelete(usuario);
-                                }}
-                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-slate-50 border border-transparent hover:border-slate-200 dark:hover:bg-gray-700 rounded-md transition-colors opacity-0 group-hover:opacity-100"
-                                title="Dar de baja"
-                            >
-                                <FiTrash2 className="w-4 h-4" />
-                            </button>
+                            {hasPermission('USUARIO_EDITAR') && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onEdit(usuario);
+                                    }}
+                                    className="p-1.5 text-slate-400 hover:text-primary-600 hover:bg-slate-50 border border-transparent hover:border-slate-200 dark:hover:bg-gray-700 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Editar"
+                                >
+                                    <FiEdit2 className="w-4 h-4" />
+                                </button>
+                            )}
+                            {hasPermission('USUARIO_ELIMINAR') && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDelete && onDelete(usuario);
+                                    }}
+                                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-slate-50 border border-transparent hover:border-slate-200 dark:hover:bg-gray-700 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Dar de baja"
+                                >
+                                    <FiTrash2 className="w-4 h-4" />
+                                </button>
+                            )}
                         </>
                     )}
                 </div>

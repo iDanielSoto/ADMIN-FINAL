@@ -269,6 +269,26 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados = [], initialData, onS
             setMensaje({ tipo: 'error', texto: error });
             return;
         }
+
+        // Verificar si algún empleado seleccionado ya tiene un horario asignado
+        const empleadosConHorario = formData.empleados_ids
+            .map(id => empleados.find(emp => emp.id === id))
+            .filter(emp => emp && emp.horario_id);
+
+        if (empleadosConHorario.length > 0) {
+            const nombres = empleadosConHorario.slice(0, 3).map(e => e.nombre).join(', ');
+            const mas = empleadosConHorario.length > 3 ? ` y ${empleadosConHorario.length - 3} más` : '';
+            
+            setConfirmAction({
+                message: `Atención: ${empleadosConHorario.length} empleado(s) (${nombres}${mas}) ya tienen un horario asignado. ¿Deseas desactivar sus horarios actuales y reemplazarlos por este nuevo?`,
+                onConfirm: () => {
+                    onSave(formData);
+                    setConfirmAction(null);
+                }
+            });
+            return;
+        }
+
         onSave(formData);
     };
 
@@ -373,13 +393,23 @@ const ScheduleModal = ({ isOpen, onClose, mode, empleados = [], initialData, onS
                                                     {filteredEmpleados.map(emp => {
                                                         const isSelected = formData.empleados_ids.includes(emp.id);
                                                         return (
-                                                            <label key={emp.id} className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors group">
+                                                            <label key={emp.id} onClick={() => toggleEmpleado(emp.id)} className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors group">
                                                                 <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-600 group-hover:border-blue-400'}`}>
                                                                     {isSelected && <FiCheck className="w-3 h-3" />}
                                                                 </div>
-                                                                <div className="flex flex-col">
-                                                                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{emp.nombre}</span>
-                                                                    {emp.rfc && <span className="text-xs text-gray-500 dark:text-gray-400">{emp.rfc}</span>}
+                                                                <div className="flex flex-col flex-1">
+                                                                    <div className="flex items-center justify-between">
+                                                                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{emp.nombre}</span>
+                                                                        {emp.horario_id && (
+                                                                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase ${emp.horario_config?.tipo_periodo === 'intersemestral' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'}`}>
+                                                                                {emp.horario_config?.tipo_periodo || 'Activo'}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        {emp.rfc && <span className="text-xs text-gray-500 dark:text-gray-400">{emp.rfc}</span>}
+                                                                        {emp.horario_id && <span className="text-[10px] text-gray-400 italic font-medium">• Tiene horario asignado</span>}
+                                                                    </div>
                                                                 </div>
                                                             </label>
                                                         );

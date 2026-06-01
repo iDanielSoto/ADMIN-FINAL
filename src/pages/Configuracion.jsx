@@ -10,6 +10,7 @@ import {
     FiWifi, FiBookOpen, FiBriefcase, FiSearch
 } from 'react-icons/fi';
 import { useTour } from '../hooks/useTour';
+import { useAuth } from '../context/AuthContext';
 
 import { API_CONFIG } from '../config/Apiconfig';
 const API_URL = API_CONFIG.BASE_URL;
@@ -106,6 +107,8 @@ const EmployeeSelector = ({ selected, onChange, employees }) => {
 const Configuracion = () => {
     const { theme, toggleTheme } = useTheme();
     const { config, updateConfig } = useConfig(); // Consumir contexto
+    const { hasPermission } = useAuth();
+
     // Estado para la navegación interna
     const [activeTab, setActiveTab] = useState('general');
 
@@ -844,19 +847,27 @@ const Configuracion = () => {
                             <p className="text-gray-500 dark:text-gray-400 mt-1">{currentSection.description}</p>
                         </div>
 
-                        <button
-                            id="config-save-btn"
-                            onClick={handleSaveAll}
-                            disabled={saving}
-                            className="btn-primary flex items-center gap-2 px-6 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {saving ? (
-                                <DynamicLoader size="tiny" layout="row" />
-                            ) : (
-                                <FiSave className="w-4 h-4" />
-                            )}
-                            {saving ? 'Guardando...' : 'Guardar Cambios'}
-                        </button>
+                        {/* Solo mostrar botón guardar si tiene el permiso específico de la sección */}
+                        {((activeTab === 'general' && hasPermission('CONFIG_GENERAL')) ||
+                          (activeTab === 'empresa' && hasPermission('CONFIG_EMPRESA')) ||
+                          (activeTab === 'seguridad' && hasPermission('CONFIG_SEGURIDAD')) ||
+                          (activeTab === 'tolerancia' && hasPermission('CONFIG_ASISTENCIA')) ||
+                          (activeTab === 'red' && hasPermission('CONFIG_RED')) ||
+                          (activeTab === 'reportes' && hasPermission('CONFIG_REPORTES'))) && (
+                            <button
+                                id="config-save-btn"
+                                onClick={handleSaveAll}
+                                disabled={saving}
+                                className="btn-primary flex items-center gap-2 px-6 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {saving ? (
+                                    <DynamicLoader size="tiny" layout="row" />
+                                ) : (
+                                    <FiSave className="w-4 h-4" />
+                                )}
+                                {saving ? 'Guardando...' : 'Guardar Cambios'}
+                            </button>
+                        )}
                     </div>
 
                     {/* Mensajes de Feedback */}

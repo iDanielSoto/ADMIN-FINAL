@@ -11,7 +11,6 @@ import {
     FiCheck,
     FiSave,
     FiMove,
-    FiEye,
     FiLock,
     FiArrowLeft,
     FiUserPlus,
@@ -25,6 +24,7 @@ import {
     FiRefreshCw
 } from 'react-icons/fi';
 import { useConfig } from '../context/ConfigContext';
+import { useAuth } from '../context/AuthContext';
 import DynamicLoader from '../components/common/DynamicLoader';
 import ConfirmBox from '../components/ConfirmBox';
 
@@ -46,6 +46,7 @@ const CATEGORIA_ICONS = {
 };
 
 const Roles = () => {
+    const { hasPermission } = useAuth();
     const [roles, setRoles] = useState([]);
     const [permisosCatalogo, setPermisosCatalogo] = useState({ lista: [], por_categoria: {} });
     const [loading, setLoading] = useState(true);
@@ -247,11 +248,34 @@ const Roles = () => {
     // --- UTILS ---
     const normalizePermiso = (codigo) => codigo ? codigo.toUpperCase().replace(/[\s-]/g, '_') : '';
 
-    const togglePermiso = (codigo) => {
+    const togglePermiso = (codigo, categoriaPermisos = []) => {
         setFormData(prev => {
             const codigoNorm = normalizePermiso(codigo);
             const existe = prev.permisos.some(p => normalizePermiso(p) === codigoNorm);
-            return { ...prev, permisos: existe ? prev.permisos.filter(p => normalizePermiso(p) !== codigoNorm) : [...prev.permisos, codigo] };
+            const esVer = codigoNorm.endsWith('_VER') || codigoNorm === 'CONFIG_VER';
+
+            let nuevosPermisos = existe
+                ? prev.permisos.filter(p => normalizePermiso(p) !== codigoNorm)
+                : [...prev.permisos, codigo];
+
+            // SI DESACTIVAMOS UN "VER", desactivamos todo lo demás de esa categoría
+            if (esVer && existe) {
+                const codigosCategoria = (categoriaPermisos || []).map(p => normalizePermiso(p.codigo));
+                nuevosPermisos = nuevosPermisos.filter(p => !codigosCategoria.includes(normalizePermiso(p)));
+            }
+
+            // SI ACTIVAMOS CUALQUIER COSA QUE NO SEA "VER", activamos el "VER" automáticamente
+            if (!esVer && !existe) {
+                const permisoVer = (categoriaPermisos || []).find(p => {
+                    const norm = normalizePermiso(p.codigo);
+                    return norm.endsWith('_VER') || norm === 'CONFIG_VER';
+                });
+                if (permisoVer && !nuevosPermisos.some(p => normalizePermiso(p) === normalizePermiso(permisoVer.codigo))) {
+                    nuevosPermisos.push(permisoVer.codigo);
+                }
+            }
+
+            return { ...prev, permisos: nuevosPermisos };
         });
     };
 
@@ -446,9 +470,11 @@ const Roles = () => {
                         <FiArrowLeft className="w-5 h-5" /> Volver a Roles
                     </button>
                     <div className="flex-1"></div>
-                    <button onClick={() => openEditModal(viewingRole)} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 shadow-sm">
-                        <FiEdit2 className="w-4 h-4" /> Editar Rol
-                    </button>
+                    {hasPermission('ROL_EDITAR') && (
+                        <button onClick={() => openEditModal(viewingRole)} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 shadow-sm">
+                            <FiEdit2 className="w-4 h-4" /> Editar Rol
+                        </button>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -489,7 +515,9 @@ const Roles = () => {
                     <div className="lg:col-span-2 card flex flex-col h-full transition-colors duration-200">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2"><FiUsers className="w-5 h-5 text-gray-400" /> Usuarios Asignados ({roleUsuarios.length})</h2>
-                            <button onClick={openAssignModal} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 shadow-sm transition-colors text-sm font-medium"><FiUserPlus className="w-4 h-4" /> Asignar Usuarios</button>
+                            {hasPermission('ROL_ASIGNAR') && (
+                                <button onClick={openAssignModal} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 shadow-sm transition-colors text-sm font-medium"><FiUserPlus className="w-4 h-4" /> Asignar Usuarios</button>
+                            )}
                         </div>
                         {loadingUsuarios ? <div className="flex justify-center py-12 flex-1"><DynamicLoader size="small" /></div> : roleUsuarios.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 flex-1"><div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4"><FiUsers className="w-8 h-8 text-gray-300 dark:text-gray-600" /></div><p className="font-medium">No hay usuarios con este rol</p></div>
@@ -583,9 +611,30 @@ const Roles = () => {
                                                 <div key={categoria} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800">
                                                     <div className="bg-gray-100 dark:bg-gray-700/50 p-3 flex items-center justify-between"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${formData.color}20` }}><Icon className="w-5 h-5" style={{ color: formData.color }} /></div><div><h4 className="font-medium text-gray-900 dark:text-white">{categoria}</h4><p className="text-xs text-gray-500 dark:text-gray-400">{permisos.filter(p => formData.permisos.some(fp => normalizePermiso(fp) === normalizePermiso(p.codigo))).length}/{permisos.length} permisos</p></div></div><button type="button" onClick={() => toggleCategoriaCompleta(categoria, permisos)} className={`text-xs px-3 py-1 rounded transition-colors ${todosSeleccionados ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-primary-600 hover:bg-primary-700 text-white'}`}>{todosSeleccionados ? 'Desmarcar todo' : 'Marcar todo'}</button></div>
                                                     <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-                                                        {permisos.map(permiso => (
-                                                            <label key={permiso.codigo} className="flex items-center gap-2 cursor-pointer group"><input type="checkbox" checked={formData.permisos.some(fp => normalizePermiso(fp) === normalizePermiso(permiso.codigo))} onChange={() => togglePermiso(permiso.codigo)} className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700" /><span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">{permiso.nombre}</span></label>
-                                                        ))}
+                                                        {permisos.map(permiso => {
+                                                            const norm = normalizePermiso(permiso.codigo);
+                                                            const esVer = norm.endsWith('_VER') || norm === 'CONFIG_VER';
+                                                            const permisoVerActivo = permisos.some(p => {
+                                                                const pNorm = normalizePermiso(p.codigo);
+                                                                return (pNorm.endsWith('_VER') || pNorm === 'CONFIG_VER') &&
+                                                                    formData.permisos.some(fp => normalizePermiso(fp) === pNorm);
+                                                            });
+
+                                                            return (
+                                                                <label key={permiso.codigo} className={`flex items-center gap-2 cursor-pointer group ${(!esVer && !permisoVerActivo) ? 'opacity-50 grayscale select-none' : ''}`}>
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={formData.permisos.some(fp => normalizePermiso(fp) === normalizePermiso(permiso.codigo))}
+                                                                        onChange={() => togglePermiso(permiso.codigo, permisos)}
+                                                                        disabled={!esVer && !permisoVerActivo}
+                                                                        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 disabled:opacity-50"
+                                                                    />
+                                                                    <span className={`text-sm text-gray-700 dark:text-gray-300 ${(!esVer && !permisoVerActivo) ? '' : 'group-hover:text-gray-900 dark:group-hover:text-white'}`}>
+                                                                        {permiso.nombre}
+                                                                    </span>
+                                                                </label>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
                                             );
@@ -645,20 +694,24 @@ const Roles = () => {
                             </select>
                         </div>
                         <div className="flex gap-3">
-                            <button
-                                onClick={handleStartReordering}
-                                className="btn-primary bg-purple-600 hover:bg-purple-700 flex items-center gap-2"
-                            >
-                                <FiMove className="w-5 h-5" />
-                                Reordenar
-                            </button>
-                            <button
-                                onClick={openCreateModal}
-                                className="btn-primary flex items-center gap-2"
-                            >
-                                <FiPlus className="w-5 h-5" />
-                                Nuevo Rol
-                            </button>
+                            {hasPermission('ROL_EDITAR') && (
+                                <button
+                                    onClick={handleStartReordering}
+                                    className="btn-primary bg-purple-600 hover:bg-purple-700 flex items-center gap-2"
+                                >
+                                    <FiMove className="w-5 h-5" />
+                                    Reordenar
+                                </button>
+                            )}
+                            {hasPermission('ROL_CREAR') && (
+                                <button
+                                    onClick={openCreateModal}
+                                    className="btn-primary flex items-center gap-2"
+                                >
+                                    <FiPlus className="w-5 h-5" />
+                                    Nuevo Rol
+                                </button>
+                            )}
                         </div>
                     </>
                 ) : (
@@ -756,29 +809,35 @@ const Roles = () => {
                                     {!isReordering && (
                                         <div className="flex items-center gap-2 relative z-10">
                                             {rol.es_activo === false ? (
-                                                <button
-                                                    onClick={(e) => handleReactivar(rol, e)}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-green-700 bg-green-50 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50 border border-green-200 dark:border-green-800 rounded-lg transition-colors"
-                                                    title="Reactivar rol"
-                                                >
-                                                    <FiRefreshCw className="w-4 h-4" /> Reactivar
-                                                </button>
+                                                hasPermission('ROL_ELIMINAR') && (
+                                                    <button
+                                                        onClick={(e) => handleReactivar(rol, e)}
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-green-700 bg-green-50 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50 border border-green-200 dark:border-green-800 rounded-lg transition-colors"
+                                                        title="Reactivar rol"
+                                                    >
+                                                        <FiRefreshCw className="w-4 h-4" /> Reactivar
+                                                    </button>
+                                                )
                                             ) : (
                                                 <>
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); openEditModal(rol); }}
-                                                        className="p-2 text-gray-500 hover:bg-primary-50 hover:text-primary-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-primary-400 rounded-lg transition-colors"
-                                                        title="Editar"
-                                                    >
-                                                        <FiEdit2 className="w-5 h-5" />
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => { handleDelete(rol, e); }}
-                                                        className={`p-2 rounded-lg transition-colors ${esFijo ? 'text-gray-400 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700' : 'text-gray-500 dark:text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400'}`}
-                                                        title={esFijo ? "Rol de sistema protegido" : "Desactivar"}
-                                                    >
-                                                        <FiTrash2 className="w-5 h-5" />
-                                                    </button>
+                                                    {hasPermission('ROL_EDITAR') && (
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); openEditModal(rol); }}
+                                                            className="p-2 text-gray-500 hover:bg-primary-50 hover:text-primary-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-primary-400 rounded-lg transition-colors"
+                                                            title="Editar"
+                                                        >
+                                                            <FiEdit2 className="w-5 h-5" />
+                                                        </button>
+                                                    )}
+                                                    {hasPermission('ROL_ELIMINAR') && (
+                                                        <button
+                                                            onClick={(e) => { handleDelete(rol, e); }}
+                                                            className={`p-2 rounded-lg transition-colors ${esFijo ? 'text-gray-400 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700' : 'text-gray-500 dark:text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400'}`}
+                                                            title={esFijo ? "Rol de sistema protegido" : "Desactivar"}
+                                                        >
+                                                            <FiTrash2 className="w-5 h-5" />
+                                                        </button>
+                                                    )}
                                                 </>
                                             )}
                                         </div>

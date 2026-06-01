@@ -1,7 +1,8 @@
-import React from 'react';
 import { FiEdit2, FiTrash2, FiMapPin, FiUsers, FiRefreshCw } from 'react-icons/fi';
+import { useAuth } from '../../context/AuthContext';
 
 const DepartamentsCard = ({ depto, onEdit, onDelete, onReactivar, onFocus }) => {
+    const { hasPermission } = useAuth();
 
     const getInitials = (nombre) => {
         if (!nombre) return '--';
@@ -65,21 +66,25 @@ const DepartamentsCard = ({ depto, onEdit, onDelete, onReactivar, onFocus }) => 
                                 <FiRefreshCw className="w-3.5 h-3.5" /> Reactivar
                             </button>
                         ) : (
-                            <>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); onEdit(depto); }}
-                                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-900/40 rounded-lg transition-all"
-                                    title="Editar"
-                                >
-                                    <FiEdit2 className="w-4 h-4" />
-                                </button>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); onDelete(depto); }}
-                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/40 rounded-lg transition-all"
-                                    title="Desactivar"
-                                >
-                                    <FiTrash2 className="w-4 h-4" />
-                                </button>
+                             <>
+                                {hasPermission('DEPARTAMENTO_EDITAR') && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onEdit(depto); }}
+                                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-900/40 rounded-lg transition-all"
+                                        title="Editar"
+                                    >
+                                        <FiEdit2 className="w-4 h-4" />
+                                    </button>
+                                )}
+                                {hasPermission('DEPARTAMENTO_ELIMINAR') && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onDelete(depto); }}
+                                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/40 rounded-lg transition-all"
+                                        title="Desactivar"
+                                    >
+                                        <FiTrash2 className="w-4 h-4" />
+                                    </button>
+                                )}
                             </>
                         )}
                     </div>

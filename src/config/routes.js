@@ -13,27 +13,30 @@ const Registros = lazy(() => import('../pages/Registros'));
 const Configuracion = lazy(() => import('../pages/Configuracion'));
 const PerfilUsuario = lazy(() => import('../pages/PerfilUsuario'));
 const Avisos = lazy(() => import('../pages/Avisos'));
-const AdminSaaS = lazy(() => import('../pages/AdminSaaS')); // Rutas SuperUser
+const HorariosIncidencias = lazy(() => import('../pages/HorariosIncidencias'));
+const AdminSaaS = lazy(() => import('../pages/AdminSaaS')); 
 const EmpresasSaaS = lazy(() => import('../pages/EmpresasSaaS'));
 const ConfigurarEmpresaSaaS = lazy(() => import('../pages/ConfigurarEmpresaSaaS'));
 const SaasLogs = lazy(() => import('../pages/SaasLogs'));
 
 export const protectedRoutes = [
     { path: '/dashboard', component: Dashboard },
-    { path: '/avisos', component: Avisos },
-    { path: '/empleados', component: Empleados },
-    { path: '/horarios', component: Horarios },
-    { path: '/departamentos', component: Departamentos },
-    { path: '/roles', component: Roles },
-    { path: '/dispositivos', component: Dispositivos },
-    { path: '/incidencias', component: Incidencias },
-    { path: '/reportes', component: Reportes },
-    { path: '/registros', component: Registros, requireAdmin: true },
-    { path: '/configuracion', component: Configuracion, requireAdmin: true },
-    { path: '/super-administradores', component: AdminSaaS, requireAdmin: true },
-    { path: '/empresas', component: EmpresasSaaS, requireAdmin: true },
-    { path: '/empresas/:id', component: ConfigurarEmpresaSaaS, requireAdmin: true },
-    { path: '/saas-logs', component: SaasLogs, requireAdmin: true },
+    { path: '/avisos', component: Avisos, permissionRequired: 'AVISO_VER' },
+    { path: '/empleados', component: Empleados, permissionRequired: 'USUARIO_VER' },
+    { path: '/horarios', component: HorariosIncidencias, permissionRequired: 'HORARIO_VER' },
+    { path: '/departamentos', component: Departamentos, permissionRequired: 'DEPARTAMENTO_VER' },
+    { path: '/roles', component: Roles, permissionRequired: 'ROL_VER' },
+    { path: '/dispositivos', component: Dispositivos, permissionRequired: 'DISPOSITIVO_VER' },
+    { path: '/incidencias', component: HorariosIncidencias, permissionRequired: 'HORARIO_GESTIONAR' },
+    { path: '/reportes', component: Reportes, permissionRequired: 'REPORTE_VER' },
+    { path: '/registros', component: Registros, permissionRequired: 'REGISTRO_VER' },
+    { path: '/configuracion', component: Configuracion, permissionRequired: 'CONFIG_VER' },
+    
+    // SaaS Routes (El middleware se encarga de esMaestro)
+    { path: '/super-administradores', component: AdminSaaS },
+    { path: '/empresas', component: EmpresasSaaS },
+    { path: '/empresas/:id', component: ConfigurarEmpresaSaaS },
+    { path: '/saas-logs', component: SaasLogs },
 ];
 
 export const specialRoutes = [
